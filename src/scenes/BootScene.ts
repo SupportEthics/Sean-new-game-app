@@ -17,19 +17,25 @@ export class BootScene extends Phaser.Scene {
   }
 
   private makeRects(): void {
+    // Parchment sword card
     let g = this.add.graphics();
-    g.fillStyle(THEME.panelCell);
-    g.fillRoundedRect(0, 0, 62, 62, 10);
-    g.lineStyle(2, THEME.panelCellBorder);
-    g.strokeRoundedRect(1, 1, 60, 60, 10);
-    g.generateTexture('cell', 62, 62);
+    g.fillStyle(THEME.cardBg);
+    g.fillRoundedRect(0, 0, 86, 64, 6);
+    g.generateTexture('card', 86, 64);
     g.destroy();
 
-    g = this.add.graphics();
-    g.fillStyle(0xffffff);
-    g.fillRoundedRect(0, 0, 160, 52, 14);
-    g.generateTexture('btn', 160, 52);
-    g.destroy();
+    // White rounded rects for tinted buttons of each size
+    for (const [key, w, h, r] of [
+      ['btn', 160, 52, 12],
+      ['btn-sm', 90, 34, 8],
+      ['btn-wide', 168, 34, 8],
+    ] as const) {
+      g = this.add.graphics();
+      g.fillStyle(0xffffff);
+      g.fillRoundedRect(0, 0, w, h, r);
+      g.generateTexture(key, w, h);
+      g.destroy();
+    }
 
     g = this.add.graphics();
     g.fillStyle(0x000000, 0.25);

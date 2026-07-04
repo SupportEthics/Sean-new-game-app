@@ -34,7 +34,7 @@ test('mid game with populated grid', async ({ page }) => {
     window.__game.gs.highestTier = 9;
   });
   // Buy through the UI so grid:changed fires and everything renders
-  await page.mouse.click(390 / 2 - 92, 424 + 40);
+  await page.mouse.click(289, 761);
   await page.waitForTimeout(2500);
   await page.screenshot({ path: 'screenshots/02-mid-game.png' });
 });

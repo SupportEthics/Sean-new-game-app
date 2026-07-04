@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 
 // Design-resolution coordinates map 1:1 to the 390x844 viewport (Scale.FIT).
-const BUY_BUTTON = { x: 390 / 2 - 92, y: 424 + 40 };
-const MERGE_BUTTON = { x: 390 / 2 + 92, y: 424 + 40 };
+const BUY_BUTTON = { x: 289, y: 761 }; // "Buy sword" card
+const MERGE_BUTTON = { x: 62, y: 761 }; // "Auto Merge" toggle (merges once on enable)
 
 declare global {
   interface Window {

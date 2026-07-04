@@ -16,7 +16,7 @@ const gs = loaded?.state ?? new GameState();
 new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game',
-  backgroundColor: '#1a1330',
+  backgroundColor: '#2a1c10',
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,

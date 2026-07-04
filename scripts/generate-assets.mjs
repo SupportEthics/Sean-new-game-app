@@ -396,6 +396,35 @@ function rock() {
   return p;
 }
 
+function stuckSword() {
+  // A fallen blade planted in the dirt at an angle
+  const p = new Pix(12, 12);
+  p.line(4, 3, 8, 9, '#9aa0a6');
+  p.line(5, 3, 9, 9, '#c9ced4');
+  p.line(3, 2, 6, 2, '#6f7378'); // guard
+  p.set(3, 1, '#3a2a1e'); // grip
+  p.edgeShade(0.7);
+  return p;
+}
+
+function bone() {
+  const p = new Pix(12, 12);
+  p.line(3, 8, 8, 5, '#d8d4c8');
+  p.circle(2.5, 8.5, 1.2, '#d8d4c8');
+  p.circle(8.5, 4.5, 1.2, '#d8d4c8');
+  p.edgeShade(0.75);
+  return p;
+}
+
+function bush() {
+  const p = new Pix(12, 12);
+  p.ellipse(6, 7, 5, 3.5, '#4f7a38');
+  p.ellipse(4, 6, 2.5, 2, '#5c8a42');
+  p.set(8, 6, '#5c8a42');
+  p.edgeShade(0.6);
+  return p;
+}
+
 // ---------- Write everything ----------
 
 writeSheet(`${OUT}/hero.png`, [hero(0), hero(1), hero(2)], SCALE);
@@ -406,4 +435,8 @@ writeSheet(`${OUT}/enemy-golem.png`, [golem(0), golem(1)], SCALE);
 writeSheet(`${OUT}/enemy-imp.png`, [imp(0), imp(1)], SCALE);
 writeSheet(`${OUT}/enemy-wraith.png`, [wraith(0), wraith(1)], SCALE);
 writeSheet(`${OUT}/gear.png`, WEAPONS.map(weapon), SCALE);
-writeSheet(`${OUT}/deco.png`, [deadTree(), skullDeco(), rock()], SCALE);
+writeSheet(
+  `${OUT}/deco.png`,
+  [deadTree(), skullDeco(), rock(), stuckSword(), bone(), bush()],
+  SCALE,
+);

@@ -10,8 +10,8 @@ export class PreloadScene extends Phaser.Scene {
 
   preload(): void {
     const barBg = this.add
-      .rectangle(THEME.width / 2, THEME.height / 2, 220, 18, THEME.panelCell)
-      .setStrokeStyle(2, THEME.panelCellBorder);
+      .rectangle(THEME.width / 2, THEME.height / 2, 220, 18, THEME.panelBgDark)
+      .setStrokeStyle(2, THEME.cardBorder);
     const bar = this.add
       .rectangle(THEME.width / 2 - 108, THEME.height / 2, 0, 10, THEME.gold)
       .setOrigin(0, 0.5);

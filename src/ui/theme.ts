@@ -4,51 +4,63 @@ export const THEME = {
   // Layout (design resolution 390x844, portrait)
   width: 390,
   height: 844,
-  battleHeight: 424,
+  layout: {
+    headerH: 52, // currency strip
+    hudH: 44, // Lv/EXP + stage row
+    arenaTop: 96,
+    arenaBottom: 396,
+    panelTop: 396, // sword card grid
+    togglesTop: 742, // auto merge / auto buy / buy sword row
+    tabBarTop: 780,
+  },
 
-  // Palette — dark fantasy
-  skyTop: 0x2f3b4a,
-  skyBottom: 0x4a5d52,
-  ground: 0x3f5240,
-  groundDark: 0x2e3d30,
-
-  /** Battle backdrop palettes; the world shifts every 5 stages. */
+  /** Arena palettes (top-down field); the world shifts every 5 stages. */
   biomes: [
-    // Dark Forest
-    { skyTop: 0x2f3b4a, skyBottom: 0x51665a, ground: 0x3f5240, groundDark: 0x2e3d30 },
+    // Greenfield Camp — the classic dirt arena
+    { dirt: 0xc98a4b, dirtDark: 0xb2763c, grass: 0x6fae4e, grassDark: 0x5c9440 },
     // Ember Wastes
-    { skyTop: 0x38222c, skyBottom: 0x7a4030, ground: 0x54382c, groundDark: 0x3e2a22 },
+    { dirt: 0xa85c38, dirtDark: 0x92492c, grass: 0x9a7434, grassDark: 0x82602a },
     // Frozen Pass
-    { skyTop: 0x36455e, skyBottom: 0x8a9cb8, ground: 0x93a8bc, groundDark: 0x74889e },
+    { dirt: 0xb8c4d4, dirtDark: 0xa2b0c4, grass: 0xd8e4ee, grassDark: 0xbccbdc },
     // Cursed Swamp
-    { skyTop: 0x27301f, skyBottom: 0x4a5a40, ground: 0x38472f, groundDark: 0x293522 },
+    { dirt: 0x8a7a4e, dirtDark: 0x76683e, grass: 0x5c7a3c, grassDark: 0x4a6530 },
     // Shadow Keep
-    { skyTop: 0x1a1424, skyBottom: 0x3a2c4a, ground: 0x362e42, groundDark: 0x272132 },
+    { dirt: 0x6e5c72, dirtDark: 0x5c4c60, grass: 0x4e4258, grassDark: 0x3e3448 },
   ],
-  panelBg: 0x1e1730,
-  panelCell: 0x322947,
-  panelCellBorder: 0x4a3d68,
+
+  // Parchment & wood UI (Idle Sword Master register)
+  panelBg: 0xd9c491,      // parchment panel
+  panelBgDark: 0x4a3520,  // wood-brown strip
+  cardBg: 0xefe0b8,       // sword card face
+  cardBorder: 0x8a5a2e,   // wood border
+  headerBg: 0x3e2c1a,     // ornate top banner
+  headerTrim: 0x8a5a2e,
 
   gold: 0xffd166,
-  gem: 0x6be3ff,
-  hpBar: 0xff6b6b,
-  hpBarBg: 0x3a2d55,
+  gem: 0x4ec3e8,
+  hpBar: 0xe84a4a,
+  hpBarBg: 0x4a3520,
   bossTimer: 0xffa94d,
+  expBar: 0x4ec3e8,
+  fence: 0x9a6a3a,
+  fenceDark: 0x7c5228,
 
-  buttonBg: 0xc2571f,
-  buttonBgDisabled: 0x54496b,
+  buttonBg: 0x58a83c,      // green action buttons
+  buttonBgAlt: 0xc9762e,   // orange secondary
+  buttonBgDisabled: 0x9a8d6e,
   buttonText: '#ffffff',
 
-  textLight: '#ffffff',
-  textDark: '#2e2348',
+  textLight: '#fff6e0',
+  textDark: '#4a3520',
   textGold: '#ffd166',
+  textDmg: '#b03a2e',
 
-  fontFamily: '"Trebuchet MS", "Comic Sans MS", sans-serif',
+  fontFamily: '"Trebuchet MS", Verdana, sans-serif',
 
-  /** Tint colors cycling by gear tier */
+  /** Card border/rarity colors cycling by gear tier (12 designs) */
   tierColors: [
-    0xb0885c, 0x9aa0a6, 0xcd7f32, 0xd9d9d9, 0xffd166, 0x7ed957, 0x6be3ff,
-    0x9b7ede, 0xff6b9d, 0xff5e5e, 0x50e3c2, 0xf5a623,
+    0x9a8d6e, 0x9a8d6e, 0x6fae4e, 0xcd7f32, 0x9aa0a6, 0x9aa0a6,
+    0x4ec3e8, 0xffd166, 0x4ec3e8, 0xe84a4a, 0x9b7ede, 0xffa94d,
   ],
 } as const;
 
