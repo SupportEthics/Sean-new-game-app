@@ -219,24 +219,26 @@ export class UIScene extends Phaser.Scene {
     g.fillStyle(THEME.headerTrim);
     g.fillRect(0, L.headerH - 4, THEME.width, 2);
 
-    this.add.image(20, 32, 'coin').setScale(1.3);
+    // Everything at bitmap size 8 (the font's small pixel-perfect step) so
+    // even worst-case numbers leave clean air in the bar
+    this.add.image(20, 26, 'coin').setScale(1.0);
     this.goldText = this.add
-      .bitmapText(32, 25, 'pix', '0', 16)
+      .bitmapText(32, 22, 'pix', '0', 8)
       .setTint(THEME.gold);
 
     const gem = this.add.graphics();
     gem.fillStyle(THEME.gem);
-    gem.fillTriangle(116, 26, 109, 33, 123, 33);
-    gem.fillTriangle(109, 33, 123, 33, 116, 41);
-    this.gemText = this.add.bitmapText(129, 25, 'pix', '0', 16).setTint(0xa8e8ff);
+    gem.fillTriangle(112, 21, 107, 26, 117, 26);
+    gem.fillTriangle(107, 26, 117, 26, 112, 32);
+    this.gemText = this.add.bitmapText(122, 22, 'pix', '0', 8).setTint(0xa8e8ff);
 
     // Right side stacks DPS over the Souls counter so long numbers on the
     // left can never crash into them
     this.dpsText = this.add
-      .bitmapText(THEME.width - 44, 18, 'pix', '', 16)
+      .bitmapText(THEME.width - 40, 22, 'pix', '', 8)
       .setOrigin(1, 0);
     this.soulsText = this.add
-      .bitmapText(THEME.width - 44, 38, 'pix', '', 8)
+      .bitmapText(THEME.width - 40, 34, 'pix', '', 8)
       .setTint(0xc9a4ff)
       .setOrigin(1, 0)
       .setVisible(false);
