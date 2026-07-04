@@ -238,7 +238,7 @@ export class UIScene extends Phaser.Scene {
     g.fillStyle(THEME.headerTrim);
     g.fillRect(0, L.panelTop, THEME.width, 3);
 
-    const gridW = 4 * (CARD_W + GAP) - GAP;
+    const gridW = GEAR.gridCols * (CARD_W + GAP) - GAP;
     const left = (THEME.width - gridW) / 2 + CARD_W / 2;
     for (let row = 0; row < GEAR.gridRows; row++) {
       for (let col = 0; col < GEAR.gridCols; col++) {
