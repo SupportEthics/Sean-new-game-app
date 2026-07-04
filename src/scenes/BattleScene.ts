@@ -312,7 +312,8 @@ export class BattleScene extends Phaser.Scene {
     const tex = `enemy-${species.key}`;
     this.enemy.setTexture(tex);
     this.enemy.play(`${tex}-idle`);
-    this.enemyName.setText(boss ? `BOSS ${species.name}` : species.name);
+    // Nameplates are boss-only; regular mobs fight anonymously
+    this.enemyName.setText(`BOSS ${species.name}`).setVisible(boss);
     this.enemy.setScale(boss ? 1.5 : 1);
     this.enemyShadow.setScale(boss ? 1.6 : 1.1);
 
