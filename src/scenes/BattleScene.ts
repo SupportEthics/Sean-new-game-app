@@ -218,15 +218,15 @@ export class BattleScene extends Phaser.Scene {
     }
 
     this.add
-      .rectangle(this.enemyX, this.enemyY - 40, 72, 9, THEME.hpBarBg)
-      .setStrokeStyle(2, 0x2a1c10)
+      .rectangle(this.enemyX, this.enemyY - 36, 46, 7, THEME.hpBarBg)
+      .setStrokeStyle(1, 0x2a1c10)
       .setDepth(12);
     this.hpBar = this.add
-      .rectangle(this.enemyX - 34, this.enemyY - 40, 68, 5, THEME.hpBar)
+      .rectangle(this.enemyX - 21, this.enemyY - 36, 42, 4, THEME.hpBar)
       .setOrigin(0, 0.5)
       .setDepth(13);
     this.enemyName = this.add
-      .text(this.enemyX, this.enemyY - 54, '', {
+      .text(this.enemyX, this.enemyY - 50, '', {
         fontFamily: THEME.fontFamily,
         fontSize: '13px',
         fontStyle: 'bold',
@@ -341,7 +341,7 @@ export class BattleScene extends Phaser.Scene {
   private syncHpBar(): void {
     const b = this.gs.battle;
     const frac = b.currentEnemyMaxHp > 0 ? b.currentEnemyHp / b.currentEnemyMaxHp : 0;
-    this.hpBar.width = 68 * Phaser.Math.Clamp(frac, 0, 1);
+    this.hpBar.width = 42 * Phaser.Math.Clamp(frac, 0, 1);
   }
 
   // ---- Reactions ----
