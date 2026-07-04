@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { addBackdrop, addCloseButton } from '../ui/panelInput';
 import { SOUL_UPGRADES } from '../config/soulsTree';
 import { formatNumber } from '../core/EconomyMath';
 import { GameState } from '../core/GameState';
@@ -25,9 +26,11 @@ export class SoulsPanel extends Phaser.Scene {
   create(): void {
     this.gs = this.registry.get('gs') as GameState;
 
-    this.add
-      .rectangle(THEME.width / 2, THEME.height / 2, THEME.width, THEME.height, 0x14101c, 0.72)
-      .setInteractive();
+    addBackdrop(
+      this,
+      new Phaser.Geom.Rectangle(PANEL_X, PANEL_Y, PANEL_W, PANEL_H),
+      () => this.scene.stop(),
+    );
 
     const g = this.add.graphics();
     g.fillStyle(THEME.panelBg);
@@ -41,11 +44,7 @@ export class SoulsPanel extends Phaser.Scene {
       .bitmapText(THEME.width / 2, PANEL_Y + 12, 'pix', 'SOUL RELICS', 16)
       .setTint(0xc9a4ff)
       .setOrigin(0.5, 0);
-    const close = this.add
-      .bitmapText(PANEL_X + PANEL_W - 22, PANEL_Y + 12, 'pix', 'X', 16)
-      .setOrigin(0.5, 0)
-      .setInteractive({ useHandCursor: true });
-    close.on('pointerdown', () => this.scene.stop());
+    addCloseButton(this, PANEL_X + PANEL_W - 22, PANEL_Y + 12, () => this.scene.stop());
 
     this.balance = this.add
       .bitmapText(THEME.width / 2, PANEL_Y + 52, 'pix', '', 8)

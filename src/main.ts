@@ -76,10 +76,22 @@ async function boot(): Promise<void> {
     void App.addListener('pause', () => saveManager.save(gs));
   }
 
+  // Mobile browsers move/resize the canvas when their toolbars collapse or
+  // the page shifts; Phaser caches canvas bounds for input, so refresh them
+  // on every viewport change or taps land offset from where they should.
+  const refreshBounds = (): void => {
+    game.scale.refresh();
+  };
+  window.visualViewport?.addEventListener('resize', refreshBounds);
+  window.visualViewport?.addEventListener('scroll', refreshBounds);
+  window.addEventListener('orientationchange', refreshBounds);
+  window.addEventListener('scroll', refreshBounds, { passive: true });
+
   // Dev/test hooks — used by Playwright and manual QA; stripped from prod builds.
   if (import.meta.env.DEV) {
     (window as unknown as Record<string, unknown>).__game = {
       gs,
+      game,
       addGold: (n: number) => gs.addGold(n),
       addGems: (n: number) => gs.addGems(n),
       setStage: (s: number) => {

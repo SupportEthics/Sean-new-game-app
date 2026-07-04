@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { RAIDS, raidGems, raidGoldPerKill } from '../config/raids';
+import { addBackdrop, addCloseButton, addDragScroll } from '../ui/panelInput';
 import { formatNumber } from '../core/EconomyMath';
 import { GameState } from '../core/GameState';
 import { AdService } from '../services/monetization/AdService';
@@ -23,9 +24,6 @@ export class RaidPanel extends Phaser.Scene {
   private rows!: Phaser.GameObjects.Container;
   private scrollY = 0;
   private maxScroll = 0;
-  private dragStartY = 0;
-  private dragStartScroll = 0;
-  private dragging = false;
   private cooldownText!: Phaser.GameObjects.BitmapText;
 
   constructor() {
@@ -37,9 +35,11 @@ export class RaidPanel extends Phaser.Scene {
     this.ads = this.registry.get('ads') as AdService;
     this.scrollY = 0;
 
-    const blocker = this.add
-      .rectangle(THEME.width / 2, THEME.height / 2, THEME.width, THEME.height, 0x14101c, 0.72)
-      .setInteractive();
+    addBackdrop(
+      this,
+      new Phaser.Geom.Rectangle(PANEL_X, PANEL_Y, PANEL_W, PANEL_H),
+      () => this.scene.stop(),
+    );
 
     const g = this.add.graphics();
     g.fillStyle(THEME.panelBg);
@@ -83,30 +83,22 @@ export class RaidPanel extends Phaser.Scene {
       .setDepth(6);
     this.adBtn.on('pointerdown', () => this.watchAd());
 
-    const close = this.add
-      .bitmapText(PANEL_X + PANEL_W - 22, PANEL_Y + 12, 'pix', 'X', 16)
-      .setOrigin(0.5, 0)
-      .setInteractive({ useHandCursor: true });
-    close.on('pointerdown', () => this.scene.stop());
-
     this.rows = this.add.container(0, 0);
     const maskShape = this.make.graphics();
     maskShape.fillRect(PANEL_X + 2, PANEL_Y + 44, PANEL_W - 4, PANEL_H - 104);
     this.rows.setMask(maskShape.createGeometryMask());
 
     this.buildRows();
+
+    // After the rows so masked-but-interactive rows never cover the X
+    addCloseButton(this, PANEL_X + PANEL_W - 22, PANEL_Y + 12, () => this.scene.stop());
     this.maxScroll = Math.max(0, RAIDS.maxLevel * ROW_PITCH + 16 - (PANEL_H - 104));
 
-    blocker.on('pointermove', (ptr: Phaser.Input.Pointer) => {
-      if (!ptr.isDown) return;
-      if (!this.dragging) {
-        this.dragging = true;
-        this.dragStartY = ptr.y;
-        this.dragStartScroll = this.scrollY;
-      }
-      this.setScroll(this.dragStartScroll + (this.dragStartY - ptr.y));
-    });
-    blocker.on('pointerup', () => (this.dragging = false));
+    addDragScroll(
+      this,
+      new Phaser.Geom.Rectangle(PANEL_X, PANEL_Y + 44, PANEL_W, PANEL_H - 156),
+      (delta) => this.setScroll(this.scrollY + delta),
+    );
     this.input.on(
       'wheel',
       (_p: unknown, _o: unknown, _dx: number, dy: number) =>
@@ -216,7 +208,11 @@ export class RaidPanel extends Phaser.Scene {
           .image(PANEL_X + PANEL_W - 52, y, 'btn-sm')
           .setTint(THEME.buttonBg);
         state.setDepth(1).setX(PANEL_X + PANEL_W - 24);
-        btn.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
+        // pointerup + gates: a scroll-drag must not fight, nor taps on rows
+        // that are masked away under the header or footer
+        btn.setInteractive({ useHandCursor: true }).on('pointerup', (ptr: Phaser.Input.Pointer) => {
+          if (Math.abs(ptr.downY - ptr.upY) > 10) return;
+          if (ptr.upY < PANEL_Y + 44 || ptr.upY > PANEL_Y + PANEL_H - 112) return;
           if (this.gs.startRaid(level, Date.now())) {
             audio.bossWarn();
             this.scene.stop();

@@ -17,12 +17,17 @@
         height: 100%;
         overflow: hidden;
         touch-action: none;
+        overscroll-behavior: none; /* no pull-to-refresh/rubber-band stealing drags */
         -webkit-user-select: none;
         user-select: none;
+        position: fixed; /* pin the page so mobile toolbars can't scroll it */
+        inset: 0;
+        width: 100%;
       }
       #game {
         width: 100%;
         height: 100%;
+        touch-action: none;
       }
     </style>
   </head>

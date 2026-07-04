@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { addBackdrop, addCloseButton, addDragScroll } from '../ui/panelInput';
 import { RARITY_COLORS, SKINS, SkinDef } from '../config/skins';
 import { formatNumber } from '../core/EconomyMath';
 import { GameState } from '../core/GameState';
@@ -26,9 +27,6 @@ export class SkinsPanel extends Phaser.Scene {
   private cards!: Phaser.GameObjects.Container;
   private scrollY = 0;
   private maxScroll = 0;
-  private dragStartY = 0;
-  private dragStartScroll = 0;
-  private dragging = false;
   private pendingSku: string | null = null;
 
   constructor() {
@@ -40,13 +38,12 @@ export class SkinsPanel extends Phaser.Scene {
     this.iap = this.registry.get('iap') as IapService;
     this.scrollY = 0;
 
-    // Dim + input-block the game behind
-    const blocker = this.add
-      .rectangle(THEME.width / 2, THEME.height / 2, THEME.width, THEME.height, 0x14101c, 0.72)
-      .setInteractive();
-    blocker.on('pointerdown', () => {
-      /* swallow */
-    });
+    // Dim + input-block the game behind; tapping outside the panel closes
+    addBackdrop(
+      this,
+      new Phaser.Geom.Rectangle(PANEL_X, PANEL_Y, PANEL_W, PANEL_H),
+      () => this.scene.stop(),
+    );
 
     // Panel chrome
     const g = this.add.graphics();
@@ -62,12 +59,6 @@ export class SkinsPanel extends Phaser.Scene {
       .setTint(THEME.gold)
       .setOrigin(0.5, 0);
 
-    const close = this.add
-      .bitmapText(PANEL_X + PANEL_W - 22, PANEL_Y + 12, 'pix', 'X', 16)
-      .setOrigin(0.5, 0)
-      .setInteractive({ useHandCursor: true });
-    close.on('pointerdown', () => this.scene.stop());
-
     // Scrollable card grid, masked to the panel body
     this.cards = this.add.container(0, 0);
     const maskShape = this.make.graphics();
@@ -76,20 +67,20 @@ export class SkinsPanel extends Phaser.Scene {
 
     this.buildCards();
 
+    // Added after the cards so scrolled-away (masked but interactive) cards
+    // can never sit on top of the close target
+    addCloseButton(this, PANEL_X + PANEL_W - 22, PANEL_Y + 12, () => this.scene.stop());
+
     const rows = Math.ceil(SKINS.length / COLS);
     this.maxScroll = Math.max(0, rows * PITCH_Y + 20 - (PANEL_H - 50));
 
-    // Drag + wheel scrolling
-    blocker.on('pointermove', (ptr: Phaser.Input.Pointer) => {
-      if (!ptr.isDown) return;
-      if (!this.dragging) {
-        this.dragging = true;
-        this.dragStartY = ptr.y;
-        this.dragStartScroll = this.scrollY;
-      }
-      this.setScroll(this.dragStartScroll + (this.dragStartY - ptr.y));
-    });
-    blocker.on('pointerup', () => (this.dragging = false));
+    // Drag scrolling anywhere over the card grid (works on touch even when
+    // the finger lands on a card), plus wheel for desktop
+    addDragScroll(
+      this,
+      new Phaser.Geom.Rectangle(PANEL_X, PANEL_Y + 44, PANEL_W, PANEL_H - 50),
+      (delta) => this.setScroll(this.scrollY + delta),
+    );
     this.input.on(
       'wheel',
       (_p: unknown, _o: unknown, _dx: number, dy: number) => this.setScroll(this.scrollY + dy * 0.6),
@@ -184,6 +175,7 @@ export class SkinsPanel extends Phaser.Scene {
       card.setInteractive({ useHandCursor: true });
       card.on('pointerup', (ptr: Phaser.Input.Pointer) => {
         if (Math.abs(ptr.downY - ptr.upY) > 10) return; // was a scroll drag
+        if (ptr.upY < PANEL_Y + 44) return; // masked out under the header
         this.onCardTap(def, owned);
       });
       this.cards.add(card);

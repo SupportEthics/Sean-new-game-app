@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { addBackdrop, addCloseButton } from '../ui/panelInput';
 import { PET_MAX_LEVEL, PETS } from '../config/pets';
 import { formatNumber } from '../core/EconomyMath';
 import { EggKind, GameState } from '../core/GameState';
@@ -37,9 +38,11 @@ export class PetsPanel extends Phaser.Scene {
     this.gs = this.registry.get('gs') as GameState;
     this.ads = this.registry.get('ads') as AdService;
 
-    this.add
-      .rectangle(THEME.width / 2, THEME.height / 2, THEME.width, THEME.height, 0x14101c, 0.72)
-      .setInteractive();
+    addBackdrop(
+      this,
+      new Phaser.Geom.Rectangle(PANEL_X, PANEL_Y, PANEL_W, PANEL_H),
+      () => this.scene.stop(),
+    );
 
     const g = this.add.graphics();
     g.fillStyle(THEME.panelBg);
@@ -53,11 +56,7 @@ export class PetsPanel extends Phaser.Scene {
       .bitmapText(THEME.width / 2, PANEL_Y + 12, 'pix', 'PETS', 16)
       .setTint(THEME.gold)
       .setOrigin(0.5, 0);
-    const close = this.add
-      .bitmapText(PANEL_X + PANEL_W - 22, PANEL_Y + 12, 'pix', 'X', 16)
-      .setOrigin(0.5, 0)
-      .setInteractive({ useHandCursor: true });
-    close.on('pointerdown', () => this.scene.stop());
+    addCloseButton(this, PANEL_X + PANEL_W - 22, PANEL_Y + 12, () => this.scene.stop());
 
     this.reveal = this.add
       .bitmapText(THEME.width / 2, PANEL_Y + 148, 'pix', 'HATCH EGGS TO RECRUIT COMPANIONS', 8)
