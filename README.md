@@ -31,7 +31,7 @@ saves automatically.
 
 - [x] M0 Project scaffold
 - [x] M1 Core loop: auto-battle, waves & bosses, merge grid, autosave
-- [ ] M2 Generated sprite-sheet art & polish
+- [x] M2 Generated pixel-art sprite sheets, animations, biomes, SFX
 - [ ] M3 Retention: offline earnings, pets, daily quests, prestige
 - [ ] M4 Monetization (ads + IAP behind a web-mock layer)
 - [ ] M5 Capacitor wrap (Android + iOS)

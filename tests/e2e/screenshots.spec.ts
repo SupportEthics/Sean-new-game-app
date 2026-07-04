@@ -10,13 +10,14 @@ interface GameHooks {
 
 declare global {
   interface Window {
+    __uiReady?: boolean;
     __game: GameHooks;
   }
 }
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
-  await page.waitForFunction(() => window.__game !== undefined);
+  await page.waitForFunction(() => window.__uiReady === true);
 });
 
 test('early game', async ({ page }) => {
@@ -42,4 +43,10 @@ test('boss fight', async ({ page }) => {
   await page.evaluate(() => window.__game.setWave(5, 10));
   await page.waitForTimeout(1200);
   await page.screenshot({ path: 'screenshots/03-boss.png' });
+});
+
+test('twilight biome at stage 12', async ({ page }) => {
+  await page.evaluate(() => window.__game.setWave(12, 3));
+  await page.waitForTimeout(1200);
+  await page.screenshot({ path: 'screenshots/04-biome.png' });
 });

@@ -3,6 +3,7 @@ import { GEAR, tierName } from '../config/gear';
 import { formatNumber } from '../core/EconomyMath';
 import { GameState } from '../core/GameState';
 import { SaveManager } from '../core/SaveManager';
+import { audio } from '../services/AudioService';
 import { THEME, tierColor } from '../ui/theme';
 
 const CELL = 62;
@@ -44,6 +45,11 @@ export class UIScene extends Phaser.Scene {
     });
     this.refreshTexts();
 
+    // Signal readiness to Playwright — clicks before this point would miss.
+    if (import.meta.env.DEV) {
+      (window as unknown as { __uiReady?: boolean }).__uiReady = true;
+    }
+
     // Autosave: every 10s and whenever the tab/app goes to background.
     this.time.addEvent({ delay: 10_000, loop: true, callback: () => this.persist() });
     document.addEventListener('visibilitychange', () => {
@@ -82,13 +88,21 @@ export class UIScene extends Phaser.Scene {
     });
 
     this.dpsText = this.add
-      .text(THEME.width - 20, 21, '', {
+      .text(THEME.width - 48, 21, '', {
         fontFamily: THEME.fontFamily,
         fontSize: '15px',
         fontStyle: 'bold',
         color: '#ffffff',
       })
       .setOrigin(1, 0);
+
+    const mute = this.add
+      .text(THEME.width - 22, 30, audio.isMuted ? '🔇' : '🔊', { fontSize: '18px' })
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    mute.on('pointerdown', () => {
+      mute.setText(audio.toggleMute() ? '🔇' : '🔊');
+    });
   }
 
   // ---- Merge panel ----
@@ -104,7 +118,10 @@ export class UIScene extends Phaser.Scene {
     // Buttons row
     const btnY = panelTop + 40;
     this.buyBg = this.makeButton(THEME.width / 2 - 92, btnY, () => {
-      if (this.gs.buyGear()) this.pulse(this.buyBg);
+      if (this.gs.buyGear()) {
+        audio.buy();
+        this.pulse(this.buyBg);
+      }
     });
     this.buyLabel = this.add
       .text(this.buyBg.x, btnY, '', {
@@ -117,7 +134,10 @@ export class UIScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.mergeBg = this.makeButton(THEME.width / 2 + 92, btnY, () => {
-      if (this.gs.autoMergeOnce() !== null) this.pulse(this.mergeBg);
+      if (this.gs.autoMergeOnce() !== null) {
+        audio.merge();
+        this.pulse(this.mergeBg);
+      }
     });
     this.add
       .text(this.mergeBg.x, btnY, 'Merge ⚡', {
@@ -167,7 +187,7 @@ export class UIScene extends Phaser.Scene {
       if (tier === null) return;
       const { x, y } = this.cellCenters[index];
       const item = this.add.container(x, y);
-      const icon = this.add.image(0, -2, 'sword').setScale(0.85).setTint(tierColor(tier));
+      const icon = this.add.image(0, -2, 'gear', (tier - 1) % 12);
       const label = this.add
         .text(0, 22, `${tier}`, {
           fontFamily: THEME.fontFamily,
@@ -221,6 +241,7 @@ export class UIScene extends Phaser.Scene {
     if (target !== -1 && target !== from) {
       const merged = this.gs.mergeAt(from, target);
       if (merged !== null) {
+        audio.merge();
         this.celebrateMerge(target, merged);
         return; // grid:changed already rebuilt the items
       }

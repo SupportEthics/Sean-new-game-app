@@ -6,6 +6,7 @@ const MERGE_BUTTON = { x: 390 / 2 + 92, y: 424 + 40 };
 
 declare global {
   interface Window {
+    __uiReady?: boolean;
     __game: {
       gs: {
         gold: number;
@@ -29,7 +30,7 @@ test('boots without page errors and exposes the game', async ({ page }) => {
 
   await page.goto('/');
   await page.waitForSelector('canvas');
-  await page.waitForFunction(() => window.__game !== undefined);
+  await page.waitForFunction(() => window.__uiReady === true);
   // Let a few seconds of battle run
   await page.waitForTimeout(3000);
 
@@ -40,7 +41,7 @@ test('boots without page errors and exposes the game', async ({ page }) => {
 
 test('buy button places gear on the grid and DPS rises', async ({ page }) => {
   await page.goto('/');
-  await page.waitForFunction(() => window.__game !== undefined);
+  await page.waitForFunction(() => window.__uiReady === true);
 
   const dpsBefore = await page.evaluate(() => window.__game.gs.heroDps);
   await page.evaluate(() => window.__game.addGold(1000));
@@ -55,7 +56,7 @@ test('buy button places gear on the grid and DPS rises', async ({ page }) => {
 
 test('merge button combines two same-tier items', async ({ page }) => {
   await page.goto('/');
-  await page.waitForFunction(() => window.__game !== undefined);
+  await page.waitForFunction(() => window.__uiReady === true);
 
   await page.evaluate(() => window.__game.addGold(1000));
   await page.mouse.click(BUY_BUTTON.x, BUY_BUTTON.y);
@@ -75,7 +76,7 @@ test('merge button combines two same-tier items', async ({ page }) => {
 
 test('progress survives a reload', async ({ page }) => {
   await page.goto('/');
-  await page.waitForFunction(() => window.__game !== undefined);
+  await page.waitForFunction(() => window.__uiReady === true);
 
   await page.evaluate(() => {
     window.__game.addGold(123456);
@@ -83,7 +84,7 @@ test('progress survives a reload', async ({ page }) => {
   });
 
   await page.reload();
-  await page.waitForFunction(() => window.__game !== undefined);
+  await page.waitForFunction(() => window.__uiReady === true);
   const gold = await page.evaluate(() => window.__game.gs.gold);
   expect(gold).toBeGreaterThanOrEqual(123456);
 });

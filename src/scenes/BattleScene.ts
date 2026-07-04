@@ -3,14 +3,18 @@ import { ENEMY_SPECIES, STAGES } from '../config/stages';
 import { isBossWave } from '../core/BattleSim';
 import { formatNumber } from '../core/EconomyMath';
 import { GameState } from '../core/GameState';
+import { gridTiers } from '../core/MergeLogic';
+import { audio } from '../services/AudioService';
 import { THEME } from '../ui/theme';
 
 /** Top half of the screen: the hero auto-battles enemy waves. */
 export class BattleScene extends Phaser.Scene {
   private gs!: GameState;
-  private hero!: Phaser.GameObjects.Image;
-  private sword!: Phaser.GameObjects.Image;
-  private enemy!: Phaser.GameObjects.Image;
+  private bg!: Phaser.GameObjects.Graphics;
+  private decoLayer!: Phaser.GameObjects.Group;
+  private hero!: Phaser.GameObjects.Sprite;
+  private weapon!: Phaser.GameObjects.Image;
+  private enemy!: Phaser.GameObjects.Sprite;
   private enemyShadow!: Phaser.GameObjects.Image;
   private hpBar!: Phaser.GameObjects.Rectangle;
   private stageText!: Phaser.GameObjects.Text;
@@ -21,9 +25,11 @@ export class BattleScene extends Phaser.Scene {
   private coinEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
   private pendingDamage = 0;
   private lastWaveKey = '';
+  private lastBiome = -1;
+  private wasBoss = false;
 
   private readonly heroX = 100;
-  private readonly groundY = 330;
+  private readonly groundY = 320;
   private readonly enemyX = 290;
 
   constructor() {
@@ -33,7 +39,10 @@ export class BattleScene extends Phaser.Scene {
   create(): void {
     this.gs = this.registry.get('gs') as GameState;
 
-    this.drawBackground();
+    this.bg = this.add.graphics();
+    this.decoLayer = this.add.group();
+    this.redrawBackground();
+
     this.createHero();
     this.createEnemy();
     this.createHud();
@@ -60,7 +69,9 @@ export class BattleScene extends Phaser.Scene {
       if (r.stageCleared) this.onStageCleared();
       if (r.bossFailed) this.onBossFailed();
     });
+    this.gs.on('grid:changed', () => this.syncWeapon());
 
+    this.syncWeapon();
     this.syncWave(true);
   }
 
@@ -73,22 +84,28 @@ export class BattleScene extends Phaser.Scene {
 
   // ---- Visual construction ----
 
-  private drawBackground(): void {
-    const g = this.add.graphics();
-    g.fillGradientStyle(THEME.skyTop, THEME.skyTop, THEME.skyBottom, THEME.skyBottom, 1);
+  private biomeIndex(): number {
+    return Math.floor((this.gs.battle.stage - 1) / 5) % THEME.biomes.length;
+  }
+
+  private redrawBackground(): void {
+    const biome = THEME.biomes[this.biomeIndex()];
+    const g = this.bg;
+    g.clear();
+    g.fillGradientStyle(biome.skyTop, biome.skyTop, biome.skyBottom, biome.skyBottom, 1);
     g.fillRect(0, 0, THEME.width, THEME.battleHeight);
 
     // Rolling hills
-    g.fillStyle(THEME.groundDark);
+    g.fillStyle(biome.groundDark);
     g.fillEllipse(80, THEME.battleHeight - 40, 340, 160);
     g.fillEllipse(330, THEME.battleHeight - 30, 300, 130);
-    g.fillStyle(THEME.ground);
+    g.fillStyle(biome.ground);
     g.fillRect(0, this.groundY + 28, THEME.width, THEME.battleHeight - this.groundY - 28);
     g.fillEllipse(60, this.groundY + 34, 260, 60);
     g.fillEllipse(300, this.groundY + 40, 280, 70);
 
-    // Fluffy clouds
-    g.fillStyle(0xffffff, 0.85);
+    // Clouds
+    g.fillStyle(0xffffff, 0.8);
     for (const [cx, cy, s] of [
       [70, 60, 1],
       [280, 100, 0.8],
@@ -97,42 +114,40 @@ export class BattleScene extends Phaser.Scene {
       g.fillEllipse(cx, cy, 70 * s, 26 * s);
       g.fillEllipse(cx + 24 * s, cy - 10 * s, 50 * s, 22 * s);
     }
+
+    // Ground decorations, deterministic per stage so screenshots are stable
+    this.decoLayer.clear(true, true);
+    const stage = this.gs.battle.stage;
+    for (let i = 0; i < 5; i++) {
+      const x = 30 + ((stage * 37 + i * 79) % 330);
+      const y = this.groundY + 44 + ((stage * 13 + i * 31) % 40);
+      const frame = (stage + i) % 3;
+      const img = this.add.image(x, y, 'deco', frame).setFlipX(i % 2 === 0);
+      this.decoLayer.add(img);
+    }
   }
 
   private createHero(): void {
-    this.add.image(this.heroX, this.groundY + 22, 'shadow');
-    this.hero = this.add.image(this.heroX, this.groundY, 'hero').setScale(1.6);
-    this.sword = this.add
-      .image(this.heroX + 30, this.groundY - 6, 'sword')
-      .setScale(0.9)
-      .setOrigin(0.5, 0.9)
-      .setAngle(35)
-      .setTint(THEME.gold);
-
-    // Idle bounce
-    this.tweens.add({
-      targets: this.hero,
-      scaleY: { from: 1.6, to: 1.52 },
-      scaleX: { from: 1.6, to: 1.66 },
-      duration: 500,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.inOut',
-    });
+    this.add.image(this.heroX, this.groundY + 34, 'shadow').setScale(1.4);
+    this.hero = this.add.sprite(this.heroX, this.groundY, 'hero').play('hero-idle');
+    this.weapon = this.add
+      .image(this.heroX + 32, this.groundY - 4, 'gear', 0)
+      .setOrigin(0.5, 0.85)
+      .setAngle(40);
   }
 
   private createEnemy(): void {
-    this.enemyShadow = this.add.image(this.enemyX, this.groundY + 24, 'shadow');
-    this.enemy = this.add.image(this.enemyX, this.groundY, 'enemy-slime').setScale(1.5);
+    this.enemyShadow = this.add.image(this.enemyX, this.groundY + 30, 'shadow').setScale(1.3);
+    this.enemy = this.add.sprite(this.enemyX, this.groundY, 'enemy-slime');
 
     this.add
-      .rectangle(this.enemyX, this.groundY - 52, 84, 10, THEME.hpBarBg)
+      .rectangle(this.enemyX, this.groundY - 56, 84, 10, THEME.hpBarBg)
       .setStrokeStyle(2, 0x221a3a);
     this.hpBar = this.add
-      .rectangle(this.enemyX - 40, this.groundY - 52, 80, 6, THEME.hpBar)
+      .rectangle(this.enemyX - 40, this.groundY - 56, 80, 6, THEME.hpBar)
       .setOrigin(0, 0.5);
     this.enemyName = this.add
-      .text(this.enemyX, this.groundY - 68, '', {
+      .text(this.enemyX, this.groundY - 72, '', {
         fontFamily: THEME.fontFamily,
         fontSize: '13px',
         color: THEME.textLight,
@@ -140,17 +155,6 @@ export class BattleScene extends Phaser.Scene {
         strokeThickness: 3,
       })
       .setOrigin(0.5);
-
-    // Enemy idle wobble
-    this.tweens.add({
-      targets: this.enemy,
-      scaleX: { from: 1.5, to: 1.58 },
-      scaleY: { from: 1.5, to: 1.44 },
-      duration: 650,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.inOut',
-    });
   }
 
   private createHud(): void {
@@ -186,6 +190,13 @@ export class BattleScene extends Phaser.Scene {
 
   // ---- Sync with the sim ----
 
+  /** The hero holds the best weapon currently on the merge grid. */
+  private syncWeapon(): void {
+    const tiers = gridTiers(this.gs.grid);
+    const best = tiers.length ? Math.max(...tiers) : 1;
+    this.weapon.setFrame((best - 1) % 12);
+  }
+
   private syncWave(force: boolean): void {
     const b = this.gs.battle;
     const key = `${b.stage}-${b.wave}-${b.enemiesLeftInWave}`;
@@ -200,12 +211,21 @@ export class BattleScene extends Phaser.Scene {
     if (key === this.lastWaveKey && !force) return;
     this.lastWaveKey = key;
 
+    if (boss && !this.wasBoss) audio.bossWarn();
+    this.wasBoss = boss;
+
+    const biome = this.biomeIndex();
+    if (biome !== this.lastBiome) {
+      this.lastBiome = biome;
+      this.redrawBackground();
+    }
+
     const species = ENEMY_SPECIES[(b.stage + b.wave) % ENEMY_SPECIES.length];
     this.enemy.setTexture(`enemy-${species.key}`);
+    this.enemy.play(`enemy-${species.key}-idle`);
     this.enemyName.setText(boss ? `BOSS ${species.name}` : species.name);
-    const scale = boss ? 2.6 : 1.5;
-    this.enemy.setScale(scale);
-    this.enemyShadow.setScale(boss ? 1.7 : 1);
+    this.enemy.setScale(boss ? 2.1 : 1.1);
+    this.enemyShadow.setScale(boss ? 2 : 1.3);
 
     // Spawn pop
     this.enemy.setAlpha(0);
@@ -226,6 +246,14 @@ export class BattleScene extends Phaser.Scene {
   // ---- Reactions ----
 
   private playAttack(): void {
+    // Lunge + attack frame (anim pauses, shows the squint frame, resumes)
+    this.hero.anims.pause();
+    this.hero.setFrame(2);
+    this.time.delayedCall(160, () => {
+      this.hero.setFrame(0);
+      this.hero.anims.resume();
+    });
+
     this.tweens.add({
       targets: this.hero,
       x: { from: this.heroX, to: this.heroX + 26 },
@@ -234,18 +262,18 @@ export class BattleScene extends Phaser.Scene {
       ease: 'Quad.out',
     });
     this.tweens.add({
-      targets: this.sword,
-      angle: { from: 35, to: 110 },
-      x: { from: this.heroX + 30, to: this.heroX + 52 },
+      targets: this.weapon,
+      angle: { from: 40, to: 115 },
+      x: { from: this.heroX + 32, to: this.heroX + 54 },
       duration: 110,
       yoyo: true,
       ease: 'Quad.out',
     });
 
     if (this.pendingDamage > 0) {
+      audio.hit();
       this.spawnDamageNumber(this.pendingDamage);
       this.pendingDamage = 0;
-      // Enemy flinch
       this.tweens.add({
         targets: this.enemy,
         x: { from: this.enemyX, to: this.enemyX + 10 },
@@ -256,14 +284,16 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private spawnDamageNumber(amount: number): void {
+    const b = this.gs.battle;
+    const punch = Phaser.Math.Clamp(amount / Math.max(b.currentEnemyMaxHp, 1), 0, 1);
     const t = this.add
       .text(
         this.enemyX + Phaser.Math.Between(-18, 18),
-        this.groundY - 70,
+        this.groundY - 76,
         formatNumber(amount),
         {
           fontFamily: THEME.fontFamily,
-          fontSize: '20px',
+          fontSize: `${Math.round(18 + punch * 10)}px`,
           fontStyle: 'bold',
           color: '#fff3c4',
           stroke: '#b33951',
@@ -282,10 +312,13 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private onKill(kills: number): void {
+    audio.coin();
     this.coinEmitter.emitParticleAt(this.enemyX, this.groundY - 10, Math.min(3 * kills, 12));
   }
 
   private onStageCleared(): void {
+    audio.stageUp();
+    this.cameras.main.shake(180, 0.006);
     const banner = this.add
       .text(THEME.width / 2, 190, `Stage ${this.gs.battle.stage}!`, {
         fontFamily: THEME.fontFamily,

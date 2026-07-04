@@ -4,6 +4,7 @@ import { GameState } from './core/GameState';
 import { LocalStorageAdapter, SaveManager } from './core/SaveManager';
 import { BattleScene } from './scenes/BattleScene';
 import { BootScene } from './scenes/BootScene';
+import { PreloadScene } from './scenes/PreloadScene';
 import { UIScene } from './scenes/UIScene';
 import { THEME } from './ui/theme';
 
@@ -22,7 +23,7 @@ new Phaser.Game({
     width: THEME.width,
     height: THEME.height,
   },
-  scene: [BootScene, BattleScene, UIScene],
+  scene: [BootScene, PreloadScene, BattleScene, UIScene],
   callbacks: {
     preBoot: (game) => {
       game.registry.set('gs', gs);

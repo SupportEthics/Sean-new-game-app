@@ -6,13 +6,16 @@ the player buys and merges gear to grow DPS. Will be monetized with rewarded
 ads + IAP (AdMob + RevenueCat via Capacitor).
 
 The full roadmap (M0–M6) and monetization design live in the repo owner's plan;
-current status: **M0+M1 done** (playable core loop in browser). Next: M2 art
-pipeline, M3 retention (offline earnings, pets, prestige), M4 monetization
-(web mock), M5 Capacitor wrap, M6 store readiness.
+current status: **M0–M2 done** (playable core loop in browser with generated
+pixel art, animations, biome backgrounds, synthesized SFX). Next: M3 retention
+(offline earnings, pets, prestige), M4 monetization (web mock), M5 Capacitor
+wrap, M6 store readiness.
 
 ## Commands
 
 - `npm run dev` — Vite dev server on :5173 (game is fully playable in browser)
+- `npm run assets` — regenerate the pixel-art sprite sheets in public/assets
+  (scripts/generate-assets.mjs; review the PNGs visually after any change)
 - `npm test` — vitest unit tests (economy, merge, battle, save, balance sims)
 - `npm run test:e2e` — Playwright smoke tests (starts dev server itself)
 - `npm run screenshots` — captures screenshots/ at 390x844 for review
