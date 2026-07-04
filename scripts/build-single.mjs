@@ -18,7 +18,7 @@ html = html.replace(
   '<head>',
   `<head><script>window.__INLINE_ASSETS=${JSON.stringify(assets)};</script>`,
 );
-writeFileSync('dist/paws-and-blades.html', html);
+writeFileSync('dist/soulforge-knight.html', html);
 console.log(
-  `wrote dist/paws-and-blades.html (${(html.length / 1024 / 1024).toFixed(1)} MB, ${Object.keys(assets).length} sheets inlined)`,
+  `wrote dist/soulforge-knight.html (${(html.length / 1024 / 1024).toFixed(1)} MB, ${Object.keys(assets).length} sheets inlined)`,
 );

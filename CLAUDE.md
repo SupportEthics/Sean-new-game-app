@@ -1,10 +1,12 @@
-# Paws & Blades — idle merge RPG (working title)
+# Soulforge Knight — idle merge RPG
 
 Dark-fantasy idle RPG for iOS + Android, inspired by Idle Sword Master /
 Legend of Mushroom / Capybara Go. A human armored knight auto-battles
 monster waves in a top-down dungeon arena; the player buys and merges swords
 to grow DPS. Will be monetized with rewarded ads + IAP (AdMob + RevenueCat
-via Capacitor).
+via Capacitor). Named "Soulforge Knight" (Sean-approved rename from the
+"Paws & Blades" working title); localStorage keys keep the legacy
+`pawsblades_` prefix so existing saves survive — do not rename them.
 Art direction (Sean's choice, after several rounds): clean hand-plotted
 pixel art with hard dark outlines, like the Idle Sword Master reference —
 NOT soft/blobby/pastel. Sprites are ASCII pixel maps or primitive shapes

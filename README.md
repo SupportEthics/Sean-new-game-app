@@ -1,6 +1,6 @@
-# Paws & Blades 🦔⚔️
+# Soulforge Knight ⚔️
 
-A dark-fantasy idle merge RPG for iOS and Android (working title). An armored
+A dark-fantasy idle merge RPG for iOS and Android. An armored
 knight auto-battles dire wolves, bone warriors, and stone golems in a
 top-down dungeon arena while you merge glowing blades to grow stronger — inspired by the
 top-grossing idle RPGs (Idle Sword Master, Legend of Mushroom, Capybara Go),
@@ -32,7 +32,7 @@ saves automatically.
 - [x] M0 Project scaffold
 - [x] M1 Core loop: auto-battle, waves & bosses, merge grid, autosave
 - [x] M2 Generated pixel-art sprite sheets, animations, biomes, SFX
-- [ ] M3 Retention: offline earnings, pets, daily quests, prestige
+- [x] M3 Retention: offline earnings, Soul Relics, daily quests, pets, prestige
 - [ ] M4 Monetization (ads + IAP behind a web-mock layer)
 - [ ] M5 Capacitor wrap (Android + iOS)
 - [ ] M6 Store readiness (icons, listings, privacy, compliance)

@@ -26,14 +26,14 @@ export class TitleScene extends Phaser.Scene {
 
     // Title
     this.add
-      .bitmapText(cx, 150, 'pix', 'PAWS', 48)
-      .setTint(THEME.gold)
-      .setDropShadow(3, 3, 0x14101c, 1)
-      .setOrigin(0.5, 0);
-    this.add
-      .bitmapText(cx, 205, 'pix', '+ BLADES', 32)
+      .bitmapText(cx, 148, 'pix', 'SOULFORGE', 32)
       .setTint(0xe8d9b0)
       .setDropShadow(2, 2, 0x14101c, 1)
+      .setOrigin(0.5, 0);
+    this.add
+      .bitmapText(cx, 186, 'pix', 'KNIGHT', 48)
+      .setTint(THEME.gold)
+      .setDropShadow(3, 3, 0x14101c, 1)
       .setOrigin(0.5, 0);
 
     // The knight, larger than life
