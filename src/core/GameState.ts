@@ -1,4 +1,4 @@
-import { ECONOMY } from '../config/economy';
+import { BOOSTS, ECONOMY } from '../config/economy';
 import { FAIRY, fairyLevelCost } from '../config/fairy';
 import {
   FREE_CHEST,
@@ -12,6 +12,7 @@ import {
   DAILY_QUESTS,
   isNextDay,
   periodKey,
+  QUESTS,
   QuestMetric,
   QuestPeriod,
   questBy,
@@ -43,6 +44,7 @@ import {
   gearCost,
   goldDrop,
   heroDps,
+  sellValue,
 } from './EconomyMath';
 import {
   emptyGrid,
@@ -161,6 +163,8 @@ export interface SerializedState {
   freeChestReadyAt: number;
   skillTimers: Record<string, SkillTimer>;
   fairyLevel: number;
+  dmgBoostUntil: number;
+  speedBoostUntil: number;
   daily: DailyState;
   weekly: PeriodQuestState;
   monthly: PeriodQuestState;
@@ -213,6 +217,9 @@ export class GameState {
   skillTimers: Record<string, SkillTimer> = {};
   /** Fairy helper level; 0 = not recruited yet. */
   fairyLevel = 0;
+  /** Rewarded-ad boosts: epoch ms the x2 damage / x2 speed windows end. */
+  dmgBoostUntil = 0;
+  speedBoostUntil = 0;
   daily: DailyState = freshDaily(utcDay(0));
   weekly: PeriodQuestState = freshPeriod('');
   monthly: PeriodQuestState = freshPeriod('');
@@ -246,8 +253,27 @@ export class GameState {
       this.petDpsMultiplier *
       this.skillDpsMultiplier *
       this.fairyDpsMultiplier *
+      (this.dmgBoostActive() ? BOOSTS.dmgMult : 1) *
       (1 + this.soulLevel('might') * 0.1)
     );
+  }
+
+  // ---- Rewarded-ad boosts ----
+
+  dmgBoostActive(now: number = Date.now()): boolean {
+    return now < this.dmgBoostUntil;
+  }
+
+  speedBoostActive(now: number = Date.now()): boolean {
+    return now < this.speedBoostUntil;
+  }
+
+  activateDmgBoost(now: number = Date.now()): void {
+    this.dmgBoostUntil = now + BOOSTS.adMinutes * 60_000;
+  }
+
+  activateSpeedBoost(now: number = Date.now()): void {
+    this.speedBoostUntil = now + BOOSTS.adMinutes * 60_000;
   }
 
   /** Gold income multiplier from Soul Relics, skill buffs and the fairy. */
@@ -374,7 +400,8 @@ export class GameState {
    * and from offline fast-forward with large dt. Fixed 100ms sub-steps keep
    * the sim identical regardless of frame rate. */
   update(dtSeconds: number): void {
-    this.tickAccumulator += dtSeconds;
+    // The x2 speed boost makes battle time itself run faster
+    this.tickAccumulator += dtSeconds * (this.speedBoostActive() ? BOOSTS.speedMult : 1);
     while (this.tickAccumulator >= TICK_SECONDS) {
       this.tickAccumulator -= TICK_SECONDS;
       this.step(TICK_SECONDS);
@@ -447,6 +474,24 @@ export class GameState {
     if (!move(this.grid, from, to, this.unlockedCells)) return false;
     this.emit('grid:changed', this.grid);
     return true;
+  }
+
+  /** Gold refunded if the sword at `index` were binned, or null when empty. */
+  sellValueAt(index: number): number | null {
+    const tier = this.grid[index];
+    return tier === null ? null : sellValue(tier);
+  }
+
+  /** Bin a sword for gold. Equipped swords can't be sold — losing part of
+   * the loadout must be a deliberate choice, not a mis-drag. */
+  sellAt(index: number): number | null {
+    const tier = this.grid[index];
+    if (tier === null || this.equippedIndices.includes(index)) return null;
+    const gold = sellValue(tier);
+    this.grid[index] = null;
+    this.addGold(gold);
+    this.emit('grid:changed', this.grid);
+    return gold;
   }
 
   /** Auto-merge one pair — never touching equipped swords; merging those
@@ -885,6 +930,17 @@ export class GameState {
     return this.questSheet(period).claimed.includes(id);
   }
 
+  /** Finished-but-unclaimed quests across every sheet — the badge number. */
+  get claimableQuests(): number {
+    let n = 0;
+    for (const period of ['daily', 'weekly', 'monthly'] as QuestPeriod[]) {
+      for (const quest of QUESTS[period]) {
+        if (this.canClaimQuest(quest.id, period)) n += 1;
+      }
+    }
+    return n;
+  }
+
   canClaimQuest(id: QuestMetric, period: QuestPeriod = 'daily'): boolean {
     const sheet = this.questSheet(period);
     return (
@@ -1001,6 +1057,8 @@ export class GameState {
         Object.entries(this.skillTimers).map(([id, t]) => [id, { ...t }]),
       ),
       fairyLevel: this.fairyLevel,
+      dmgBoostUntil: this.dmgBoostUntil,
+      speedBoostUntil: this.speedBoostUntil,
       daily: {
         ...this.daily,
         progress: { ...this.daily.progress },
@@ -1049,6 +1107,8 @@ export class GameState {
       Object.entries(data.skillTimers).map(([id, t]) => [id, { ...t }]),
     );
     gs.fairyLevel = data.fairyLevel;
+    gs.dmgBoostUntil = data.dmgBoostUntil;
+    gs.speedBoostUntil = data.speedBoostUntil;
     gs.daily = {
       ...data.daily,
       progress: { ...data.daily.progress },

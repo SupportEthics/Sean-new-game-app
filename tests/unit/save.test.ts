@@ -118,5 +118,8 @@ describe('SaveManager', () => {
     // v12 -> v13: weekly/monthly sheets exist and roll on first use
     expect(loaded!.state.questProgress('kills', 'weekly')).toBe(0);
     expect(loaded!.state.questProgress('kills', 'monthly')).toBe(0);
+    // v13 -> v14: ad boosts start inactive
+    expect(loaded!.state.dmgBoostActive()).toBe(false);
+    expect(loaded!.state.speedBoostActive()).toBe(false);
   });
 });

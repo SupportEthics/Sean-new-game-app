@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ECONOMY } from '../config/economy';
+import { BOOSTS, ECONOMY } from '../config/economy';
 import { GEAR, tierName } from '../config/gear';
 import { formatNumber, gearDps } from '../core/EconomyMath';
 import { GameState } from '../core/GameState';
@@ -52,6 +52,21 @@ export class UIScene extends Phaser.Scene {
   private autoStates: { key: 'auto_merge' | 'auto_buy'; label: Phaser.GameObjects.BitmapText }[] = [];
   private lastHud = '';
   private raidLock!: Phaser.GameObjects.Text;
+  private sideMenu!: Phaser.GameObjects.Container;
+  private menuOpen = false;
+  private menuLabel!: Phaser.GameObjects.BitmapText;
+  private menuBadge!: Phaser.GameObjects.BitmapText;
+  private bin!: Phaser.GameObjects.Container;
+  private binLabel!: Phaser.GameObjects.BitmapText;
+  private questBadge!: Phaser.GameObjects.Container;
+  private questBadgeText!: Phaser.GameObjects.BitmapText;
+  private boostLabels: { label: Phaser.GameObjects.BitmapText; until: () => number; idle: string }[] = [];
+  private readonly binBounds = new Phaser.Geom.Rectangle(
+    THEME.width - 70,
+    L.arenaBottom - 66,
+    62,
+    62,
+  );
   private raidIcon!: Phaser.GameObjects.Image;
   private rebirthButton!: Phaser.GameObjects.Container;
   private confirmLayer: Phaser.GameObjects.Container | null = null;
@@ -107,14 +122,19 @@ export class UIScene extends Phaser.Scene {
         if (now < this.autoMergeUntil) this.gs.autoMergeOnce();
       },
     });
-    // Countdown labels on the automation buttons
+    // Countdown labels on the automation buttons + ad boosts
     this.time.addEvent({
       delay: 1000,
       loop: true,
-      callback: () => this.refreshAutoLabels(),
+      callback: () => {
+        this.refreshAutoLabels();
+        this.refreshBoostLabels();
+      },
     });
 
     this.createSideButtons();
+    this.createBoostButtons();
+    this.createBin();
     this.maybeShowOffline();
 
     if (import.meta.env.DEV) {
@@ -143,6 +163,7 @@ export class UIScene extends Phaser.Scene {
     this.raidLock.setVisible(!this.gs.raidsUnlocked);
     this.raidIcon.setAlpha(this.gs.raidsUnlocked ? 1 : 0.35);
     this.rebirthButton.setVisible(this.gs.canPrestige);
+    this.menuBadge.setVisible(this.gs.canPrestige);
 
     this.stageText.setText(`STAGE ${b.stage}`);
     this.waveText.setText(
@@ -183,26 +204,27 @@ export class UIScene extends Phaser.Scene {
     g.fillStyle(THEME.headerTrim);
     g.fillRect(0, L.headerH - 4, THEME.width, 2);
 
-    this.add.image(24, 32, 'coin').setScale(1.3);
+    this.add.image(20, 32, 'coin').setScale(1.3);
     this.goldText = this.add
-      .bitmapText(36, 25, 'pix', '0', 16)
+      .bitmapText(32, 25, 'pix', '0', 16)
       .setTint(THEME.gold);
 
     const gem = this.add.graphics();
     gem.fillStyle(THEME.gem);
-    gem.fillTriangle(140, 26, 133, 33, 147, 33);
-    gem.fillTriangle(133, 33, 147, 33, 140, 41);
-    this.gemText = this.add.bitmapText(153, 25, 'pix', '0', 16).setTint(0xa8e8ff);
+    gem.fillTriangle(116, 26, 109, 33, 123, 33);
+    gem.fillTriangle(109, 33, 123, 33, 116, 41);
+    this.gemText = this.add.bitmapText(129, 25, 'pix', '0', 16).setTint(0xa8e8ff);
 
-    // Souls counter appears once the player has rebirthed
-    this.soulsText = this.add
-      .bitmapText(226, 25, 'pix', '', 16)
-      .setTint(0xc9a4ff)
-      .setVisible(false);
-
+    // Right side stacks DPS over the Souls counter so long numbers on the
+    // left can never crash into them
     this.dpsText = this.add
-      .bitmapText(THEME.width - 44, 25, 'pix', '', 16)
+      .bitmapText(THEME.width - 44, 18, 'pix', '', 16)
       .setOrigin(1, 0);
+    this.soulsText = this.add
+      .bitmapText(THEME.width - 44, 38, 'pix', '', 8)
+      .setTint(0xc9a4ff)
+      .setOrigin(1, 0)
+      .setVisible(false);
 
     const mute = this.add
       .text(THEME.width - 20, 32, audio.isMuted ? '🔇' : '🔊', { fontSize: '15px' })
@@ -248,17 +270,18 @@ export class UIScene extends Phaser.Scene {
   // ---- Side buttons (arena left edge) ----
 
   private sideButton(
+    menu: Phaser.GameObjects.Container,
+    x: number,
     y: number,
     label: string,
     onTap: () => void,
   ): { lock: Phaser.GameObjects.Text; icon: (img: Phaser.GameObjects.Image) => void } {
-    const x = 30;
     const g = this.add.graphics();
     g.fillStyle(THEME.headerBg, 0.9);
     g.fillRoundedRect(x - 24, y - 24, 48, 48, 8);
     g.lineStyle(2, THEME.headerTrim);
     g.strokeRoundedRect(x - 24, y - 24, 48, 48, 8);
-    this.add
+    const lbl = this.add
       .bitmapText(x, y + 14, 'pix', label, 8)
       .setTint(0xffd166)
       .setOrigin(0.5, 0);
@@ -266,18 +289,30 @@ export class UIScene extends Phaser.Scene {
       .text(x, y - 5, '🔒', { fontSize: '15px' })
       .setOrigin(0.5)
       .setVisible(false);
-    this.add
+    const hit = this.add
       .rectangle(x, y, 48, 48, 0xffffff, 0.001)
       .setInteractive({ useHandCursor: true })
       .on('pointerdown', onTap);
+    menu.add([g, lbl, lock, hit]);
     return {
       lock,
-      icon: (img) => img.setPosition(x, y - 5),
+      icon: (img) => {
+        img.setPosition(x, y - 5);
+        menu.add(img);
+      },
     };
   }
 
+  /** SKINS/RAID/QUESTS/REBIRTH live in a collapsible menu so they don't sit
+   * over the pets fighting on the left flank. Tap MENU to fan them out,
+   * tap again (or pick one) to tuck them away. */
   private createSideButtons(): void {
-    const skins = this.sideButton(L.arenaTop + 74, 'SKINS', () => {
+    const bx = 30;
+    const ty = L.arenaTop + 74;
+    this.sideMenu = this.add.container(0, 0).setVisible(false).setDepth(30);
+
+    const skins = this.sideButton(this.sideMenu, bx, ty + 58, 'SKINS', () => {
+      this.toggleMenu(false);
       if (!this.scene.isActive('Skins')) {
         audio.buy();
         this.scene.launch('Skins');
@@ -285,11 +320,12 @@ export class UIScene extends Phaser.Scene {
     });
     skins.icon(this.add.image(0, 0, `hero-${this.gs.activeSkin}`, 0).setScale(0.5));
 
-    const raid = this.sideButton(L.arenaTop + 132, 'RAID', () => {
+    const raid = this.sideButton(this.sideMenu, bx, ty + 116, 'RAID', () => {
       if (!this.gs.raidsUnlocked) {
         this.toast('UNLOCKS AFTER FIRST REBIRTH');
         return;
       }
+      this.toggleMenu(false);
       if (!this.scene.isActive('Raids') && !this.gs.raid) {
         audio.buy();
         this.scene.launch('Raids');
@@ -300,7 +336,8 @@ export class UIScene extends Phaser.Scene {
     this.raidLock = raid.lock;
     this.raidIcon = raidIcon;
 
-    const quests = this.sideButton(L.arenaTop + 190, 'QUESTS', () => {
+    const quests = this.sideButton(this.sideMenu, bx, ty + 174, 'QUESTS', () => {
+      this.toggleMenu(false);
       if (!this.scene.isActive('Quests')) {
         audio.buy();
         this.scene.launch('Quests');
@@ -308,10 +345,10 @@ export class UIScene extends Phaser.Scene {
     });
     quests.icon(this.add.image(0, 0, 'icons', 1).setScale(0.9));
 
-    // Rebirth appears once the run reaches the prestige stage
+    // Rebirth sits beside SKINS once the run reaches the prestige stage
     this.rebirthButton = this.add.container(0, 0).setVisible(false);
-    const x = 30;
-    const y = L.arenaTop + 248;
+    const x = 88;
+    const y = ty + 58;
     const g = this.add.graphics();
     g.fillStyle(0x4a1e60, 0.95);
     g.fillRoundedRect(x - 24, y - 24, 48, 48, 8);
@@ -325,8 +362,163 @@ export class UIScene extends Phaser.Scene {
     const hit = this.add
       .rectangle(x, y, 48, 48, 0xffffff, 0.001)
       .setInteractive({ useHandCursor: true })
-      .on('pointerdown', () => this.confirmPrestige());
+      .on('pointerdown', () => {
+        this.toggleMenu(false);
+        this.confirmPrestige();
+      });
     this.rebirthButton.add([g, star, lbl, hit]);
+    this.sideMenu.add(this.rebirthButton);
+
+    // The always-visible toggle
+    const tg = this.add.graphics().setDepth(31);
+    tg.fillStyle(THEME.headerBg, 0.9);
+    tg.fillRoundedRect(bx - 24, ty - 24, 48, 48, 8);
+    tg.lineStyle(2, THEME.headerTrim);
+    tg.strokeRoundedRect(bx - 24, ty - 24, 48, 48, 8);
+    const bars = this.add.graphics().setDepth(31);
+    bars.fillStyle(0xffd166);
+    for (let i = 0; i < 3; i++) bars.fillRect(bx - 10, ty - 14 + i * 7, 20, 3);
+    this.menuLabel = this.add
+      .bitmapText(bx, ty + 14, 'pix', 'MENU', 8)
+      .setTint(0xffd166)
+      .setOrigin(0.5, 0)
+      .setDepth(31);
+    // A little beacon when a rebirth is waiting inside
+    this.menuBadge = this.add
+      .bitmapText(bx - 18, ty - 26, 'pix', '!', 16)
+      .setTint(0xd8b4ff)
+      .setOrigin(0.5, 0)
+      .setDepth(32)
+      .setVisible(false);
+    // Red counter for finished-but-unclaimed quests
+    this.questBadge = this.makeCountBadge(bx + 20, ty - 20, 32);
+    const refreshQuestBadge = (): void => {
+      const n = this.gs.claimableQuests;
+      this.questBadge.setVisible(n > 0);
+      this.questBadgeText.setText(String(Math.min(n, 9)));
+    };
+    this.gs.on('quests:changed', refreshQuestBadge);
+    refreshQuestBadge();
+    this.add
+      .rectangle(bx, ty, 48, 48, 0xffffff, 0.001)
+      .setDepth(31)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => this.toggleMenu(!this.menuOpen));
+  }
+
+  private toggleMenu(open: boolean): void {
+    if (this.menuOpen === open) return;
+    this.menuOpen = open;
+    this.sideMenu.setVisible(open);
+    this.menuLabel.setText(open ? 'CLOSE' : 'MENU');
+    audio.buy();
+  }
+
+  /** Small red circle with a count, used for the quest badge. */
+  private makeCountBadge(x: number, y: number, depth: number): Phaser.GameObjects.Container {
+    const c = this.add.container(0, 0).setDepth(depth).setVisible(false);
+    const circle = this.add.graphics();
+    circle.fillStyle(0xd82e2e);
+    circle.fillCircle(x, y, 9);
+    circle.lineStyle(1, 0x14101c);
+    circle.strokeCircle(x, y, 9);
+    this.questBadgeText = this.add
+      .bitmapText(x, y, 'pix', '', 8)
+      .setTint(0xffffff)
+      .setOrigin(0.5);
+    c.add([circle, this.questBadgeText]);
+    return c;
+  }
+
+  /** X2 DMG / X2 SPEED: rewarded-ad boosts on the arena's right edge. */
+  private createBoostButtons(): void {
+    const x = THEME.width - 30;
+    this.boostButton(x, L.arenaTop + 74, 'X2 DMG', 0, 0xb03a2e, 'boost_dmg',
+      () => this.gs.activateDmgBoost(), () => this.gs.dmgBoostUntil);
+    this.boostButton(x, L.arenaTop + 132, 'X2 SPEED', 3, 0x2884a8, 'boost_speed',
+      () => this.gs.activateSpeedBoost(), () => this.gs.speedBoostUntil);
+  }
+
+  private boostButton(
+    x: number,
+    y: number,
+    name: string,
+    iconFrame: number,
+    tint: number,
+    placement: AdPlacement,
+    activate: () => void,
+    until: () => number,
+  ): void {
+    const g = this.add.graphics();
+    g.fillStyle(THEME.headerBg, 0.9);
+    g.fillRoundedRect(x - 24, y - 24, 48, 48, 8);
+    g.lineStyle(2, tint);
+    g.strokeRoundedRect(x - 24, y - 24, 48, 48, 8);
+    this.add.image(x, y - 8, 'icons', iconFrame).setScale(0.8).setTint(tint);
+    this.add
+      .bitmapText(x + 18, y + 2, 'pix', 'AD', 8)
+      .setTint(0x6fae4e)
+      .setOrigin(1, 0);
+    const label = this.add
+      .bitmapText(x, y + 14, 'pix', name, 8)
+      .setTint(0xffd166)
+      .setOrigin(0.5, 0);
+    this.boostLabels.push({ label, until, idle: name });
+    let busy = false;
+    this.add
+      .rectangle(x, y, 48, 48, 0xffffff, 0.001)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => {
+        if (busy) return;
+        if (Date.now() < until()) {
+          this.toast('BOOST ALREADY RUNNING');
+          return;
+        }
+        busy = true;
+        void this.ads.showRewarded(placement).then((result) => {
+          busy = false;
+          if (!result.rewarded) return;
+          this.gs.trackQuest('ads');
+          activate();
+          audio.stageUp();
+          this.toast(`${name} FOR ${BOOSTS.adMinutes} MIN!`);
+          this.refreshBoostLabels();
+        });
+      });
+  }
+
+  private refreshBoostLabels(): void {
+    const now = Date.now();
+    for (const b of this.boostLabels) {
+      const left = b.until() - now;
+      if (left <= 0) {
+        b.label.setText(b.idle).setTint(0xffd166);
+      } else {
+        const m = Math.floor(left / 60_000);
+        const s = Math.floor((left % 60_000) / 1000);
+        b.label.setText(`${m}:${String(s).padStart(2, '0')}`).setTint(0x6fae4e);
+      }
+    }
+  }
+
+  /** The sword bin: appears while dragging a sellable sword; dropping the
+   * sword on it refunds a slice of its price in gold. */
+  private createBin(): void {
+    const b = this.binBounds;
+    this.bin = this.add.container(0, 0).setVisible(false).setDepth(40);
+    const g = this.add.graphics();
+    g.fillStyle(0x3a1010, 0.94);
+    g.fillRoundedRect(b.x, b.y, b.width, b.height, 10);
+    g.lineStyle(2, 0xb03a2e);
+    g.strokeRoundedRect(b.x, b.y, b.width, b.height, 10);
+    const icon = this.add
+      .text(b.centerX, b.centerY - 10, '🗑', { fontSize: '22px' })
+      .setOrigin(0.5);
+    this.binLabel = this.add
+      .bitmapText(b.centerX, b.centerY + 8, 'pix', '', 8)
+      .setTint(0xffd166)
+      .setOrigin(0.5, 0);
+    this.bin.add([g, icon, this.binLabel]);
   }
 
   /** Small self-dismissing message above the toggles row. */
@@ -744,6 +936,15 @@ export class UIScene extends Phaser.Scene {
       (_p: Phaser.Input.Pointer, obj: Phaser.GameObjects.Container) => {
         this.itemLayer.bringToTop(obj);
         obj.setScale(1.12);
+        // Offer the bin for anything that may be sold (never the loadout)
+        const from = obj.getData('index') as number;
+        const value = this.gs.equippedIndices.includes(from)
+          ? null
+          : this.gs.sellValueAt(from);
+        if (value !== null) {
+          this.binLabel.setText(`+${formatNumber(value).toUpperCase()}G`);
+          this.bin.setVisible(true);
+        }
       },
     );
     this.input.on(
@@ -807,6 +1008,19 @@ export class UIScene extends Phaser.Scene {
 
   private handleDrop(obj: Phaser.GameObjects.Container): void {
     const from = obj.getData('index') as number;
+
+    if (this.bin.visible) {
+      this.bin.setVisible(false);
+      if (this.binBounds.contains(obj.x, obj.y)) {
+        const gold = this.gs.sellAt(from);
+        if (gold !== null) {
+          audio.coin();
+          this.toast(`SOLD FOR ${formatNumber(gold).toUpperCase()}G`);
+          return; // grid:changed rebuilds the cards
+        }
+      }
+    }
+
     const target = this.nearestCell(obj.x, obj.y);
 
     if (target !== -1 && target !== from) {

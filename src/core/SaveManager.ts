@@ -93,6 +93,12 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.monthly = { key: '', progress: {}, claimed: [] };
     return save;
   },
+  // v13 -> v14: rewarded-ad battle boosts
+  (save) => {
+    save.state.dmgBoostUntil = 0;
+    save.state.speedBoostUntil = 0;
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

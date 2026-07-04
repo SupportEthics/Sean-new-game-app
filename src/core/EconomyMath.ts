@@ -7,6 +7,11 @@ export function gearCost(tier: number): number {
   return Math.round(ECONOMY.gearCostBase * Math.pow(ECONOMY.gearCostGrowth, tier - 1));
 }
 
+/** Gold refunded when a sword is dropped in the bin: a slice of its price. */
+export function sellValue(tier: number): number {
+  return Math.max(1, Math.floor(gearCost(tier) * ECONOMY.sellRefundFraction));
+}
+
 /** Gold cost to raise the shop's buy tier to `nextTier`. */
 export function buyTierUpgradeCost(nextTier: number): number {
   return Math.round(gearCost(nextTier) * ECONOMY.buyTierUpgradeMultiplier);

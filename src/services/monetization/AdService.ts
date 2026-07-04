@@ -9,7 +9,9 @@ export type AdPlacement =
   | 'free_chest'
   | 'auto_merge'
   | 'auto_buy'
-  | 'pet_egg';
+  | 'pet_egg'
+  | 'boost_dmg'
+  | 'boost_speed';
 
 export interface AdResult {
   /** True when the ad played to completion and the reward should be granted. */

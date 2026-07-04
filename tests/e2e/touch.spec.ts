@@ -25,6 +25,15 @@ test.beforeEach(async ({ page }) => {
   await page.waitForFunction(() => window.__uiReady === true);
 });
 
+test('side MENU expands and opens the skins panel', async ({ page }) => {
+  await page.touchscreen.tap(30, 170); // MENU toggle
+  await page.waitForTimeout(300);
+  await page.touchscreen.tap(30, 228); // SKINS inside the fanned-out menu
+  await page.waitForFunction(
+    () => (window as unknown as { __skinsOpen?: boolean }).__skinsOpen === true,
+  );
+});
+
 test('SKILLS and PET tabs open from touch taps', async ({ page }) => {
   await page.touchscreen.tap(97, 812);
   await page.waitForFunction(() => window.__skillsOpen === true);

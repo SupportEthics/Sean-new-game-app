@@ -19,6 +19,17 @@ export const ECONOMY = {
   /** Offline earnings (used from M3, defined now so saves carry the fields) */
   offlineRateMultiplier: 0.6,
   offlineCapHours: 8,
+
+  /** Fraction of a sword's shop price refunded when it's binned. */
+  sellRefundFraction: 0.3,
+} as const;
+
+/** Rewarded-ad battle boosts (the buttons on the arena's right edge). */
+export const BOOSTS = {
+  /** Watching an ad turns a boost on for this long (real time). */
+  adMinutes: 30,
+  dmgMult: 2,
+  speedMult: 2,
 } as const;
 
 /** Suffixes for big-number formatting: 1.2K, 3.4M ... then aa, ab ... */
