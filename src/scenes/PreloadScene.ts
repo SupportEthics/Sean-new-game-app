@@ -6,6 +6,17 @@ import { THEME } from '../ui/theme';
 /** Character order must match the glyph sheet written by generate-assets.mjs. */
 const FONT_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ .,:/+-%!';
 
+/**
+ * The single-file desktop build (scripts/build-single.mjs) injects every
+ * sprite sheet as a data URI under window.__INLINE_ASSETS so the game runs
+ * from a double-clicked .html with no server. Normal builds fetch normally.
+ */
+function assetUrl(path: string): string {
+  const inline = (window as unknown as { __INLINE_ASSETS?: Record<string, string> })
+    .__INLINE_ASSETS;
+  return inline?.[path] ?? path;
+}
+
 /** Loads the generated sprite sheets and builds the shared animations. */
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -27,23 +38,23 @@ export class PreloadScene extends Phaser.Scene {
 
     // One sheet per skin: idle0, idle1, attack at native resolution
     SKINS.forEach((skin) =>
-      this.load.spritesheet(`hero-${skin.id}`, `assets/hero-${skin.id}.png`, {
+      this.load.spritesheet(`hero-${skin.id}`, assetUrl(`assets/hero-${skin.id}.png`), {
         frameWidth: 52,
         frameHeight: 68,
       }),
     );
     ENEMY_SPECIES.forEach((s) =>
-      this.load.spritesheet(`enemy-${s.key}`, `assets/enemy-${s.key}.png`, {
+      this.load.spritesheet(`enemy-${s.key}`, assetUrl(`assets/enemy-${s.key}.png`), {
         frameWidth: 48,
         frameHeight: 48,
       }),
     );
-    this.load.spritesheet('gear', 'assets/gear.png', { frameWidth: 56, frameHeight: 64 });
-    this.load.spritesheet('deco', 'assets/deco.png', { frameWidth: 28, frameHeight: 28 });
-    this.load.spritesheet('torch', 'assets/torch.png', { frameWidth: 20, frameHeight: 34 });
-    this.load.spritesheet('tiles', 'assets/tiles.png', { frameWidth: 64, frameHeight: 64 });
-    this.load.spritesheet('icons', 'assets/icons.png', { frameWidth: 24, frameHeight: 24 });
-    this.load.image('pixfont', 'assets/pixfont.png');
+    this.load.spritesheet('gear', assetUrl('assets/gear.png'), { frameWidth: 56, frameHeight: 64 });
+    this.load.spritesheet('deco', assetUrl('assets/deco.png'), { frameWidth: 28, frameHeight: 28 });
+    this.load.spritesheet('torch', assetUrl('assets/torch.png'), { frameWidth: 20, frameHeight: 34 });
+    this.load.spritesheet('tiles', assetUrl('assets/tiles.png'), { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('icons', assetUrl('assets/icons.png'), { frameWidth: 24, frameHeight: 24 });
+    this.load.image('pixfont', assetUrl('assets/pixfont.png'));
   }
 
   create(): void {
