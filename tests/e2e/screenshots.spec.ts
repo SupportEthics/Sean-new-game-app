@@ -278,6 +278,23 @@ test('town panel after second rebirth', async ({ page }) => {
   await page.screenshot({ path: 'screenshots/24-town.png' });
 });
 
+test('hall of legends centred on the player', async ({ page }) => {
+  await page.evaluate(() => {
+    const g = window.__game as unknown as {
+      gs: { highestStage: number; prestigeCount: number };
+      openRanks(): void;
+    };
+    g.gs.highestStage = 52;
+    g.gs.prestigeCount = 1;
+    g.openRanks();
+  });
+  await page.waitForFunction(
+    () => (window as unknown as { __ranksOpen?: boolean }).__ranksOpen === true,
+  );
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: 'screenshots/25-ranks.png' });
+});
+
 test('twilight biome at stage 12', async ({ page }) => {
   await page.evaluate(() => window.__game.setWave(12, 3));
   await page.waitForTimeout(1200);

@@ -21,6 +21,8 @@ import { SoulsPanel } from './scenes/SoulsPanel';
 import { TitleScene } from './scenes/TitleScene';
 import { TownPanel } from './scenes/TownPanel';
 import { UIScene } from './scenes/UIScene';
+import { LeaderboardPanel } from './scenes/LeaderboardPanel';
+import { LeaderboardService, WebMockLeaderboard } from './services/LeaderboardService';
 import { hydrateSaveFromPreferences, MirroredStorage } from './services/NativeSave';
 import { createMonetization } from './services/monetization/factory';
 import { THEME } from './ui/theme';
@@ -37,6 +39,9 @@ async function boot(): Promise<void> {
 
   // Real AdMob/RevenueCat inside the Capacitor shells, web mocks elsewhere
   const { iap, ads } = createMonetization();
+  // Platform leaderboards stay mocked until store setup (see the service)
+  const leaderboard: LeaderboardService = new WebMockLeaderboard();
+  gs.on('stage:changed', () => void leaderboard.submitHighestStage(gs.highestStage));
 
   // App Store restore flow: non-consumables reappear on reinstall
   void iap.restore().then((skus) => {
@@ -60,13 +65,14 @@ async function boot(): Promise<void> {
       width: THEME.width,
       height: THEME.height,
     },
-    scene: [BootScene, PreloadScene, TitleScene, BattleScene, UIScene, SkinsPanel, RaidPanel, SoulsPanel, QuestsPanel, PetsPanel, ShopPanel, SkillsPanel, FairyPanel, TownPanel],
+    scene: [BootScene, PreloadScene, TitleScene, BattleScene, UIScene, SkinsPanel, RaidPanel, SoulsPanel, QuestsPanel, PetsPanel, ShopPanel, SkillsPanel, FairyPanel, TownPanel, LeaderboardPanel],
     callbacks: {
       preBoot: (g) => {
         g.registry.set('gs', gs);
         g.registry.set('saveManager', saveManager);
         g.registry.set('iap', iap);
         g.registry.set('ads', ads);
+        g.registry.set('leaderboard', leaderboard);
         g.registry.set('offline', offline);
       },
     },
@@ -114,6 +120,7 @@ async function boot(): Promise<void> {
       openSkills: () => game.scene.getScene('UI')?.scene.launch('Skills'),
       openFairy: () => game.scene.getScene('UI')?.scene.launch('Fairy'),
     openTown: () => game.scene.getScene('UI')?.scene.launch('Town'),
+    openRanks: () => game.scene.getScene('UI')?.scene.launch('Ranks'),
     spawnGift: () => (game.scene.getScene('Battle') as unknown as { spawnGift(): void }).spawnGift(),
     openLogin: () => {
       gs.lastLoginClaimDay = '';

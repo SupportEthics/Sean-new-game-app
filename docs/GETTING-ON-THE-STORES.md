@@ -46,6 +46,20 @@ npm run cap:ios       # opens Xcode (Mac only) -> Run / Archive
 The app ID is `uk.co.supportethics.soulforgeknight` — create the store
 listings with exactly this ID.
 
+## Leaderboards (when the store accounts exist)
+
+The in-game "Hall of Legends" ranks players against seeded rival knights
+today. To light up REAL global rankings:
+
+1. App Store Connect → your app → Game Center → create a leaderboard
+   ("Highest Stage", integer, higher-is-better). Copy its ID.
+2. Play Console → Play Games Services → create the matching leaderboard.
+3. Paste both IDs into `src/config/native.ts` (`LEADERBOARDS`).
+4. Bind a Capacitor Game Center/Play Games plugin in
+   `src/services/LeaderboardService.ts` (the interface and submit calls are
+   already wired; check plugin compatibility with the project's Capacitor
+   version — see the note at the top of that file).
+
 ## What's still to come in M6 (store readiness)
 
 - App icon + splash screen in native sizes

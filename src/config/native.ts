@@ -24,6 +24,14 @@ export const REVENUECAT = {
   iosApiKey: 'REPLACE_WITH_REVENUECAT_IOS_KEY',
 };
 
+// Platform leaderboard IDs, created in App Store Connect (Game Center) and
+// Play Console (Play Games Services) at store setup. While these are
+// placeholders the LeaderboardService stays on the web mock.
+export const LEADERBOARDS = {
+  highestStageIos: 'REPLACE_WITH_GAMECENTER_LEADERBOARD_ID',
+  highestStageAndroid: 'REPLACE_WITH_PLAYGAMES_LEADERBOARD_ID',
+};
+
 export function revenueCatKeyFor(platform: string): string | null {
   const key = platform === 'ios' ? REVENUECAT.iosApiKey : REVENUECAT.androidApiKey;
   return key.startsWith('REPLACE_WITH') ? null : key;

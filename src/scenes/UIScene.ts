@@ -498,13 +498,43 @@ export class UIScene extends Phaser.Scene {
     return { container, text };
   }
 
-  /** X2 DMG / X2 SPEED: rewarded-ad boosts on the arena's right edge. */
+  /** X2 DMG / X2 SPEED boosts + the RANKS board on the arena's right edge. */
   private createBoostButtons(): void {
     const x = THEME.width - 30;
     this.boostButton(x, L.arenaTop + 74, 'X2 DMG', 0, 0xb03a2e, 'boost_dmg',
       () => this.gs.activateDmgBoost(), () => this.gs.dmgBoostUntil);
     this.boostButton(x, L.arenaTop + 132, 'X2 SPEED', 3, 0x2884a8, 'boost_speed',
       () => this.gs.activateSpeedBoost(), () => this.gs.speedBoostUntil);
+
+    // RANKS: the Hall of Legends
+    const ry = L.arenaTop + 190;
+    const g = this.add.graphics();
+    g.fillStyle(THEME.headerBg, 0.9);
+    g.fillRoundedRect(x - 24, ry - 24, 48, 48, 8);
+    g.lineStyle(2, 0xc99a2e);
+    g.strokeRoundedRect(x - 24, ry - 24, 48, 48, 8);
+    // Little trophy mark
+    const cup = this.add.graphics();
+    cup.fillStyle(0xffd166);
+    cup.fillRect(x - 8, ry - 16, 16, 10);
+    cup.fillRect(x - 3, ry - 6, 6, 5);
+    cup.fillRect(x - 7, ry - 1, 14, 3);
+    cup.fillStyle(0xc99a2e);
+    cup.fillRect(x - 12, ry - 15, 4, 6);
+    cup.fillRect(x + 8, ry - 15, 4, 6);
+    this.add
+      .bitmapText(x, ry + 14, 'pix', 'RANKS', 8)
+      .setTint(0xffd166)
+      .setOrigin(0.5, 0);
+    this.add
+      .rectangle(x, ry, 48, 48, 0xffffff, 0.001)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => {
+        if (!this.scene.isActive('Ranks')) {
+          audio.buy();
+          this.scene.launch('Ranks');
+        }
+      });
   }
 
   private boostButton(
