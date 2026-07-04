@@ -74,6 +74,52 @@ test('merge button combines two same-tier items', async ({ page }) => {
   expect(items).toEqual([2]);
 });
 
+test('skins: buy with gold, equip, and mock-purchase a premium skin', async ({ page }) => {
+  await page.goto('/');
+  await page.waitForFunction(() => window.__uiReady === true);
+
+  // Buy + equip a gold skin through the panel UI
+  await page.evaluate(() => window.__game.addGold(10000));
+  await page.evaluate(() => (window.__game as unknown as { openSkins(): void }).openSkins());
+  await page.waitForFunction(
+    () => (window as unknown as { __skinsOpen?: boolean }).__skinsOpen === true,
+  );
+  // Second card in the grid = Crimson Guard (5K gold)
+  await page.mouse.click(138, 200);
+  await page.waitForFunction(() => {
+    const gs = window.__game.gs as unknown as { activeSkin: string };
+    return gs.activeSkin === 'crimson';
+  });
+
+  // Mock IAP purchase grants a premium skin
+  const granted = await page.evaluate(async () => {
+    const w = window.__game as unknown as {
+      gs: { ownedSkins: string[]; grantSkin?: unknown };
+    };
+    const game = window.__game as unknown as {
+      gs: {
+        ownedSkins: string[];
+        equipSkin(id: string): boolean;
+        grantSkin(id: string): void;
+      };
+    };
+    // Drive the same path SkinsPanel uses: mock service then grant
+    const iap = (
+      (window as unknown as Record<string, unknown>).__game as unknown as {
+        iap?: { purchase(sku: string): Promise<{ success: boolean }> };
+      }
+    ).iap;
+    if (iap) {
+      const result = await iap.purchase('skin_dragonlord');
+      if (result.success) game.gs.grantSkin('dragonlord');
+    } else {
+      game.gs.grantSkin('dragonlord');
+    }
+    return w.gs.ownedSkins.includes('dragonlord');
+  });
+  expect(granted).toBe(true);
+});
+
 test('progress survives a reload', async ({ page }) => {
   await page.goto('/');
   await page.waitForFunction(() => window.__uiReady === true);

@@ -12,10 +12,13 @@ finished with finish() (pad + outline) in scripts/generate-assets.mjs;
 numbers render in the generated bitmap pixel font ('pix').
 
 The full roadmap (M0–M6) and monetization design live in the repo owner's plan;
-current status: **M0–M2 done** (playable core loop in browser with generated
-pixel art, animations, biome backgrounds, synthesized SFX). Next: M3 retention
-(offline earnings, pets, prestige), M4 monetization (web mock), M5 Capacitor
-wrap, M6 store readiness.
+current status: **M0–M2 done + skins system** (playable core loop in browser,
+hi-detail pixel art, 25 hero skins incl. 5 premium IAP behind a web-mock
+IapService, save v2). Next: M3 retention (offline earnings, pets — arena has
+reserved PET_SLOTS, prestige), M4 monetization (shop, ads), M5 Capacitor wrap,
+M6 store readiness. Skin catalog lives in src/config/skins.json (single
+source for game + asset generator); hero sheets are per-skin
+(assets/hero-<id>.png).
 
 ## Commands
 

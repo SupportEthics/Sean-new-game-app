@@ -79,6 +79,8 @@ export class UIScene extends Phaser.Scene {
       },
     });
 
+    this.createSkinsButton();
+
     if (import.meta.env.DEV) {
       (window as unknown as { __uiReady?: boolean }).__uiReady = true;
     }
@@ -195,6 +197,35 @@ export class UIScene extends Phaser.Scene {
       .bitmapText(THEME.width - 90, y + 32, 'pix', '', 8)
       .setTint(0x4a3520)
       .setOrigin(0.5, 0.5);
+  }
+
+  // ---- Skins side button (arena left edge) ----
+
+  private createSkinsButton(): void {
+    const x = 30;
+    const y = L.arenaTop + 74;
+    const g = this.add.graphics();
+    g.fillStyle(THEME.headerBg, 0.9);
+    g.fillRoundedRect(x - 24, y - 24, 48, 48, 8);
+    g.lineStyle(2, THEME.headerTrim);
+    g.strokeRoundedRect(x - 24, y - 24, 48, 48, 8);
+    this.add.image(x, y - 5, `hero-${this.gs.activeSkin}`, 0).setScale(0.5);
+    this.gs.on('skin:changed', () => {
+      /* preview refresh handled by re-adding on open; static button is fine */
+    });
+    this.add
+      .bitmapText(x, y + 14, 'pix', 'SKINS', 8)
+      .setTint(0xffd166)
+      .setOrigin(0.5, 0);
+    this.add
+      .rectangle(x, y, 48, 48, 0xffffff, 0.001)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => {
+        if (!this.scene.isActive('Skins')) {
+          audio.buy();
+          this.scene.launch('Skins');
+        }
+      });
   }
 
   // ---- Sword card panel ----
@@ -336,7 +367,7 @@ export class UIScene extends Phaser.Scene {
       const border = this.add
         .rectangle(0, 0, CARD_W, CARD_H)
         .setStrokeStyle(2, tierColor(tier));
-      const icon = this.add.image(-24, 4, 'gear', (tier - 1) % 12).setScale(0.72);
+      const icon = this.add.image(-22, 0, 'gear', (tier - 1) % 12);
       const dmg = this.add
         .bitmapText(
           CARD_W / 2 - 5,

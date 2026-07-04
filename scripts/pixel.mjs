@@ -129,6 +129,42 @@ export class Pix {
   }
 
   /**
+   * Cylinder-shaded rect (light from the left): columns blend through the
+   * ramp [highlight, base, shadow].
+   */
+  cylRect(x, y, w, h, ramp) {
+    const [hi, base, dark] = ramp;
+    for (let xx = 0; xx < w; xx++) {
+      const t = w === 1 ? 0.5 : xx / (w - 1);
+      const c = t < 0.28 ? hi : t < 0.72 ? base : dark;
+      this.rect(x + xx, y, 1, h, c);
+    }
+  }
+
+  /**
+   * Dome-shaded ellipse (light from top-left): base fill, highlight lobe
+   * upper-left, shadow crescent lower-right.
+   */
+  domeEllipse(cx, cy, rx, ry, ramp) {
+    const [hi, base, dark] = ramp;
+    this.ellipse(cx, cy, rx, ry, base);
+    this.ellipse(cx + rx * 0.25, cy + ry * 0.3, rx * 0.8, ry * 0.72, dark);
+    this.ellipse(cx - rx * 0.05, cy - ry * 0.05, rx * 0.78, ry * 0.72, base);
+    this.ellipse(cx - rx * 0.3, cy - ry * 0.38, rx * 0.42, ry * 0.34, hi);
+  }
+
+  /** Sprinkle deterministic single-pixel texture over a rect region. */
+  noise(x, y, w, h, hex, everyN = 7, seed = 0) {
+    for (let yy = y; yy < y + h; yy++) {
+      for (let xx = x; xx < x + w; xx++) {
+        if (((xx * 31 + yy * 17 + seed) % everyN) === 0 && this.isOpaque(xx, yy)) {
+          this.set(xx, yy, hex);
+        }
+      }
+    }
+  }
+
+  /**
    * Hard 1px outline: set every transparent pixel that touches an opaque one
    * (including diagonals) to `hex`. Author sprites with a 1px transparent
    * margin so the outline has room to grow.

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { skinById } from '../config/skins';
 import { ENEMY_SPECIES, STAGES } from '../config/stages';
 import { isBossWave } from '../core/BattleSim';
 import { formatNumber } from '../core/EconomyMath';
@@ -37,10 +38,16 @@ export class BattleScene extends Phaser.Scene {
   private orbitSpeed = 2.4; // radians/sec
   private bestTier = 1;
 
-  private readonly heroX = 120;
-  private readonly heroY = 258;
-  private readonly enemyX = 272;
-  private readonly enemyY = 258;
+  private readonly heroX = 112;
+  private readonly heroY = 252;
+  private readonly enemyX = 268;
+  private readonly enemyY = 252;
+  /** Reserved staging spots for M3 pets/companions — keep clear of props. */
+  static readonly PET_SLOTS = [
+    { x: 62, y: 296 },
+    { x: 108, y: 318 },
+    { x: 56, y: 224 },
+  ];
 
   constructor() {
     super('Battle');
@@ -90,7 +97,7 @@ export class BattleScene extends Phaser.Scene {
 
     // Signature orbiting blade
     this.orbitAngle += (delta / 1000) * this.orbitSpeed;
-    const r = 44;
+    const r = 34;
     const wx = this.heroX + Math.cos(this.orbitAngle) * r;
     const wy = this.heroY + Math.sin(this.orbitAngle) * r * 0.6; // elliptical = top-down feel
     this.weapon.setPosition(wx, wy);
@@ -156,49 +163,70 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private createHero(): void {
-    this.add.image(this.heroX, this.heroY + 34, 'shadow').setScale(1.5).setDepth(4);
-    this.hero = this.add.sprite(this.heroX, this.heroY, 'hero').play('hero-idle').setDepth(10);
+    this.add.image(this.heroX, this.heroY + 32, 'shadow').setScale(1.2).setDepth(4);
+    const skin = this.gs.activeSkin;
+    this.hero = this.add
+      .sprite(this.heroX, this.heroY, `hero-${skin}`)
+      .play(`hero-${skin}-idle`)
+      .setDepth(10);
 
     this.weaponGlow = this.add
-      .image(this.heroX + 44, this.heroY, 'spark')
-      .setScale(3.2)
+      .image(this.heroX + 34, this.heroY, 'spark')
+      .setScale(2.4)
       .setAlpha(0.35)
       .setTint(THEME.gold)
       .setDepth(7);
     this.weapon = this.add
-      .image(this.heroX + 44, this.heroY, 'gear', 0)
+      .image(this.heroX + 34, this.heroY, 'gear', 0)
+      .setScale(0.5)
       .setOrigin(0.5, 0.5)
       .setDepth(8);
+
+    this.gs.on('skin:changed', (id) => this.applySkin(id));
+    this.applySkin(skin);
+  }
+
+  private applySkin(id: string): void {
+    this.hero.setTexture(`hero-${id}`);
+    this.hero.play(`hero-${id}-idle`);
+    // Legendary auras color the orbiting blade's glow
+    const aura = skinById(id)?.art.aura;
+    this.weaponGlow.setTint(
+      aura ? Phaser.Display.Color.HexStringToColor(aura.slice(0, 7)).color : THEME.gold,
+    );
   }
 
   private createEnemy(): void {
     this.enemyShadow = this.add
-      .image(this.enemyX, this.enemyY + 28, 'shadow')
-      .setScale(1.5)
+      .image(this.enemyX, this.enemyY + 22, 'shadow')
+      .setScale(1.1)
       .setDepth(4);
     this.enemy = this.add.sprite(this.enemyX, this.enemyY, 'enemy-wolf').setDepth(10);
     this.enemy.setFlipX(true); // face the hero
 
-    for (let i = 0; i < 2; i++) {
+    // Waiting pack, spread across the right flank
+    for (const [dx, dy] of [
+      [46, -40],
+      [64, 26],
+    ]) {
       const s = this.add
-        .sprite(this.enemyX + 42 + i * 18, this.enemyY - 46 + i * 78, 'enemy-wolf')
+        .sprite(this.enemyX + dx, this.enemyY + dy, 'enemy-wolf')
         .setDepth(9)
         .setAlpha(0.92)
-        .setScale(0.9)
         .setFlipX(true);
       this.extraEnemies.push(s);
     }
 
     this.add
-      .rectangle(this.enemyX, this.enemyY - 54, 84, 10, THEME.hpBarBg)
+      .rectangle(this.enemyX, this.enemyY - 40, 72, 9, THEME.hpBarBg)
       .setStrokeStyle(2, 0x2a1c10)
       .setDepth(12);
     this.hpBar = this.add
-      .rectangle(this.enemyX - 40, this.enemyY - 54, 80, 6, THEME.hpBar)
+      .rectangle(this.enemyX - 34, this.enemyY - 40, 68, 5, THEME.hpBar)
       .setOrigin(0, 0.5)
       .setDepth(13);
     this.enemyName = this.add
-      .text(this.enemyX, this.enemyY - 70, '', {
+      .text(this.enemyX, this.enemyY - 54, '', {
         fontFamily: THEME.fontFamily,
         fontSize: '13px',
         fontStyle: 'bold',
@@ -261,11 +289,11 @@ export class BattleScene extends Phaser.Scene {
     this.enemy.setTexture(tex);
     this.enemy.play(`${tex}-idle`);
     this.enemyName.setText(boss ? `BOSS ${species.name}` : species.name);
-    this.enemy.setScale(boss ? 1.8 : 1);
-    this.enemyShadow.setScale(boss ? 2 : 1.5);
+    this.enemy.setScale(boss ? 1.5 : 1);
+    this.enemyShadow.setScale(boss ? 1.6 : 1.1);
 
     // Walk in from the right
-    this.enemy.setX(this.enemyX + 90).setAlpha(0.4);
+    this.enemy.setX(this.enemyX + 80).setAlpha(0.4);
     this.tweens.add({
       targets: this.enemy,
       x: this.enemyX,
@@ -288,7 +316,7 @@ export class BattleScene extends Phaser.Scene {
   private syncHpBar(): void {
     const b = this.gs.battle;
     const frac = b.currentEnemyMaxHp > 0 ? b.currentEnemyHp / b.currentEnemyMaxHp : 0;
-    this.hpBar.width = 80 * Phaser.Math.Clamp(frac, 0, 1);
+    this.hpBar.width = 68 * Phaser.Math.Clamp(frac, 0, 1);
   }
 
   // ---- Reactions ----
@@ -303,7 +331,7 @@ export class BattleScene extends Phaser.Scene {
 
     this.tweens.add({
       targets: this.hero,
-      x: { from: this.heroX, to: this.heroX + 22 },
+      x: { from: this.heroX, to: this.heroX + 16 },
       duration: 110,
       yoyo: true,
       ease: 'Quad.out',
@@ -316,7 +344,7 @@ export class BattleScene extends Phaser.Scene {
       this.pendingDamage = 0;
       this.tweens.add({
         targets: this.enemy,
-        x: { from: this.enemyX, to: this.enemyX + 10 },
+        x: { from: this.enemyX, to: this.enemyX + 8 },
         duration: 70,
         yoyo: true,
       });
@@ -329,7 +357,7 @@ export class BattleScene extends Phaser.Scene {
     const t = this.add
       .bitmapText(
         this.enemyX + Phaser.Math.Between(-18, 18),
-        this.enemyY - 88,
+        this.enemyY - 70,
         'pix',
         formatNumber(amount).toUpperCase(),
         punch > 0.5 ? 24 : 16,

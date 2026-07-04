@@ -1,4 +1,5 @@
 import { ECONOMY } from '../config/economy';
+import { DEFAULT_SKIN, SkinDef, skinById } from '../config/skins';
 import { BattleState, newBattleState, tick, TickResult } from './BattleSim';
 import { buyTierFor, gearCost, heroDps } from './EconomyMath';
 import {
@@ -21,6 +22,8 @@ export interface GameEvents {
   'boss:failed': number;
   'gear:merged': { index: number; tier: number };
   'gear:bought': { index: number; tier: number };
+  'skin:changed': string;
+  'skins:changed': string[];
 }
 
 type Handler<T> = (payload: T) => void;
@@ -35,6 +38,8 @@ export interface SerializedState {
   battle: BattleState;
   totalKills: number;
   totalGoldEarned: number;
+  ownedSkins: string[];
+  activeSkin: string;
 }
 
 const TICK_SECONDS = 0.1;
@@ -52,6 +57,8 @@ export class GameState {
   battle: BattleState = newBattleState(1);
   totalKills = 0;
   totalGoldEarned = 0;
+  ownedSkins: string[] = [DEFAULT_SKIN];
+  activeSkin: string = DEFAULT_SKIN;
 
   private handlers = new Map<keyof GameEvents, Set<Handler<never>>>();
   private tickAccumulator = 0;
@@ -70,7 +77,15 @@ export class GameState {
   // ---- Derived values ----
 
   get heroDps(): number {
-    return heroDps(gridTiers(this.grid));
+    return heroDps(gridTiers(this.grid)) * this.skinDpsMultiplier;
+  }
+
+  /** Every owned skin grants its bonus permanently (collection incentive). */
+  get skinDpsMultiplier(): number {
+    return (
+      1 +
+      this.ownedSkins.reduce((sum, id) => sum + (skinById(id)?.dpsBonus ?? 0), 0)
+    );
   }
 
   get buyTier(): number {
@@ -159,6 +174,63 @@ export class GameState {
     return pair ? this.mergeAt(pair.from, pair.to) : null;
   }
 
+  // ---- Skins ----
+
+  /** Why a skin can/can't be unlocked right now (IAP handled via grantSkin). */
+  canUnlockSkin(def: SkinDef): { ok: boolean; reason?: string } {
+    if (this.ownedSkins.includes(def.id)) return { ok: false, reason: 'owned' };
+    switch (def.unlock.type) {
+      case 'free':
+        return { ok: true };
+      case 'gold':
+        return this.gold >= def.unlock.amount
+          ? { ok: true }
+          : { ok: false, reason: 'gold' };
+      case 'gems':
+        return this.gems >= def.unlock.amount
+          ? { ok: true }
+          : { ok: false, reason: 'gems' };
+      case 'stage':
+        return this.highestStage >= def.unlock.stage
+          ? { ok: true }
+          : { ok: false, reason: 'stage' };
+      case 'iap':
+        return { ok: false, reason: 'iap' };
+    }
+  }
+
+  /** Unlock via in-game currency / stage requirement. Returns success. */
+  unlockSkin(id: string): boolean {
+    const def = skinById(id);
+    if (!def) return false;
+    const check = this.canUnlockSkin(def);
+    if (!check.ok) return false;
+    if (def.unlock.type === 'gold') {
+      this.gold -= def.unlock.amount;
+      this.emit('gold:changed', this.gold);
+    } else if (def.unlock.type === 'gems') {
+      this.gems -= def.unlock.amount;
+      this.emit('gems:changed', this.gems);
+    }
+    this.ownedSkins.push(id);
+    this.emit('skins:changed', this.ownedSkins);
+    return true;
+  }
+
+  /** Unconditional grant — the IAP fulfillment path (and restores). */
+  grantSkin(id: string): void {
+    if (!skinById(id) || this.ownedSkins.includes(id)) return;
+    this.ownedSkins.push(id);
+    this.emit('skins:changed', this.ownedSkins);
+  }
+
+  equipSkin(id: string): boolean {
+    if (!this.ownedSkins.includes(id) || this.activeSkin === id) return false;
+    this.activeSkin = id;
+    this.emit('skin:changed', id);
+    return true;
+  }
+
   // ---- Persistence ----
 
   serialize(): SerializedState {
@@ -171,6 +243,8 @@ export class GameState {
       battle: { ...this.battle },
       totalKills: this.totalKills,
       totalGoldEarned: this.totalGoldEarned,
+      ownedSkins: [...this.ownedSkins],
+      activeSkin: this.activeSkin,
     };
   }
 
@@ -184,6 +258,8 @@ export class GameState {
     gs.battle = { ...data.battle };
     gs.totalKills = data.totalKills;
     gs.totalGoldEarned = data.totalGoldEarned;
+    gs.ownedSkins = [...data.ownedSkins];
+    gs.activeSkin = data.activeSkin;
     return gs;
   }
 }

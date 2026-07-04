@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { SKINS } from '../config/skins';
 import { ENEMY_SPECIES } from '../config/stages';
 import { THEME } from '../ui/theme';
 
@@ -24,31 +25,37 @@ export class PreloadScene extends Phaser.Scene {
       barBg.destroy();
     });
 
-    this.load.spritesheet('hero', 'assets/hero.png', { frameWidth: 88, frameHeight: 112 });
-    ENEMY_SPECIES.forEach((s) =>
-      this.load.spritesheet(`enemy-${s.key}`, `assets/enemy-${s.key}.png`, {
-        frameWidth: 88,
-        frameHeight: 88,
+    // One sheet per skin: idle0, idle1, attack at native resolution
+    SKINS.forEach((skin) =>
+      this.load.spritesheet(`hero-${skin.id}`, `assets/hero-${skin.id}.png`, {
+        frameWidth: 52,
+        frameHeight: 68,
       }),
     );
-    this.load.spritesheet('gear', 'assets/gear.png', { frameWidth: 72, frameHeight: 80 });
-    this.load.spritesheet('deco', 'assets/deco.png', { frameWidth: 56, frameHeight: 56 });
-    this.load.spritesheet('torch', 'assets/torch.png', { frameWidth: 48, frameHeight: 80 });
+    ENEMY_SPECIES.forEach((s) =>
+      this.load.spritesheet(`enemy-${s.key}`, `assets/enemy-${s.key}.png`, {
+        frameWidth: 48,
+        frameHeight: 48,
+      }),
+    );
+    this.load.spritesheet('gear', 'assets/gear.png', { frameWidth: 56, frameHeight: 64 });
+    this.load.spritesheet('deco', 'assets/deco.png', { frameWidth: 28, frameHeight: 28 });
+    this.load.spritesheet('torch', 'assets/torch.png', { frameWidth: 20, frameHeight: 34 });
     this.load.spritesheet('tiles', 'assets/tiles.png', { frameWidth: 64, frameHeight: 64 });
-    this.load.spritesheet('icons', 'assets/icons.png', { frameWidth: 48, frameHeight: 48 });
+    this.load.spritesheet('icons', 'assets/icons.png', { frameWidth: 24, frameHeight: 24 });
     this.load.image('pixfont', 'assets/pixfont.png');
   }
 
   create(): void {
-    // Keep the chunky pixels crisp when scaled
+    // Keep the pixels crisp when scaled
     const keys = [
-      'hero',
       'gear',
       'deco',
       'torch',
       'tiles',
       'icons',
       'pixfont',
+      ...SKINS.map((s) => `hero-${s.id}`),
       ...ENEMY_SPECIES.map((s) => `enemy-${s.key}`),
     ];
     keys.forEach((k) => this.textures.get(k).setFilter(Phaser.Textures.FilterMode.NEAREST));
@@ -71,12 +78,14 @@ export class PreloadScene extends Phaser.Scene {
       }),
     );
 
-    this.anims.create({
-      key: 'hero-idle',
-      frames: this.anims.generateFrameNumbers('hero', { frames: [0, 1] }),
-      frameRate: 3,
-      repeat: -1,
-    });
+    SKINS.forEach((skin) =>
+      this.anims.create({
+        key: `hero-${skin.id}-idle`,
+        frames: this.anims.generateFrameNumbers(`hero-${skin.id}`, { frames: [0, 1] }),
+        frameRate: 3,
+        repeat: -1,
+      }),
+    );
     this.anims.create({
       key: 'torch-flame',
       frames: this.anims.generateFrameNumbers('torch', { frames: [0, 1] }),

@@ -60,4 +60,38 @@ describe('SaveManager', () => {
     const raw = JSON.parse(storage.get('pawsblades_save_v1')!);
     expect(raw.version).toBe(CURRENT_SAVE_VERSION);
   });
+
+  it('migrates a v1 save (pre-skins) to the current version', () => {
+    const storage = new MemoryStorage();
+    // Captured v1 shape: no ownedSkins/activeSkin fields
+    const v1 = {
+      version: 1,
+      lastSeenUtc: Date.now(),
+      state: {
+        gold: 999,
+        gems: 5,
+        grid: new Array(20).fill(null),
+        highestTier: 3,
+        highestStage: 7,
+        battle: {
+          stage: 7,
+          wave: 2,
+          enemiesLeftInWave: 3,
+          currentEnemyHp: 10,
+          currentEnemyMaxHp: 10,
+          bossTimeLeft: 30,
+        },
+        totalKills: 500,
+        totalGoldEarned: 12345,
+      },
+    };
+    storage.set('pawsblades_save_v1', JSON.stringify(v1));
+
+    const loaded = new SaveManager(storage).load();
+    expect(loaded).not.toBeNull();
+    expect(loaded!.state.ownedSkins).toEqual(['squire']);
+    expect(loaded!.state.activeSkin).toBe('squire');
+    expect(loaded!.state.gold).toBe(999); // untouched fields survive
+    expect(loaded!.state.highestStage).toBe(7);
+  });
 });

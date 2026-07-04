@@ -11,7 +11,12 @@ export interface SaveFile {
  * Never remove entries — old installs may skip many app updates.
  */
 const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
-  // v1 -> v2 example (none yet)
+  // v1 -> v2: skins arrive; everyone owns and wears the default
+  (save) => {
+    save.state.ownedSkins = ['squire'];
+    save.state.activeSkin = 'squire';
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

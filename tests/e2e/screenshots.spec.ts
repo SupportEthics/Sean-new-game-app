@@ -45,6 +45,17 @@ test('boss fight', async ({ page }) => {
   await page.screenshot({ path: 'screenshots/03-boss.png' });
 });
 
+test('skins panel', async ({ page }) => {
+  await page.evaluate(() =>
+    (window.__game as unknown as { openSkins(): void }).openSkins(),
+  );
+  await page.waitForFunction(
+    () => (window as unknown as { __skinsOpen?: boolean }).__skinsOpen === true,
+  );
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: 'screenshots/05-skins.png' });
+});
+
 test('twilight biome at stage 12', async ({ page }) => {
   await page.evaluate(() => window.__game.setWave(12, 3));
   await page.waitForTimeout(1200);
