@@ -25,12 +25,12 @@ export const STAGES = {
   heroAttacksPerSecond: 2,
 } as const;
 
-/** Cute enemy species rotate by stage for variety. */
+/** Monster species rotate by stage for variety. */
 export const ENEMY_SPECIES = [
-  { key: 'slime', name: 'Grumpy Slime', color: 0x7ed957 },
-  { key: 'carrot', name: 'Cranky Carrot', color: 0xff9950 },
-  { key: 'mushroom', name: 'Moody Mushroom', color: 0xe86a92 },
-  { key: 'bat', name: 'Bashful Bat', color: 0x9b7ede },
-  { key: 'crab', name: 'Crabby Crab', color: 0xff6b6b },
-  { key: 'ghost', name: 'Giggly Ghost', color: 0x9fd8ef },
+  { key: 'wolf', name: 'Dire Wolf', color: 0x6a707e },
+  { key: 'skeleton', name: 'Bone Warrior', color: 0xe8e4d8 },
+  { key: 'spider', name: 'Venom Spider', color: 0x3a3244 },
+  { key: 'golem', name: 'Stone Golem', color: 0x7a7284 },
+  { key: 'imp', name: 'Flame Imp', color: 0xc2482e },
+  { key: 'wraith', name: 'Grave Wraith', color: 0x4a4460 },
 ] as const;

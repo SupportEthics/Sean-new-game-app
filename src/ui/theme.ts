@@ -6,28 +6,28 @@ export const THEME = {
   height: 844,
   battleHeight: 424,
 
-  // Palette — warm pastel fantasy
-  skyTop: 0xa8d8ea,
-  skyBottom: 0xdff3e4,
-  ground: 0x8fc98f,
-  groundDark: 0x6faf6f,
+  // Palette — dark fantasy
+  skyTop: 0x2f3b4a,
+  skyBottom: 0x4a5d52,
+  ground: 0x3f5240,
+  groundDark: 0x2e3d30,
 
   /** Battle backdrop palettes; the world shifts every 5 stages. */
   biomes: [
-    // Meadow
-    { skyTop: 0xa8d8ea, skyBottom: 0xdff3e4, ground: 0x8fc98f, groundDark: 0x6faf6f },
-    // Sunset
-    { skyTop: 0xffb88c, skyBottom: 0xffe3c4, ground: 0xc9a96f, groundDark: 0xa98a54 },
-    // Twilight
-    { skyTop: 0x6f7ac8, skyBottom: 0xc4a8e0, ground: 0x7f96b8, groundDark: 0x60789c },
-    // Snowfield
-    { skyTop: 0xbfe3f0, skyBottom: 0xf2fbff, ground: 0xe8f2f8, groundDark: 0xc4d8e4 },
-    // Night
-    { skyTop: 0x2b2d5c, skyBottom: 0x5c5490, ground: 0x4a6a5c, groundDark: 0x36503f },
+    // Dark Forest
+    { skyTop: 0x2f3b4a, skyBottom: 0x51665a, ground: 0x3f5240, groundDark: 0x2e3d30 },
+    // Ember Wastes
+    { skyTop: 0x38222c, skyBottom: 0x7a4030, ground: 0x54382c, groundDark: 0x3e2a22 },
+    // Frozen Pass
+    { skyTop: 0x36455e, skyBottom: 0x8a9cb8, ground: 0x93a8bc, groundDark: 0x74889e },
+    // Cursed Swamp
+    { skyTop: 0x27301f, skyBottom: 0x4a5a40, ground: 0x38472f, groundDark: 0x293522 },
+    // Shadow Keep
+    { skyTop: 0x1a1424, skyBottom: 0x3a2c4a, ground: 0x362e42, groundDark: 0x272132 },
   ],
-  panelBg: 0x2e2348,
-  panelCell: 0x453764,
-  panelCellBorder: 0x5d4d85,
+  panelBg: 0x1e1730,
+  panelCell: 0x322947,
+  panelCellBorder: 0x4a3d68,
 
   gold: 0xffd166,
   gem: 0x6be3ff,
@@ -35,8 +35,8 @@ export const THEME = {
   hpBarBg: 0x3a2d55,
   bossTimer: 0xffa94d,
 
-  buttonBg: 0xff8f5e,
-  buttonBgDisabled: 0x6f6284,
+  buttonBg: 0xc2571f,
+  buttonBgDisabled: 0x54496b,
   buttonText: '#ffffff',
 
   textLight: '#ffffff',

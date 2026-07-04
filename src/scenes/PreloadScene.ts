@@ -21,15 +21,15 @@ export class PreloadScene extends Phaser.Scene {
       barBg.destroy();
     });
 
-    this.load.spritesheet('hero', 'assets/hero.png', { frameWidth: 80, frameHeight: 80 });
+    this.load.spritesheet('hero', 'assets/hero.png', { frameWidth: 96, frameHeight: 96 });
     ENEMY_SPECIES.forEach((s) =>
       this.load.spritesheet(`enemy-${s.key}`, `assets/enemy-${s.key}.png`, {
-        frameWidth: 64,
-        frameHeight: 64,
+        frameWidth: 80,
+        frameHeight: 80,
       }),
     );
-    this.load.spritesheet('gear', 'assets/gear.png', { frameWidth: 56, frameHeight: 56 });
-    this.load.spritesheet('deco', 'assets/deco.png', { frameWidth: 40, frameHeight: 40 });
+    this.load.spritesheet('gear', 'assets/gear.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('deco', 'assets/deco.png', { frameWidth: 48, frameHeight: 48 });
   }
 
   create(): void {

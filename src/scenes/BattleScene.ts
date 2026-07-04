@@ -104,16 +104,21 @@ export class BattleScene extends Phaser.Scene {
     g.fillEllipse(60, this.groundY + 34, 260, 60);
     g.fillEllipse(300, this.groundY + 40, 280, 70);
 
-    // Clouds
-    g.fillStyle(0xffffff, 0.8);
+    // Low drifting mist instead of fluffy clouds
+    g.fillStyle(0xffffff, 0.08);
     for (const [cx, cy, s] of [
-      [70, 60, 1],
-      [280, 100, 0.8],
-      [180, 40, 0.6],
+      [70, 70, 1.4],
+      [280, 110, 1.1],
+      [180, 45, 0.9],
     ] as const) {
-      g.fillEllipse(cx, cy, 70 * s, 26 * s);
-      g.fillEllipse(cx + 24 * s, cy - 10 * s, 50 * s, 22 * s);
+      g.fillEllipse(cx, cy, 110 * s, 20 * s);
+      g.fillEllipse(cx + 40 * s, cy + 8 * s, 80 * s, 16 * s);
     }
+    // A pale moon
+    g.fillStyle(0xf2ecd8, 0.55);
+    g.fillCircle(330, 56, 18);
+    g.fillStyle(biome.skyTop, 0.75);
+    g.fillCircle(323, 50, 15);
 
     // Ground decorations, deterministic per stage so screenshots are stable
     this.decoLayer.clear(true, true);
@@ -137,8 +142,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private createEnemy(): void {
-    this.enemyShadow = this.add.image(this.enemyX, this.groundY + 30, 'shadow').setScale(1.3);
-    this.enemy = this.add.sprite(this.enemyX, this.groundY, 'enemy-slime');
+    this.enemyShadow = this.add.image(this.enemyX, this.groundY + 30, 'shadow').setScale(1.5);
+    this.enemy = this.add.sprite(this.enemyX, this.groundY, 'enemy-wolf');
 
     this.add
       .rectangle(this.enemyX, this.groundY - 56, 84, 10, THEME.hpBarBg)
@@ -224,8 +229,8 @@ export class BattleScene extends Phaser.Scene {
     this.enemy.setTexture(`enemy-${species.key}`);
     this.enemy.play(`enemy-${species.key}-idle`);
     this.enemyName.setText(boss ? `BOSS ${species.name}` : species.name);
-    this.enemy.setScale(boss ? 2.1 : 1.1);
-    this.enemyShadow.setScale(boss ? 2 : 1.3);
+    this.enemy.setScale(boss ? 1.8 : 1);
+    this.enemyShadow.setScale(boss ? 2 : 1.5);
 
     // Spawn pop
     this.enemy.setAlpha(0);
@@ -289,7 +294,7 @@ export class BattleScene extends Phaser.Scene {
     const t = this.add
       .text(
         this.enemyX + Phaser.Math.Between(-18, 18),
-        this.groundY - 76,
+        this.groundY - 96,
         formatNumber(amount),
         {
           fontFamily: THEME.fontFamily,

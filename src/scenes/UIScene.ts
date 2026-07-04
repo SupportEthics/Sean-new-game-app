@@ -187,7 +187,7 @@ export class UIScene extends Phaser.Scene {
       if (tier === null) return;
       const { x, y } = this.cellCenters[index];
       const item = this.add.container(x, y);
-      const icon = this.add.image(0, -2, 'gear', (tier - 1) % 12);
+      const icon = this.add.image(0, -2, 'gear', (tier - 1) % 12).setScale(0.8);
       const label = this.add
         .text(0, 22, `${tier}`, {
           fontFamily: THEME.fontFamily,

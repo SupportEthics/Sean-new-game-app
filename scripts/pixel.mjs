@@ -128,6 +128,24 @@ export class Pix {
     }
   }
 
+  /** Set every transparent pixel that touches an opaque one — a glow halo. */
+  halo(hex) {
+    const marks = [];
+    for (let y = 0; y < this.h; y++) {
+      for (let x = 0; x < this.w; x++) {
+        if (this.isOpaque(x, y)) continue;
+        if (
+          this.isOpaque(x - 1, y) ||
+          this.isOpaque(x + 1, y) ||
+          this.isOpaque(x, y - 1) ||
+          this.isOpaque(x, y + 1)
+        )
+          marks.push([x, y]);
+      }
+    }
+    for (const [x, y] of marks) this.set(x, y, hex);
+  }
+
   /** Stamp another Pix onto this one at (ox, oy). */
   stamp(src, ox, oy) {
     for (let y = 0; y < src.h; y++) {
