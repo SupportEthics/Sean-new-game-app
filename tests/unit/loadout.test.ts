@@ -4,13 +4,14 @@ import { gearDps, heroDps } from '../../src/core/EconomyMath';
 import { GameState } from '../../src/core/GameState';
 
 describe('unlockedSlots', () => {
-  it('follows the stage milestones 1/5/15/30', () => {
+  it('follows the stage milestones 1/5/15/25', () => {
     expect(unlockedSlots(1)).toBe(1);
     expect(unlockedSlots(4)).toBe(1);
     expect(unlockedSlots(5)).toBe(2);
     expect(unlockedSlots(14)).toBe(2);
     expect(unlockedSlots(15)).toBe(3);
-    expect(unlockedSlots(30)).toBe(4);
+    expect(unlockedSlots(24)).toBe(3);
+    expect(unlockedSlots(25)).toBe(4);
     expect(unlockedSlots(999)).toBe(4);
   });
 });
@@ -43,19 +44,73 @@ describe('heroDps with multiple slots', () => {
   });
 });
 
+describe('auto-merge respects the loadout', () => {
+  it('never auto-merges equipped swords', () => {
+    const gs = new GameState(); // stage 1 = one equip slot
+    gs.grid[0] = 3; // equipped (best)
+    gs.grid[1] = 3; // would pair with it
+    expect(gs.autoMergeOnce()).toBeNull(); // pair involves the equipped sword
+    gs.grid[2] = 3; // now two unequipped threes exist
+    expect(gs.autoMergeOnce()).toBe(4);
+    expect(gs.grid[0]).toBe(3); // equipped sword untouched
+  });
+
+  it('manual merges of equipped swords still work', () => {
+    const gs = new GameState();
+    gs.grid[0] = 3;
+    gs.grid[1] = 3;
+    expect(gs.mergeAt(1, 0)).toBe(4); // player's drag decision
+  });
+});
+
+describe('shop tier upgrades', () => {
+  it('always sells tier 1 until upgraded', () => {
+    const gs = new GameState();
+    gs.highestTier = 12; // forging high tiers no longer raises the shop
+    expect(gs.buyTier).toBe(1);
+  });
+
+  it('upgrading costs gold and raises the offer', () => {
+    const gs = new GameState();
+    expect(gs.upgradeBuyTier()).toBe(false); // can't afford
+    gs.addGold(1e6);
+    const before = gs.gold;
+    expect(gs.upgradeBuyTier()).toBe(true);
+    expect(gs.buyTier).toBe(2);
+    expect(gs.gold).toBeLessThan(before);
+  });
+
+  it('prestige resets the shop tier', () => {
+    const gs = new GameState();
+    gs.addGold(1e6);
+    gs.upgradeBuyTier();
+    gs.battle.stage = 40;
+    gs.highestStage = 40;
+    gs.prestige();
+    expect(gs.buyTier).toBe(1);
+  });
+
+  it('shop tier survives serialize round-trip', () => {
+    const gs = new GameState();
+    gs.addGold(1e6);
+    gs.upgradeBuyTier();
+    expect(GameState.deserialize(gs.serialize()).buyTier).toBe(2);
+  });
+});
+
 describe('GameState loadout', () => {
   it('starts with one slot and gains them by stage', () => {
     const gs = new GameState();
     expect(gs.equipSlots).toBe(1);
     gs.highestStage = 5;
     expect(gs.equipSlots).toBe(2);
-    gs.highestStage = 30;
+    gs.highestStage = 25;
     expect(gs.equipSlots).toBe(4);
   });
 
   it('equippedIndices picks top tiers, ties broken by grid order', () => {
     const gs = new GameState();
-    gs.highestStage = 30; // all 4 slots
+    gs.highestStage = 25; // all 4 slots
     gs.grid[3] = 5;
     gs.grid[7] = 9;
     gs.grid[1] = 5;

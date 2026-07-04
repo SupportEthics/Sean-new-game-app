@@ -144,11 +144,11 @@ export class SkinsPanel extends Phaser.Scene {
       const bg = this.add
         .rectangle(0, 0, CARD_W, CARD_H, legendary ? 0xf5e6bc : THEME.cardBg)
         .setStrokeStyle(equipped ? 3 : 2, equipped ? 0x2e7a1e : RARITY_COLORS[def.rarity]);
-      const preview = this.add.image(0, -22, `hero-${def.id}`, 0);
+      const preview = this.add.image(0, -28, `hero-${def.id}`, 0);
       if (!owned) preview.setTint(0x9a9a9a); // dimmed but colors still sell it
 
       const name = this.add
-        .bitmapText(0, 34, 'pix', def.name.toUpperCase(), 8)
+        .bitmapText(0, 26, 'pix', def.name.toUpperCase(), 8)
         .setTint(0x4a3520)
         .setOrigin(0.5, 0)
         .setMaxWidth(CARD_W - 8);
@@ -170,7 +170,7 @@ export class SkinsPanel extends Phaser.Scene {
         stateTint = label.tint;
       }
       const state = this.add
-        .bitmapText(0, 56, 'pix', stateText, 8)
+        .bitmapText(0, 50, 'pix', stateText, 8)
         .setTint(stateTint)
         .setOrigin(0.5, 0);
 

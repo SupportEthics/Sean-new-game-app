@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  buyTierFor,
+  buyTierUpgradeCost,
   enemyHp,
   formatNumber,
   gearCost,
@@ -22,14 +22,10 @@ describe('gearCost', () => {
   });
 });
 
-describe('buyTierFor', () => {
-  it('never offers below tier 1', () => {
-    expect(buyTierFor(1)).toBe(1);
-    expect(buyTierFor(3)).toBe(1);
-  });
-
-  it('lags the highest achieved tier', () => {
-    expect(buyTierFor(10)).toBe(7);
+describe('buyTierUpgradeCost', () => {
+  it('costs a multiple of the sword price and escalates', () => {
+    expect(buyTierUpgradeCost(2)).toBeGreaterThan(gearCost(2));
+    expect(buyTierUpgradeCost(5)).toBeGreaterThan(buyTierUpgradeCost(2));
   });
 });
 

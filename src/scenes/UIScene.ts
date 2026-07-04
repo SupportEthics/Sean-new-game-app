@@ -39,6 +39,8 @@ export class UIScene extends Phaser.Scene {
   private waveText!: Phaser.GameObjects.BitmapText;
   private buyLabel!: Phaser.GameObjects.BitmapText;
   private buyBg!: Phaser.GameObjects.Image;
+  private upgradeBg!: Phaser.GameObjects.Image;
+  private upgradeLabel!: Phaser.GameObjects.BitmapText;
   private itemLayer!: Phaser.GameObjects.Container;
   private cellCenters: { x: number; y: number }[] = [];
   private ads!: AdService;
@@ -135,7 +137,7 @@ export class UIScene extends Phaser.Scene {
         : `WAVE ${b.wave}/10 - ${formatNumber(this.gs.heroDps).toUpperCase()}/S`,
     );
     this.levelText.setText(`LV ${level}`);
-    this.expBar.width = 130 * frac;
+    this.expBar.width = 96 * frac;
   }
 
   private prefTime(key: string): number {
@@ -203,14 +205,14 @@ export class UIScene extends Phaser.Scene {
     g.fillStyle(THEME.panelBgDark);
     g.fillRect(0, y, THEME.width, L.hudH);
 
-    // Lv + EXP bar (left)
+    // Lv + EXP bar (left) — bar starts clear of a 3-digit level number
     this.levelText = this.add.bitmapText(12, y + 15, 'pix', 'LV 1', 16);
     this.add
-      .rectangle(66, y + 22, 134, 14, 0x2a1c10)
+      .rectangle(102, y + 22, 100, 14, 0x2a1c10)
       .setOrigin(0, 0.5)
       .setStrokeStyle(2, THEME.headerTrim);
     this.expBar = this.add
-      .rectangle(68, y + 22, 0, 8, THEME.expBar)
+      .rectangle(104, y + 22, 0, 8, THEME.expBar)
       .setOrigin(0, 0.5);
 
     // Stage box (right)
@@ -471,20 +473,49 @@ export class UIScene extends Phaser.Scene {
   }
 
   private createToggleRow(): void {
-    this.autoCard(62, 'Auto Merge', 'auto_merge');
-    this.autoCard(156, 'Auto Buy', 'auto_buy');
+    this.autoCard(58, 'Auto Merge', 'auto_merge');
+    this.autoCard(144, 'Auto Buy', 'auto_buy');
     this.refreshAutoLabels();
 
     const y = L.togglesTop + 19;
     this.buyBg = this.add
-      .image(289, y, 'btn-wide')
+      .image(247, y, 'btn-wide')
+      .setDisplaySize(116, 34)
       .setTint(THEME.buttonBg)
       .setInteractive({ useHandCursor: true });
-    this.buyLabel = this.add.bitmapText(289, y, 'pix', '', 8).setOrigin(0.5);
+    this.buyLabel = this.add.bitmapText(247, y, 'pix', '', 8).setOrigin(0.5);
     this.buyBg.on('pointerdown', () => {
       if (this.gs.buyGear()) {
         audio.buy();
-        this.tweens.add({ targets: this.buyBg, scale: 0.94, duration: 60, yoyo: true });
+        this.tweens.add({
+          targets: this.buyBg,
+          scaleX: 0.65,
+          scaleY: 0.62,
+          duration: 60,
+          yoyo: true,
+        });
+      }
+    });
+
+    // Shop tier upgrade: spend gold to raise what the shop sells
+    this.upgradeBg = this.add
+      .image(339, y, 'btn-sm')
+      .setDisplaySize(64, 34)
+      .setTint(THEME.buttonBgAlt)
+      .setInteractive({ useHandCursor: true });
+    this.add.bitmapText(339, y - 8, 'pix', 'TIER UP', 8).setOrigin(0.5).setDepth(1);
+    this.upgradeLabel = this.add.bitmapText(339, y + 7, 'pix', '', 8).setOrigin(0.5);
+    this.upgradeBg.on('pointerdown', () => {
+      if (this.gs.upgradeBuyTier()) {
+        audio.merge();
+        this.tweens.add({
+          targets: this.upgradeBg,
+          scaleX: 0.66,
+          scaleY: 0.9,
+          duration: 60,
+          yoyo: true,
+        });
+        this.toast(`SHOP NOW SELLS TIER ${this.gs.buyTier}`);
       }
     });
   }
@@ -714,8 +745,16 @@ export class UIScene extends Phaser.Scene {
     this.dpsText.setText(`${formatNumber(this.gs.heroDps).toUpperCase()} DPS`);
 
     this.buyLabel.setText(
-      `BUY SWORD T${this.gs.buyTier} - ${formatNumber(this.gs.buyCost).toUpperCase()}G`,
+      `BUY T${this.gs.buyTier} - ${formatNumber(this.gs.buyCost).toUpperCase()}G`,
     );
     this.buyBg.setTint(this.gs.canBuy ? THEME.buttonBg : THEME.buttonBgDisabled);
+
+    const upCost = this.gs.buyTierUpgradeCost;
+    this.upgradeLabel.setText(
+      upCost === null ? 'MAX' : `${formatNumber(upCost).toUpperCase()}G`,
+    );
+    this.upgradeBg.setTint(
+      this.gs.canUpgradeBuyTier ? THEME.buttonBgAlt : THEME.buttonBgDisabled,
+    );
   }
 }

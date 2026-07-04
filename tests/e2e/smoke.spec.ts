@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 
 // Design-resolution coordinates map 1:1 to the 390x844 viewport (Scale.FIT).
-const BUY_BUTTON = { x: 289, y: 761 }; // "Buy sword" card
-const MERGE_BUTTON = { x: 62, y: 761 }; // "Auto Merge" toggle (merges once on enable)
+const BUY_BUTTON = { x: 247, y: 761 }; // "Buy sword" card
+const MERGE_BUTTON = { x: 58, y: 761 }; // "Auto Merge" toggle (merges once on enable)
 
 declare global {
   interface Window {
@@ -30,6 +30,10 @@ test('boots without page errors and exposes the game', async ({ page }) => {
 
   await page.goto('/');
   await page.waitForSelector('canvas');
+  await page.waitForFunction(
+    () => (window as unknown as { __titleReady?: boolean }).__titleReady === true,
+  );
+  await page.mouse.click(195, 500); // tap through the welcome screen
   await page.waitForFunction(() => window.__uiReady === true);
   // Let a few seconds of battle run
   await page.waitForTimeout(3000);
@@ -41,6 +45,10 @@ test('boots without page errors and exposes the game', async ({ page }) => {
 
 test('buy button places gear on the grid and DPS rises', async ({ page }) => {
   await page.goto('/');
+  await page.waitForFunction(
+    () => (window as unknown as { __titleReady?: boolean }).__titleReady === true,
+  );
+  await page.mouse.click(195, 500); // tap through the welcome screen
   await page.waitForFunction(() => window.__uiReady === true);
 
   const dpsBefore = await page.evaluate(() => window.__game.gs.heroDps);
@@ -56,26 +64,35 @@ test('buy button places gear on the grid and DPS rises', async ({ page }) => {
 
 test('merge button combines two same-tier items', async ({ page }) => {
   await page.goto('/');
+  await page.waitForFunction(
+    () => (window as unknown as { __titleReady?: boolean }).__titleReady === true,
+  );
+  await page.mouse.click(195, 500); // tap through the welcome screen
   await page.waitForFunction(() => window.__uiReady === true);
 
   await page.evaluate(() => window.__game.addGold(1000));
   await page.mouse.click(BUY_BUTTON.x, BUY_BUTTON.y);
   await page.mouse.click(BUY_BUTTON.x, BUY_BUTTON.y);
+  await page.mouse.click(BUY_BUTTON.x, BUY_BUTTON.y);
   await page.waitForFunction(
-    () => window.__game.gs.grid.filter((c) => c !== null).length === 2,
+    () => window.__game.gs.grid.filter((c) => c !== null).length === 3,
   );
 
   await page.mouse.click(MERGE_BUTTON.x, MERGE_BUTTON.y);
   await page.waitForFunction(() => window.__game.gs.highestTier >= 2);
 
-  const items = await page.evaluate(
-    () => window.__game.gs.grid.filter((c) => c !== null),
-  );
-  expect(items).toEqual([2]);
+  // The equipped sword (slot 0) is untouched; the other two merged
+  const grid = await page.evaluate(() => window.__game.gs.grid);
+  expect(grid[0]).toBe(1);
+  expect(grid.filter((c) => c === 2)).toHaveLength(1);
 });
 
 test('skins: buy with gold, equip, and mock-purchase a premium skin', async ({ page }) => {
   await page.goto('/');
+  await page.waitForFunction(
+    () => (window as unknown as { __titleReady?: boolean }).__titleReady === true,
+  );
+  await page.mouse.click(195, 500); // tap through the welcome screen
   await page.waitForFunction(() => window.__uiReady === true);
 
   // Buy + equip a gold skin through the panel UI
@@ -122,6 +139,10 @@ test('skins: buy with gold, equip, and mock-purchase a premium skin', async ({ p
 
 test('progress survives a reload', async ({ page }) => {
   await page.goto('/');
+  await page.waitForFunction(
+    () => (window as unknown as { __titleReady?: boolean }).__titleReady === true,
+  );
+  await page.mouse.click(195, 500); // tap through the welcome screen
   await page.waitForFunction(() => window.__uiReady === true);
 
   await page.evaluate(() => {
@@ -130,6 +151,10 @@ test('progress survives a reload', async ({ page }) => {
   });
 
   await page.reload();
+  await page.waitForFunction(
+    () => (window as unknown as { __titleReady?: boolean }).__titleReady === true,
+  );
+  await page.mouse.click(195, 500);
   await page.waitForFunction(() => window.__uiReady === true);
   const gold = await page.evaluate(() => window.__game.gs.gold);
   expect(gold).toBeGreaterThanOrEqual(123456);

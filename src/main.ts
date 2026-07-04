@@ -7,6 +7,7 @@ import { BootScene } from './scenes/BootScene';
 import { PreloadScene } from './scenes/PreloadScene';
 import { RaidPanel } from './scenes/RaidPanel';
 import { SkinsPanel } from './scenes/SkinsPanel';
+import { TitleScene } from './scenes/TitleScene';
 import { UIScene } from './scenes/UIScene';
 import { WebMockAd } from './services/monetization/AdService';
 import { WebMockIap } from './services/monetization/WebMockIap';
@@ -32,7 +33,7 @@ const game = new Phaser.Game({
     width: THEME.width,
     height: THEME.height,
   },
-  scene: [BootScene, PreloadScene, BattleScene, UIScene, SkinsPanel, RaidPanel],
+  scene: [BootScene, PreloadScene, TitleScene, BattleScene, UIScene, SkinsPanel, RaidPanel],
   callbacks: {
     preBoot: (g) => {
       g.registry.set('gs', gs);

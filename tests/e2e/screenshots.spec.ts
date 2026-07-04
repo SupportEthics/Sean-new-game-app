@@ -17,7 +17,21 @@ declare global {
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
+  await page.waitForFunction(
+    () => (window as unknown as { __titleReady?: boolean }).__titleReady === true,
+  );
+  await page.mouse.click(195, 500); // tap through the welcome screen
   await page.waitForFunction(() => window.__uiReady === true);
+});
+
+test('welcome screen', async ({ page }) => {
+  // beforeEach already tapped through; reload to capture the title itself
+  await page.reload();
+  await page.waitForFunction(
+    () => (window as unknown as { __titleReady?: boolean }).__titleReady === true,
+  );
+  await page.waitForTimeout(700);
+  await page.screenshot({ path: 'screenshots/00-title.png' });
 });
 
 test('early game', async ({ page }) => {
@@ -35,7 +49,7 @@ test('mid game with populated grid', async ({ page }) => {
     window.__game.gs.highestTier = 9;
   });
   // Buy through the UI so grid:changed fires and everything renders
-  await page.mouse.click(289, 761);
+  await page.mouse.click(247, 761);
   await page.waitForTimeout(2500);
   await page.screenshot({ path: 'screenshots/02-mid-game.png' });
 });

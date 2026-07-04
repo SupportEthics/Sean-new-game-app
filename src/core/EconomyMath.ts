@@ -7,9 +7,9 @@ export function gearCost(tier: number): number {
   return Math.round(ECONOMY.gearCostBase * Math.pow(ECONOMY.gearCostGrowth, tier - 1));
 }
 
-/** The tier the buy button offers, given the highest tier the player has made. */
-export function buyTierFor(highestTier: number): number {
-  return Math.max(1, highestTier - ECONOMY.buyTierLag);
+/** Gold cost to raise the shop's buy tier to `nextTier`. */
+export function buyTierUpgradeCost(nextTier: number): number {
+  return Math.round(gearCost(nextTier) * ECONOMY.buyTierUpgradeMultiplier);
 }
 
 /** Gold cost of unlocking grid cell number `n` (1-based; n > baseCells). */

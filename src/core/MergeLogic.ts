@@ -84,11 +84,18 @@ export function gridTiers(grid: Grid): number[] {
   return grid.filter((c): c is number => c !== null);
 }
 
-/** One best available merge (highest tier pair first), for auto-merge. */
-export function findBestMerge(grid: Grid): { from: number; to: number } | null {
+/**
+ * One best available merge (highest tier pair first), for auto-merge.
+ * Indices in `exclude` (the equipped loadout) are never auto-merged —
+ * changing the hero's weapons is the player's call.
+ */
+export function findBestMerge(
+  grid: Grid,
+  exclude?: ReadonlySet<number>,
+): { from: number; to: number } | null {
   const byTier = new Map<number, number[]>();
   grid.forEach((tier, idx) => {
-    if (tier === null || tier >= GEAR.maxTier) return;
+    if (tier === null || tier >= GEAR.maxTier || exclude?.has(idx)) return;
     const list = byTier.get(tier) ?? [];
     list.push(idx);
     byTier.set(tier, list);

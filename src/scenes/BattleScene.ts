@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { GEAR } from '../config/gear';
 import { RAIDS } from '../config/raids';
 import { skinById } from '../config/skins';
 import { ENEMY_SPECIES, STAGES } from '../config/stages';
@@ -21,6 +22,8 @@ export class BattleScene extends Phaser.Scene {
   private decoLayer!: Phaser.GameObjects.Group;
   private hero!: Phaser.GameObjects.Sprite;
   private blades: { img: Phaser.GameObjects.Image; glow: Phaser.GameObjects.Image }[] = [];
+  private slotIcons: Phaser.GameObjects.Image[] = [];
+  private slotLocks: Phaser.GameObjects.BitmapText[] = [];
   private auraTint: number = THEME.gold;
   private lastSlots = 0;
   private enemy!: Phaser.GameObjects.Sprite;
@@ -146,6 +149,34 @@ export class BattleScene extends Phaser.Scene {
     for (const x of [70, THEME.width - 70]) {
       this.add.sprite(x, L.arenaTop + 26, 'torch').play('torch-flame').setDepth(2);
     }
+
+    // Equip slots, mounted on the wall between the torches: one socket per
+    // wieldable sword — filled sockets mirror the orbiting loadout.
+    const slotW = 44;
+    const startX = THEME.width / 2 - ((GEAR.equipSlotStages.length - 1) * (slotW + 6)) / 2;
+    const sg = this.add.graphics().setDepth(2);
+    for (let i = 0; i < GEAR.equipSlotStages.length; i++) {
+      const x = startX + i * (slotW + 6);
+      sg.fillStyle(0x2a1c10, 0.85);
+      sg.fillRoundedRect(x - slotW / 2, L.arenaTop + 4, slotW, 40, 6);
+      sg.lineStyle(2, THEME.gold, 0.55);
+      sg.strokeRoundedRect(x - slotW / 2, L.arenaTop + 4, slotW, 40, 6);
+      const icon = this.add
+        .image(x, L.arenaTop + 24, 'gear', 0)
+        .setScale(0.5)
+        .setDepth(3)
+        .setVisible(false);
+      this.slotIcons.push(icon);
+      // Locked sockets advertise their unlock stage
+      const lock = this.add
+        .bitmapText(x, L.arenaTop + 24, 'pix', `ST\n${GEAR.equipSlotStages[i]}`, 8)
+        .setTint(0x9a8d6e)
+        .setCenterAlign()
+        .setOrigin(0.5)
+        .setDepth(3)
+        .setVisible(false);
+      this.slotLocks.push(lock);
+    }
   }
 
   /** Per-biome pass: tint the tiles and scatter this stage's props. */
@@ -258,6 +289,19 @@ export class BattleScene extends Phaser.Scene {
   /** The hero wields his equipped loadout: one orbiting blade per slot. */
   private syncWeapon(): void {
     const equipped = this.gs.equippedIndices.map((i) => this.gs.grid[i] as number);
+
+    // Wall sockets mirror the loadout; locked ones show their unlock stage
+    const slots = this.gs.equipSlots;
+    this.slotIcons.forEach((icon, i) => {
+      const unlocked = i < slots;
+      const tier = equipped[i];
+      this.slotLocks[i].setVisible(!unlocked);
+      if (unlocked && tier !== undefined) {
+        icon.setVisible(true).setFrame((tier - 1) % 12);
+      } else {
+        icon.setVisible(false);
+      }
+    });
     const want = Math.max(1, equipped.length);
 
     while (this.blades.length < want) {

@@ -4,7 +4,7 @@ import { RAIDS, raidGems, raidGoldPerKill, raidMonsterHp } from '../config/raids
 import { DEFAULT_SKIN, SkinDef, skinById } from '../config/skins';
 import { BattleState, newBattleState, tick, TickResult } from './BattleSim';
 import { GEAR, unlockedSlots } from '../config/gear';
-import { buyTierFor, cellCost, gearCost, heroDps } from './EconomyMath';
+import { buyTierUpgradeCost, cellCost, gearCost, heroDps } from './EconomyMath';
 import {
   emptyGrid,
   findBestMerge,
@@ -66,6 +66,7 @@ export interface SerializedState {
   ownedSkins: string[];
   activeSkin: string;
   unlockedCells: number;
+  buyTierLevel: number;
   prestigeCount: number;
   souls: number;
   raidHighest: number;
@@ -90,6 +91,8 @@ export class GameState {
   ownedSkins: string[] = [DEFAULT_SKIN];
   activeSkin: string = DEFAULT_SKIN;
   unlockedCells: number = GEAR.baseCells;
+  /** The tier the shop sells at; raised with gold via upgradeBuyTier(). */
+  buyTierLevel = 1;
   prestigeCount = 0;
   /** Rebirth currency, banked for the M3 upgrade tree. */
   souls = 0;
@@ -144,7 +147,24 @@ export class GameState {
   }
 
   get buyTier(): number {
-    return buyTierFor(this.highestTier);
+    return this.buyTierLevel;
+  }
+
+  /** Gold cost to raise the shop tier, or null at the cap. */
+  get buyTierUpgradeCost(): number | null {
+    return this.buyTierLevel >= GEAR.maxTier ? null : buyTierUpgradeCost(this.buyTierLevel + 1);
+  }
+
+  get canUpgradeBuyTier(): boolean {
+    return this.buyTierUpgradeCost !== null && this.gold >= this.buyTierUpgradeCost;
+  }
+
+  upgradeBuyTier(): boolean {
+    if (!this.canUpgradeBuyTier) return false;
+    this.gold -= this.buyTierUpgradeCost as number;
+    this.buyTierLevel += 1;
+    this.emit('gold:changed', this.gold);
+    return true;
   }
 
   get buyCost(): number {
@@ -247,9 +267,10 @@ export class GameState {
     return true;
   }
 
-  /** Perform the single best merge available (auto-merge button). */
+  /** Auto-merge one pair — never touching equipped swords; merging those
+   * is a deliberate manual drag. */
   autoMergeOnce(): number | null {
-    const pair = findBestMerge(this.grid);
+    const pair = findBestMerge(this.grid, new Set(this.equippedIndices));
     return pair ? this.mergeAt(pair.from, pair.to) : null;
   }
 
@@ -276,6 +297,7 @@ export class GameState {
     this.gold = ECONOMY.startingGold;
     this.grid = this.grid.map(() => null);
     this.highestTier = 1;
+    this.buyTierLevel = 1;
     this.battle = newBattleState(1);
     this.emit('prestige:done', this.prestigeCount);
     this.emit('gold:changed', this.gold);
@@ -451,6 +473,7 @@ export class GameState {
       ownedSkins: [...this.ownedSkins],
       activeSkin: this.activeSkin,
       unlockedCells: this.unlockedCells,
+      buyTierLevel: this.buyTierLevel,
       prestigeCount: this.prestigeCount,
       souls: this.souls,
       raidHighest: this.raidHighest,
@@ -471,6 +494,7 @@ export class GameState {
     gs.ownedSkins = [...data.ownedSkins];
     gs.activeSkin = data.activeSkin;
     gs.unlockedCells = data.unlockedCells;
+    gs.buyTierLevel = data.buyTierLevel;
     gs.prestigeCount = data.prestigeCount;
     gs.souls = data.souls;
     gs.raidHighest = data.raidHighest;

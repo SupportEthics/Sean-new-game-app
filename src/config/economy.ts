@@ -5,8 +5,9 @@ export const ECONOMY = {
   gearCostBase: 10,
   gearCostGrowth: 2.1,
 
-  /** Buying is always offered at max(1, highestTierAchieved - buyTierLag) */
-  buyTierLag: 3,
+  /** The shop sells at buyTierLevel (starts at 1); raising it costs gold:
+   * upgrade to tier n costs gearCost(n) * buyTierUpgradeMultiplier. */
+  buyTierUpgradeMultiplier: 8,
 
   /** Starting wallet */
   startingGold: 25,

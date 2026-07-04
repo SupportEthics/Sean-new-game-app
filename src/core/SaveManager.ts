@@ -40,6 +40,12 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     delete legacy.acorns;
     return save;
   },
+  // v5 -> v6: the shop tier becomes a paid upgrade; grandfather the old
+  // implicit tier (highestTier - 3) so nobody's shop regresses
+  (save) => {
+    save.state.buyTierLevel = Math.max(1, (save.state.highestTier ?? 1) - 3);
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

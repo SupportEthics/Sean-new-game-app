@@ -96,6 +96,8 @@ describe('SaveManager', () => {
     // v2 -> v3: board grew to 42 with the original 20 cells unlocked
     expect(loaded!.state.grid).toHaveLength(42);
     expect(loaded!.state.unlockedCells).toBe(20);
+    // v5 -> v6: shop tier grandfathered from highestTier - 3
+    expect(loaded!.state.buyTierLevel).toBe(1);
     // v3 -> v4 -> v5: prestige + raids, currency renamed to souls
     expect(loaded!.state.prestigeCount).toBe(0);
     expect(loaded!.state.souls).toBe(0);

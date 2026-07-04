@@ -112,7 +112,6 @@ export class PreloadScene extends Phaser.Scene {
       }),
     );
 
-    this.scene.start('Battle');
-    this.scene.launch('UI');
+    this.scene.start('Title');
   }
 }

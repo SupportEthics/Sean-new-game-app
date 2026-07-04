@@ -25,9 +25,10 @@ export const GEAR = {
    * more. */
   passiveDpsFraction: 0.1,
 
-  /** Equip slots unlock by reaching these stages: slot 1 from the start,
-   * slot 4 at stage 30. The top-N swords auto-equip — no manual loadout. */
-  equipSlotStages: [1, 5, 15, 30],
+  /** Equip slots unlock by reaching these stages (Sean's tuning): slot 1
+   * immediately, then stages 5 / 15 / 25. The wall sockets in the arena show
+   * the locked slots and their requirements. Top-N swords auto-equip. */
+  equipSlotStages: [1, 5, 15, 25],
 } as const;
 
 /** How many swords the hero can wield at `highestStage`. */
