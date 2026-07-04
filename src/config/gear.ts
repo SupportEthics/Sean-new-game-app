@@ -13,11 +13,21 @@ export const GEAR = {
   /** Each tier multiplies DPS by this (merging 2 of a kind should be a real upgrade) */
   dpsGrowth: 1.9,
 
-  /** The best item on the grid is "equipped". Every OTHER item on the grid
-   * contributes this fraction of its own DPS as a passive bonus, so keeping
-   * a full grid matters, but merging up matters more. */
+  /** The best items on the grid are "equipped" (see equipSlotStages). Every
+   * OTHER item on the grid contributes this fraction of its own DPS as a
+   * passive bonus, so keeping a full grid matters, but merging up matters
+   * more. */
   passiveDpsFraction: 0.1,
+
+  /** Equip slots unlock by reaching these stages: slot 1 from the start,
+   * slot 4 at stage 30. The top-N swords auto-equip — no manual loadout. */
+  equipSlotStages: [1, 5, 15, 30],
 } as const;
+
+/** How many swords the hero can wield at `highestStage`. */
+export function unlockedSlots(highestStage: number): number {
+  return GEAR.equipSlotStages.filter((s) => highestStage >= s).length;
+}
 
 /** Display names per tier band — used for flavor in the UI. */
 export const TIER_NAMES: readonly string[] = [

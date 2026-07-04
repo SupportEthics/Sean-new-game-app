@@ -1,6 +1,7 @@
 import { ECONOMY } from '../config/economy';
 import { DEFAULT_SKIN, SkinDef, skinById } from '../config/skins';
 import { BattleState, newBattleState, tick, TickResult } from './BattleSim';
+import { unlockedSlots } from '../config/gear';
 import { buyTierFor, gearCost, heroDps } from './EconomyMath';
 import {
   emptyGrid,
@@ -77,7 +78,22 @@ export class GameState {
   // ---- Derived values ----
 
   get heroDps(): number {
-    return heroDps(gridTiers(this.grid)) * this.skinDpsMultiplier;
+    return heroDps(gridTiers(this.grid), this.equipSlots) * this.skinDpsMultiplier;
+  }
+
+  /** Sword slots currently unlocked (1..4, by highest stage reached). */
+  get equipSlots(): number {
+    return unlockedSlots(this.highestStage);
+  }
+
+  /** Grid indices of the auto-equipped loadout: top-N tiers, ties by index. */
+  get equippedIndices(): number[] {
+    return this.grid
+      .map((tier, index) => ({ tier, index }))
+      .filter((c): c is { tier: number; index: number } => c.tier !== null)
+      .sort((a, b) => b.tier - a.tier || a.index - b.index)
+      .slice(0, this.equipSlots)
+      .map((c) => c.index);
   }
 
   /** Every owned skin grants its bonus permanently (collection incentive). */

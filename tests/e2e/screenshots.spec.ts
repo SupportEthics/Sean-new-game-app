@@ -27,6 +27,7 @@ test('early game', async ({ page }) => {
 
 test('mid game with populated grid', async ({ page }) => {
   await page.evaluate(() => {
+    (window.__game as unknown as { setStage(s: number): void }).setStage(31); // all 4 sword slots
     window.__game.addGold(1e6);
     // Hand-place a mid-game grid; the UI rebuilds on the next grid event
     const tiers = [8, 8, 7, 6, 5, 5, 4, 3, 3, 2, 1, 1];

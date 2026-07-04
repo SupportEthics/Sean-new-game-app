@@ -4,7 +4,6 @@ import { ENEMY_SPECIES, STAGES } from '../config/stages';
 import { isBossWave } from '../core/BattleSim';
 import { formatNumber } from '../core/EconomyMath';
 import { GameState } from '../core/GameState';
-import { gridTiers } from '../core/MergeLogic';
 import { audio } from '../services/AudioService';
 import { THEME } from '../ui/theme';
 
@@ -20,8 +19,9 @@ export class BattleScene extends Phaser.Scene {
   private wallTs!: Phaser.GameObjects.TileSprite;
   private decoLayer!: Phaser.GameObjects.Group;
   private hero!: Phaser.GameObjects.Sprite;
-  private weapon!: Phaser.GameObjects.Image;
-  private weaponGlow!: Phaser.GameObjects.Image;
+  private blades: { img: Phaser.GameObjects.Image; glow: Phaser.GameObjects.Image }[] = [];
+  private auraTint: number = THEME.gold;
+  private lastSlots = 0;
   private enemy!: Phaser.GameObjects.Sprite;
   private extraEnemies: Phaser.GameObjects.Sprite[] = [];
   private enemyShadow!: Phaser.GameObjects.Image;
@@ -36,7 +36,6 @@ export class BattleScene extends Phaser.Scene {
   private wasBoss = false;
   private orbitAngle = 0;
   private orbitSpeed = 2.4; // radians/sec
-  private bestTier = 1;
 
   private readonly heroX = 112;
   private readonly heroY = 252;
@@ -84,6 +83,13 @@ export class BattleScene extends Phaser.Scene {
       if (r.stageCleared) this.onStageCleared();
       if (r.bossFailed) this.onBossFailed();
     });
+    this.gs.on('stage:changed', () => {
+      if (this.gs.equipSlots > this.lastSlots) {
+        this.lastSlots = this.gs.equipSlots;
+        this.syncWeapon();
+        this.onSlotUnlocked();
+      }
+    });
     this.gs.on('grid:changed', () => this.syncWeapon());
 
     this.syncWeapon();
@@ -95,16 +101,20 @@ export class BattleScene extends Phaser.Scene {
     this.syncWave(false);
     this.syncHpBar();
 
-    // Signature orbiting blade
+    // Signature orbiting blades — one per equipped sword, evenly spaced
     this.orbitAngle += (delta / 1000) * this.orbitSpeed;
     const r = 34;
-    const wx = this.heroX + Math.cos(this.orbitAngle) * r;
-    const wy = this.heroY + Math.sin(this.orbitAngle) * r * 0.6; // elliptical = top-down feel
-    this.weapon.setPosition(wx, wy);
-    this.weapon.setAngle(Phaser.Math.RadToDeg(this.orbitAngle) + 135);
-    this.weaponGlow.setPosition(wx, wy);
-    this.weapon.setDepth(wy > this.heroY ? 20 : 8);
-    this.weaponGlow.setDepth(wy > this.heroY ? 19 : 7);
+    const n = this.blades.length || 1;
+    this.blades.forEach((blade, i) => {
+      const a = this.orbitAngle + (i * Math.PI * 2) / n;
+      const wx = this.heroX + Math.cos(a) * r;
+      const wy = this.heroY + Math.sin(a) * r * 0.6; // elliptical = top-down feel
+      blade.img.setPosition(wx, wy);
+      blade.img.setAngle(Phaser.Math.RadToDeg(a) + 135);
+      blade.glow.setPosition(wx, wy);
+      blade.img.setDepth(wy > this.heroY ? 20 : 8);
+      blade.glow.setDepth(wy > this.heroY ? 19 : 7);
+    });
     // Ease burst speed back down to cruise
     this.orbitSpeed = Math.max(2.4, this.orbitSpeed * 0.97);
   }
@@ -170,18 +180,7 @@ export class BattleScene extends Phaser.Scene {
       .play(`hero-${skin}-idle`)
       .setDepth(10);
 
-    this.weaponGlow = this.add
-      .image(this.heroX + 34, this.heroY, 'spark')
-      .setScale(2.4)
-      .setAlpha(0.35)
-      .setTint(THEME.gold)
-      .setDepth(7);
-    this.weapon = this.add
-      .image(this.heroX + 34, this.heroY, 'gear', 0)
-      .setScale(0.5)
-      .setOrigin(0.5, 0.5)
-      .setDepth(8);
-
+    this.lastSlots = this.gs.equipSlots;
     this.gs.on('skin:changed', (id) => this.applySkin(id));
     this.applySkin(skin);
   }
@@ -189,11 +188,12 @@ export class BattleScene extends Phaser.Scene {
   private applySkin(id: string): void {
     this.hero.setTexture(`hero-${id}`);
     this.hero.play(`hero-${id}-idle`);
-    // Legendary auras color the orbiting blade's glow
+    // Legendary auras color the orbiting blades' glow
     const aura = skinById(id)?.art.aura;
-    this.weaponGlow.setTint(
-      aura ? Phaser.Display.Color.HexStringToColor(aura.slice(0, 7)).color : THEME.gold,
-    );
+    this.auraTint = aura
+      ? Phaser.Display.Color.HexStringToColor(aura.slice(0, 7)).color
+      : THEME.gold;
+    this.blades.forEach((b) => b.glow.setTint(this.auraTint));
   }
 
   private createEnemy(): void {
@@ -252,13 +252,37 @@ export class BattleScene extends Phaser.Scene {
 
   // ---- Sync with the sim ----
 
+  /** The hero wields his equipped loadout: one orbiting blade per slot. */
   private syncWeapon(): void {
-    const tiers = gridTiers(this.gs.grid);
-    this.bestTier = tiers.length ? Math.max(...tiers) : 1;
-    this.weapon.setFrame((this.bestTier - 1) % 12);
-    // Glow gets stronger with tier band
-    const band = Math.min((this.bestTier - 1) / 12, 1);
-    this.weaponGlow.setAlpha(0.2 + band * 0.35);
+    const equipped = this.gs.equippedIndices.map((i) => this.gs.grid[i] as number);
+    const want = Math.max(1, equipped.length);
+
+    while (this.blades.length < want) {
+      const glow = this.add
+        .image(this.heroX, this.heroY, 'spark')
+        .setScale(2.4)
+        .setAlpha(0.3)
+        .setTint(this.auraTint)
+        .setDepth(7);
+      const img = this.add
+        .image(this.heroX, this.heroY, 'gear', 0)
+        .setScale(0.5)
+        .setOrigin(0.5, 0.5)
+        .setDepth(8);
+      this.blades.push({ img, glow });
+    }
+    while (this.blades.length > want) {
+      const b = this.blades.pop()!;
+      b.img.destroy();
+      b.glow.destroy();
+    }
+
+    this.blades.forEach((blade, i) => {
+      const tier = equipped[i] ?? 1;
+      blade.img.setFrame((tier - 1) % 12);
+      const band = Math.min((tier - 1) / 12, 1);
+      blade.glow.setAlpha(0.18 + band * 0.35);
+    });
   }
 
   private syncWave(force: boolean): void {
@@ -408,6 +432,33 @@ export class BattleScene extends Phaser.Scene {
           y: banner.y - 30,
           delay: 700,
           duration: 350,
+          onComplete: () => banner.destroy(),
+        });
+      },
+    });
+  }
+
+  private onSlotUnlocked(): void {
+    audio.stageUp();
+    const banner = this.add
+      .bitmapText(THEME.width / 2, L.arenaTop + 150, 'pix', 'SWORD SLOT UNLOCKED!', 16)
+      .setTint(THEME.gold)
+      .setDropShadow(2, 2, 0x14101c, 1)
+      .setOrigin(0.5)
+      .setScale(0.4)
+      .setDepth(40);
+    this.tweens.add({
+      targets: banner,
+      scale: 1,
+      duration: 280,
+      ease: 'Back.out',
+      onComplete: () => {
+        this.tweens.add({
+          targets: banner,
+          alpha: 0,
+          y: banner.y - 26,
+          delay: 1200,
+          duration: 400,
           onComplete: () => banner.destroy(),
         });
       },

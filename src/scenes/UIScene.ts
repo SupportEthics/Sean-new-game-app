@@ -67,6 +67,7 @@ export class UIScene extends Phaser.Scene {
       this.rebuildItems();
       this.refreshTexts();
     });
+    this.gs.on('stage:changed', () => this.rebuildItems()); // slot unlocks re-badge cards
     this.refreshTexts();
 
     // Auto actions tick — one buy + one merge per beat feels game-paced
@@ -358,15 +359,17 @@ export class UIScene extends Phaser.Scene {
   private rebuildItems(): void {
     this.itemLayer.removeAll(true);
 
+    const equipped = new Set(this.gs.equippedIndices);
     this.gs.grid.forEach((tier, index) => {
       if (tier === null) return;
       const { x, y } = this.cellCenters[index];
       const item = this.add.container(x, y);
+      const isEquipped = equipped.has(index);
 
       const face = this.add.image(0, 0, 'card');
       const border = this.add
         .rectangle(0, 0, CARD_W, CARD_H)
-        .setStrokeStyle(2, tierColor(tier));
+        .setStrokeStyle(isEquipped ? 3 : 2, isEquipped ? 0xffd166 : tierColor(tier));
       const icon = this.add.image(-22, 0, 'gear', (tier - 1) % 12);
       const dmg = this.add
         .bitmapText(
@@ -391,7 +394,14 @@ export class UIScene extends Phaser.Scene {
         .setTint(0x2e7a1e)
         .setOrigin(1, 1);
 
-      item.add([face, border, icon, dmg, name, lvl]);
+      if (isEquipped) {
+        const badge = this.add
+          .bitmapText(-CARD_W / 2 + 4, -CARD_H / 2 + 5, 'pix', 'EQ', 8)
+          .setTint(0xc9961e);
+        item.add([face, border, icon, dmg, name, lvl, badge]);
+      } else {
+        item.add([face, border, icon, dmg, name, lvl]);
+      }
       item.setSize(CARD_W, CARD_H);
       item.setData('index', index);
       item.setData('tier', tier);

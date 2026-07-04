@@ -17,12 +17,19 @@ export function gearDps(tier: number): number {
   return GEAR.baseDps * Math.pow(GEAR.dpsGrowth, tier - 1);
 }
 
-/** Hero DPS: best item full DPS + a passive fraction from every other item. */
-export function heroDps(tiers: number[]): number {
-  if (tiers.length === 0) return 1; // bare paws
+/**
+ * Hero DPS: the top `slots` items count in full (the equipped loadout);
+ * every other item on the grid adds a passive fraction of its own DPS.
+ */
+export function heroDps(tiers: number[], slots = 1): number {
+  if (tiers.length === 0) return 1; // bare hands
   const dpsList = tiers.map(gearDps).sort((a, b) => b - a);
-  const [best, ...rest] = dpsList;
-  return best + rest.reduce((sum, d) => sum + d * GEAR.passiveDpsFraction, 0);
+  const equipped = dpsList.slice(0, Math.max(1, slots));
+  const rest = dpsList.slice(Math.max(1, slots));
+  return (
+    equipped.reduce((sum, d) => sum + d, 0) +
+    rest.reduce((sum, d) => sum + d * GEAR.passiveDpsFraction, 0)
+  );
 }
 
 export function enemyHp(stage: number, wave: number): number {
