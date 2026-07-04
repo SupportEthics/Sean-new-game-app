@@ -82,6 +82,7 @@ export class TitleScene extends Phaser.Scene {
 
     this.input.once('pointerdown', () => {
       audio.stageUp();
+      audio.startMusic(); // first user gesture satisfies autoplay rules
       this.cameras.main.fadeOut(250, 20, 16, 28);
       this.cameras.main.once('camerafadeoutcomplete', () => {
         this.scene.start('Battle');

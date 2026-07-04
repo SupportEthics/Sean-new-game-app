@@ -6,6 +6,8 @@
 export class AudioService {
   private ctx: AudioContext | null = null;
   private muted: boolean;
+  private musicTimer: ReturnType<typeof setInterval> | null = null;
+  private musicStep = 0;
 
   constructor() {
     let stored: string | null = null;
@@ -29,6 +31,29 @@ export class AudioService {
       /* storage unavailable */
     }
     return this.muted;
+  }
+
+  /**
+   * Looping dungeon chiptune, fully synthesized (nothing to download, works
+   * in the single-file build). Started on the first user gesture; a step
+   * sequencer plays a brooding A-minor bass line with a sparse lead. The
+   * mute toggle silences it via the same `muted` gate every tone respects.
+   */
+  startMusic(): void {
+    if (this.musicTimer) return;
+    // A minor: bass roots + a wandering pentatonic lead, 16 steps
+    const bass = [110, 110, 0, 110, 98, 0, 98, 110, 87, 0, 87, 98, 110, 0, 130.8, 123.5];
+    const lead = [0, 440, 0, 523, 0, 0, 392, 0, 0, 330, 0, 440, 0, 587, 523, 0];
+    const stepMs = 280;
+    this.musicTimer = setInterval(() => {
+      const i = this.musicStep % 16;
+      this.musicStep += 1;
+      if (bass[i] > 0) this.tone(bass[i], 0.24, { type: 'square', vol: 0.018 });
+      if (lead[i] > 0 && this.musicStep % 32 >= 16) {
+        // Lead only every other bar so it stays atmospheric, not busy
+        this.tone(lead[i], 0.2, { type: 'triangle', vol: 0.02 });
+      }
+    }, stepMs);
   }
 
   private tone(

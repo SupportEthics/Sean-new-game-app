@@ -11,7 +11,9 @@ export type AdPlacement =
   | 'auto_buy'
   | 'pet_egg'
   | 'boost_dmg'
-  | 'boost_speed';
+  | 'boost_speed'
+  | 'skill_cast'
+  | 'gift';
 
 export interface AdResult {
   /** True when the ad played to completion and the reward should be granted. */

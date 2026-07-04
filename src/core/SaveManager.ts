@@ -99,6 +99,14 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.speedBoostUntil = 0;
     return save;
   },
+  // v14 -> v15: login calendar + achievements (with lifetime merge counter)
+  (save) => {
+    save.state.loginStreakDay = 0;
+    save.state.lastLoginClaimDay = '';
+    save.state.totalMerges = 0;
+    save.state.achievementsClaimed = [];
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

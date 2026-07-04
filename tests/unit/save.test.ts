@@ -121,5 +121,10 @@ describe('SaveManager', () => {
     // v13 -> v14: ad boosts start inactive
     expect(loaded!.state.dmgBoostActive()).toBe(false);
     expect(loaded!.state.speedBoostActive()).toBe(false);
+    // v14 -> v15: login calendar fresh, achievements empty, merges seeded
+    expect(loaded!.state.loginStreakDay).toBe(0);
+    expect(loaded!.state.loginRewardReady()).toBe(true);
+    expect(loaded!.state.totalMerges).toBe(0);
+    expect(loaded!.state.achievementsClaimed).toEqual([]);
   });
 });

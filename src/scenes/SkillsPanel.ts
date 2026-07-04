@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { addBackdrop, addCloseButton } from '../ui/panelInput';
 import { SKILLS } from '../config/skills';
 import { GameState } from '../core/GameState';
+import { AdService } from '../services/monetization/AdService';
 import { audio } from '../services/AudioService';
 import { THEME } from '../ui/theme';
 
@@ -21,7 +22,9 @@ function clock(seconds: number): string {
 /** Active hero skills: cast timed buffs, watch their cooldowns tick. */
 export class SkillsPanel extends Phaser.Scene {
   private gs!: GameState;
+  private ads!: AdService;
   private rows!: Phaser.GameObjects.Container;
+  private adBusy = false;
 
   constructor() {
     super('Skills');
@@ -29,6 +32,7 @@ export class SkillsPanel extends Phaser.Scene {
 
   create(): void {
     this.gs = this.registry.get('gs') as GameState;
+    this.ads = this.registry.get('ads') as AdService;
 
     addBackdrop(
       this,
@@ -107,15 +111,34 @@ export class SkillsPanel extends Phaser.Scene {
         )
         .setTint(activeLeft > 0 ? 0xc9961e : 0x8a5a2e);
 
+      // Free cast when off cooldown; an ad casts early while cooling
+      const adCast = !ready && cooldownLeft > 0 && this.gs.canAdCastSkill(def.id);
       const btn = this.add
         .image(PANEL_X + PANEL_W - 52, y, 'btn-sm')
-        .setTint(ready ? 0xb03a2e : THEME.buttonBgDisabled);
+        .setTint(ready ? 0xb03a2e : adCast ? 0x2884a8 : THEME.buttonBgDisabled);
       const lbl = this.add
-        .bitmapText(PANEL_X + PANEL_W - 52, y, 'pix', 'CAST', 8)
+        .bitmapText(
+          PANEL_X + PANEL_W - 52,
+          y,
+          'pix',
+          ready ? 'CAST' : adCast ? 'AD CAST' : 'CAST',
+          8,
+        )
         .setOrigin(0.5);
       if (ready) {
         btn.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
           if (this.gs.castSkill(def.id)) audio.stageUp();
+        });
+      } else if (adCast) {
+        btn.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
+          if (this.adBusy) return;
+          this.adBusy = true;
+          void this.ads.showRewarded('skill_cast').then((result) => {
+            this.adBusy = false;
+            if (!result.rewarded) return;
+            this.gs.trackQuest('ads');
+            if (this.gs.castSkill(def.id, true)) audio.stageUp();
+          });
         });
       }
       row.add([bg, name, desc, status, btn, lbl]);

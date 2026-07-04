@@ -1,5 +1,8 @@
+import { AchievementDef, ACHIEVEMENTS, achievementById } from '../config/achievements';
 import { BOOSTS, ECONOMY } from '../config/economy';
 import { FAIRY, fairyLevelCost } from '../config/fairy';
+import { GiftDef } from '../config/gifts';
+import { LOGIN_REWARDS, LoginReward } from '../config/loginRewards';
 import {
   FREE_CHEST,
   gemPackBySku,
@@ -79,6 +82,7 @@ export interface GameEvents {
   'shop:changed': undefined;
   'skills:changed': undefined;
   'fairy:changed': number;
+  'login:changed': undefined;
 }
 
 /** Sim-time seconds left on a skill's buff and cooldown. */
@@ -165,6 +169,10 @@ export interface SerializedState {
   fairyLevel: number;
   dmgBoostUntil: number;
   speedBoostUntil: number;
+  loginStreakDay: number;
+  lastLoginClaimDay: string;
+  totalMerges: number;
+  achievementsClaimed: string[];
   daily: DailyState;
   weekly: PeriodQuestState;
   monthly: PeriodQuestState;
@@ -220,6 +228,14 @@ export class GameState {
   /** Rewarded-ad boosts: epoch ms the x2 damage / x2 speed windows end. */
   dmgBoostUntil = 0;
   speedBoostUntil = 0;
+  /** Login calendar: how many days of the 7-day cycle are claimed (0-7,
+   * wraps), and the UTC day of the last claim (one per day). */
+  loginStreakDay = 0;
+  lastLoginClaimDay = '';
+  /** Lifetime merge count (achievements; quests use per-period sheets). */
+  totalMerges = 0;
+  /** Achievement ids already claimed. */
+  achievementsClaimed: string[] = [];
   daily: DailyState = freshDaily(utcDay(0));
   weekly: PeriodQuestState = freshPeriod('');
   monthly: PeriodQuestState = freshPeriod('');
@@ -256,24 +272,6 @@ export class GameState {
       (this.dmgBoostActive() ? BOOSTS.dmgMult : 1) *
       (1 + this.soulLevel('might') * 0.1)
     );
-  }
-
-  // ---- Rewarded-ad boosts ----
-
-  dmgBoostActive(now: number = Date.now()): boolean {
-    return now < this.dmgBoostUntil;
-  }
-
-  speedBoostActive(now: number = Date.now()): boolean {
-    return now < this.speedBoostUntil;
-  }
-
-  activateDmgBoost(now: number = Date.now()): void {
-    this.dmgBoostUntil = now + BOOSTS.adMinutes * 60_000;
-  }
-
-  activateSpeedBoost(now: number = Date.now()): void {
-    this.speedBoostUntil = now + BOOSTS.adMinutes * 60_000;
   }
 
   /** Gold income multiplier from Soul Relics, skill buffs and the fairy. */
@@ -463,6 +461,7 @@ export class GameState {
     const newTier = merge(this.grid, from, to, this.unlockedCells);
     if (newTier === null) return null;
     this.highestTier = Math.max(this.highestTier, newTier);
+    this.totalMerges += 1;
     this.trackQuest('merges');
     this.emit('gear:merged', { index: to, tier: newTier });
     this.emit('grid:changed', this.grid);
@@ -748,14 +747,19 @@ export class GameState {
   }
 
   canCastSkill(id: string): boolean {
+    return this.canAdCastSkill(id) && this.skillCooldownLeft(id) <= 0;
+  }
+
+  /** A rewarded ad casts during cooldown; only the hard guards remain. */
+  canAdCastSkill(id: string): boolean {
     const def = skillDefById(id);
-    if (!def || !this.skillUnlocked(id) || this.skillCooldownLeft(id) > 0) return false;
+    if (!def || !this.skillUnlocked(id) || this.skillActiveLeft(id) > 0) return false;
     if (def.warpSeconds && this.raid) return false; // no warping the raid timer
     return true;
   }
 
-  castSkill(id: string): boolean {
-    if (!this.canCastSkill(id)) return false;
+  castSkill(id: string, viaAd = false): boolean {
+    if (viaAd ? !this.canAdCastSkill(id) : !this.canCastSkill(id)) return false;
     const def = skillDefById(id)!;
     this.skillTimers[id] = { active: def.durationSeconds, cooldown: def.cooldownSeconds };
     this.emit('skills:changed', undefined);
@@ -871,6 +875,76 @@ export class GameState {
     return false;
   }
 
+  // ---- Boosts + gifts ----
+
+  dmgBoostActive(now: number = Date.now()): boolean {
+    return now < this.dmgBoostUntil;
+  }
+
+  speedBoostActive(now: number = Date.now()): boolean {
+    return now < this.speedBoostUntil;
+  }
+
+  activateDmgBoost(now: number = Date.now(), minutes: number = BOOSTS.adMinutes): void {
+    this.dmgBoostUntil = Math.max(this.dmgBoostUntil, now + minutes * 60_000);
+  }
+
+  activateSpeedBoost(now: number = Date.now(), minutes: number = BOOSTS.adMinutes): void {
+    this.speedBoostUntil = Math.max(this.speedBoostUntil, now + minutes * 60_000);
+  }
+
+  /** Apply a rolled gift prize. Returns a human-readable summary. */
+  grantGift(gift: GiftDef, now: number = Date.now()): string {
+    switch (gift.kind) {
+      case 'gold': {
+        const gold = Math.max(50, Math.floor(this.goldPerSecondEstimate * (gift.minutes ?? 10) * 60));
+        this.addGold(gold);
+        return 'A PILE OF GOLD!';
+      }
+      case 'gems':
+        this.addGems(gift.gems ?? 5);
+        return `+${gift.gems ?? 5} GEMS!`;
+      case 'dmg_boost':
+        this.activateDmgBoost(now, gift.minutes ?? 10);
+        return `X2 DAMAGE FOR ${gift.minutes ?? 10} MIN!`;
+      case 'speed_boost':
+        this.activateSpeedBoost(now, gift.minutes ?? 10);
+        return `X2 SPEED FOR ${gift.minutes ?? 10} MIN!`;
+    }
+  }
+
+  // ---- Daily login rewards ----
+
+  /** The reward on offer today (next unclaimed day in the 7-day cycle). */
+  get todaysLoginReward(): LoginReward {
+    return LOGIN_REWARDS[this.loginStreakDay % LOGIN_REWARDS.length];
+  }
+
+  loginRewardReady(now: number = Date.now()): boolean {
+    return this.lastLoginClaimDay !== utcDay(now);
+  }
+
+  /** Claim today's reward; the cycle pauses (not resets) on missed days. */
+  claimLoginReward(now: number = Date.now()): LoginReward | null {
+    if (!this.loginRewardReady(now)) return null;
+    const reward = this.todaysLoginReward;
+    this.lastLoginClaimDay = utcDay(now);
+    this.loginStreakDay = (this.loginStreakDay + 1) % LOGIN_REWARDS.length;
+    if (reward.goldMinutes) {
+      this.addGold(Math.max(50, Math.floor(this.goldPerSecondEstimate * reward.goldMinutes * 60)));
+    }
+    if (reward.gems) this.addGems(reward.gems);
+    if (reward.goldEgg) {
+      // A free hatch, no gold spent: same roll table as the gold egg
+      const pet = rollPet(Math.random(), eggPool('gold'));
+      if (this.petLevel(pet.id) >= PET_MAX_LEVEL) this.addGems(PET_DUP_GEMS);
+      else this.pets[pet.id] = this.petLevel(pet.id) + 1;
+      this.emit('pets:changed', this.pets);
+    }
+    this.emit('login:changed', undefined);
+    return reward;
+  }
+
   // ---- Quests (daily / weekly / monthly) ----
 
   /** The progress/claimed sheet for a period. */
@@ -930,7 +1004,7 @@ export class GameState {
     return this.questSheet(period).claimed.includes(id);
   }
 
-  /** Finished-but-unclaimed quests across every sheet — the badge number. */
+  /** Finished-but-unclaimed quests AND achievements — the badge number. */
   get claimableQuests(): number {
     let n = 0;
     for (const period of ['daily', 'weekly', 'monthly'] as QuestPeriod[]) {
@@ -938,7 +1012,54 @@ export class GameState {
         if (this.canClaimQuest(quest.id, period)) n += 1;
       }
     }
+    for (const a of ACHIEVEMENTS) {
+      if (this.canClaimAchievement(a.id)) n += 1;
+    }
     return n;
+  }
+
+  // ---- Achievements ----
+
+  achievementProgress(def: AchievementDef): number {
+    switch (def.metric) {
+      case 'kills':
+        return this.totalKills;
+      case 'merges':
+        return this.totalMerges;
+      case 'stage':
+        return this.highestStage;
+      case 'tier':
+        return this.highestTier;
+      case 'skins':
+        return this.ownedSkins.length;
+      case 'pets':
+        return Object.keys(this.pets).length;
+      case 'fairy':
+        return this.fairyLevel;
+      case 'prestiges':
+        return this.prestigeCount;
+      case 'raids':
+        return this.raidHighest;
+      case 'gold':
+        return this.totalGoldEarned;
+    }
+  }
+
+  canClaimAchievement(id: string): boolean {
+    const def = achievementById(id);
+    return (
+      def !== undefined &&
+      !this.achievementsClaimed.includes(id) &&
+      this.achievementProgress(def) >= def.target
+    );
+  }
+
+  claimAchievement(id: string): boolean {
+    if (!this.canClaimAchievement(id)) return false;
+    this.achievementsClaimed.push(id);
+    this.addGems(achievementById(id)!.gems);
+    this.emit('quests:changed', undefined); // shares the badge/panel refresh
+    return true;
   }
 
   canClaimQuest(id: QuestMetric, period: QuestPeriod = 'daily'): boolean {
@@ -1059,6 +1180,10 @@ export class GameState {
       fairyLevel: this.fairyLevel,
       dmgBoostUntil: this.dmgBoostUntil,
       speedBoostUntil: this.speedBoostUntil,
+      loginStreakDay: this.loginStreakDay,
+      lastLoginClaimDay: this.lastLoginClaimDay,
+      totalMerges: this.totalMerges,
+      achievementsClaimed: [...this.achievementsClaimed],
       daily: {
         ...this.daily,
         progress: { ...this.daily.progress },
@@ -1109,6 +1234,10 @@ export class GameState {
     gs.fairyLevel = data.fairyLevel;
     gs.dmgBoostUntil = data.dmgBoostUntil;
     gs.speedBoostUntil = data.speedBoostUntil;
+    gs.loginStreakDay = data.loginStreakDay;
+    gs.lastLoginClaimDay = data.lastLoginClaimDay;
+    gs.totalMerges = data.totalMerges;
+    gs.achievementsClaimed = [...data.achievementsClaimed];
     gs.daily = {
       ...data.daily,
       progress: { ...data.daily.progress },

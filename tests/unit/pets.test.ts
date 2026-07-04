@@ -92,12 +92,15 @@ describe('pet bonuses', () => {
     expect(gs.heroDps).toBeCloseTo(base * (1 + 2 * PETS[0].dpsPerLevel));
   });
 
-  it('arena squad is the top pets by level, capped at the slot count', () => {
+  it('every hatched pet fights in the arena, highest level first', () => {
     const gs = new GameState();
     expect(gs.activePets).toEqual([]);
     gs.pets = { pup: 1, emberbat: 3, wisp: 2, pebble: 5, drake: 4 };
-    expect(gs.activePets).toEqual(['pebble', 'drake', 'emberbat']);
+    expect(gs.activePets).toEqual(['pebble', 'drake', 'emberbat', 'wisp', 'pup']);
     expect(gs.activePets).toHaveLength(ACTIVE_PET_SLOTS);
+    // Partial rosters show only what's hatched
+    gs.pets = { wisp: 2 };
+    expect(gs.activePets).toEqual(['wisp']);
   });
 
   it('pets survive a serialize round-trip', () => {

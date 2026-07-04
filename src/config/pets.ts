@@ -25,8 +25,8 @@ export const PETS: PetDef[] = [
 export const PET_MAX_LEVEL = 10;
 /** Consolation gems when an egg hatches a pet already at max level. */
 export const PET_DUP_GEMS = 3;
-/** How many pets fight beside the hero in the arena. */
-export const ACTIVE_PET_SLOTS = 3;
+/** How many pets fight beside the hero in the arena (the full roster). */
+export const ACTIVE_PET_SLOTS = 5;
 
 export const EGGS = {
   /** Gold egg price escalates with every gold egg bought (account-lifetime). */

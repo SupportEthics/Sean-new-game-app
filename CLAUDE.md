@@ -23,9 +23,17 @@ level-up, top 3 fight in the arena), shop (4 gem packs, $0.99 starter pack,
 $4.99 remove-ads, piggy bank cracked via IAP, free ad chest), interstitial
 ad breaks (core/Interstitials.ts policy, disabled by remove_ads), 4 active
 skills (Whirlwind/Gold Rush/Time Warp/Battle Fury on sim-time cooldowns),
-fairy companion (stage 10, gold-levelled +DPS/+gold). Playable core loop in
+fairy companion (stage 10, gold-levelled +DPS/+gold), first-run tutorial
+(core/Tutorial.ts + UIScene overlay, localStorage-flagged, e2e suites
+pre-set pawsblades_tutorial_done), 7-day login rewards (popup, cycle
+pauses on missed days), floating ad-gift parcels (config/gifts.ts),
+achievements (AWARDS tab in QuestsPanel, lifetime counters incl.
+totalMerges), procedural chiptune music loop (AudioService.startMusic on
+first gesture), x2 dmg/speed ad boosts, sword sell bin (30% refund, never
+equipped), all 5 pets fight in the arena, skills on long cooldowns with
+AD CAST. Playable core loop in
 browser, hi-detail pixel art, 25 hero skins incl. 5 premium IAP behind a
-web-mock IapService, save v13. M5 Capacitor wrap done: android/ + ios/
+web-mock IapService, save v15. M5 Capacitor wrap done: android/ + ios/
 native projects (appId uk.co.supportethics.soulforgeknight), service
 factory picks AdMobAd/RevenueCatIap on native (Google test ad units;
 RevenueCat dormant until real keys land in src/config/native.ts) vs web

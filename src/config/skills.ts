@@ -1,4 +1,5 @@
-// Active hero skills — data only. Timed buffs on cooldowns, cast from the
+// Active hero skills — data only. Timed buffs on LONG cooldowns (a
+// rewarded ad casts a skill early), cast from the
 // SKILLS tab. Timers run on sim time (they tick with battle, pause with it,
 // and fast-forward with offline warp), so everything stays unit-testable.
 
@@ -25,7 +26,7 @@ export const SKILLS: SkillDef[] = [
     desc: 'X3 DPS FOR 12S',
     unlockStage: 3,
     durationSeconds: 12,
-    cooldownSeconds: 60,
+    cooldownSeconds: 300,
     dpsMult: 3,
   },
   {
@@ -34,7 +35,7 @@ export const SKILLS: SkillDef[] = [
     desc: 'X3 GOLD FOR 15S',
     unlockStage: 8,
     durationSeconds: 15,
-    cooldownSeconds: 90,
+    cooldownSeconds: 420,
     goldMult: 3,
   },
   {
@@ -43,7 +44,7 @@ export const SKILLS: SkillDef[] = [
     desc: 'BATTLE 30S INSTANTLY',
     unlockStage: 14,
     durationSeconds: 0,
-    cooldownSeconds: 120,
+    cooldownSeconds: 600,
     warpSeconds: 30,
   },
   {
@@ -52,7 +53,7 @@ export const SKILLS: SkillDef[] = [
     desc: 'X2 DPS AND X2 GOLD FOR 20S',
     unlockStage: 20,
     durationSeconds: 20,
-    cooldownSeconds: 150,
+    cooldownSeconds: 720,
     dpsMult: 2,
     goldMult: 2,
   },

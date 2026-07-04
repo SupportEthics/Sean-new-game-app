@@ -30,6 +30,27 @@ describe('skill gating', () => {
     gs.update(WHIRLWIND.cooldownSeconds + 1);
     expect(gs.canCastSkill('whirlwind')).toBe(true);
   });
+
+  it('a rewarded ad casts during cooldown but never during the buff', () => {
+    const gs = unlockedState();
+    expect(gs.castSkill('whirlwind')).toBe(true);
+    // Buff still running: even an ad can't stack it
+    expect(gs.canAdCastSkill('whirlwind')).toBe(false);
+    expect(gs.castSkill('whirlwind', true)).toBe(false);
+    // Buff over, cooldown still ticking: free cast blocked, ad cast allowed
+    gs.update(WHIRLWIND.durationSeconds + 1);
+    expect(gs.canCastSkill('whirlwind')).toBe(false);
+    expect(gs.canAdCastSkill('whirlwind')).toBe(true);
+    expect(gs.castSkill('whirlwind', true)).toBe(true);
+    expect(gs.skillActiveLeft('whirlwind')).toBeGreaterThan(0);
+  });
+
+  it('ad cast still respects the raid guard for time warp', () => {
+    const gs = unlockedState();
+    gs.prestigeCount = 1;
+    gs.startRaid(1, 0);
+    expect(gs.castSkill('warp', true)).toBe(false);
+  });
 });
 
 describe('skill effects', () => {

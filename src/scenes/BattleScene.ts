@@ -1,11 +1,13 @@
 import Phaser from 'phaser';
 import { GEAR } from '../config/gear';
+import { GIFTS, rollGift } from '../config/gifts';
 import { RAIDS } from '../config/raids';
 import { skinById } from '../config/skins';
 import { ENEMY_SPECIES, STAGES } from '../config/stages';
 import { isBossWave } from '../core/BattleSim';
 import { formatNumber } from '../core/EconomyMath';
 import { GameState } from '../core/GameState';
+import { AdService } from '../services/monetization/AdService';
 import { audio } from '../services/AudioService';
 import { THEME } from '../ui/theme';
 
@@ -24,6 +26,10 @@ export class BattleScene extends Phaser.Scene {
   private petSprites: Phaser.GameObjects.Sprite[] = [];
   private petShadows: Phaser.GameObjects.Image[] = [];
   private fairySprite: Phaser.GameObjects.Sprite | null = null;
+  private ads!: AdService;
+  private giftSprite: Phaser.GameObjects.Sprite | null = null;
+  private giftBusy = false;
+  private reduceMotion = false;
   private blades: { img: Phaser.GameObjects.Image; glow: Phaser.GameObjects.Image }[] = [];
   private slotIcons: Phaser.GameObjects.Image[] = [];
   private slotLocks: Phaser.GameObjects.BitmapText[] = [];
@@ -48,11 +54,14 @@ export class BattleScene extends Phaser.Scene {
   private readonly heroY = 252;
   private readonly enemyX = 268;
   private readonly enemyY = 252;
-  /** Reserved staging spots for M3 pets/companions — keep clear of props. */
+  /** Staging spots for the pet squad — clear of the MENU button (top-left),
+   * hero + blade orbit, and the boost buttons on the right edge. */
   static readonly PET_SLOTS = [
     { x: 62, y: 296 },
     { x: 108, y: 318 },
     { x: 56, y: 224 },
+    { x: 154, y: 308 },
+    { x: 22, y: 258 },
   ];
 
   constructor() {
@@ -61,6 +70,12 @@ export class BattleScene extends Phaser.Scene {
 
   create(): void {
     this.gs = this.registry.get('gs') as GameState;
+    this.ads = this.registry.get('ads') as AdService;
+    try {
+      this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch {
+      this.reduceMotion = false;
+    }
 
     this.buildArena();
     this.decoLayer = this.add.group();
@@ -107,6 +122,7 @@ export class BattleScene extends Phaser.Scene {
     this.syncPets();
     this.syncFairy();
     this.syncWave(true);
+    this.scheduleGift();
   }
 
   override update(_time: number, delta: number): void {
@@ -274,6 +290,60 @@ export class BattleScene extends Phaser.Scene {
       yoyo: true,
       repeat: -1,
       ease: 'Sine.inOut',
+    });
+  }
+
+  // ---- Floating gift event ----
+
+  /** Every few minutes a parcel drifts across the arena; tapping it plays
+   * a rewarded ad for a random prize. */
+  private scheduleGift(): void {
+    const { min, max } = GIFTS.intervalMinutes;
+    const delay = (min + Math.random() * (max - min)) * 60_000;
+    this.time.delayedCall(delay, () => {
+      this.spawnGift();
+      this.scheduleGift();
+    });
+  }
+
+  private spawnGift(): void {
+    if (this.giftSprite || this.gs.raid) return;
+    const fromLeft = Math.random() < 0.5;
+    const y = 150 + Math.random() * 60;
+    const startX = fromLeft ? -16 : THEME.width + 16;
+    const endX = fromLeft ? THEME.width + 16 : -16;
+    const gift = this.add
+      .sprite(startX, y, 'gift')
+      .play('gift-idle')
+      .setDepth(25)
+      .setInteractive({ useHandCursor: true });
+    this.giftSprite = gift;
+
+    const drift = this.tweens.add({
+      targets: gift,
+      x: endX,
+      duration: GIFTS.lifetimeSeconds * 1000,
+      onComplete: () => {
+        gift.destroy();
+        if (this.giftSprite === gift) this.giftSprite = null;
+      },
+    });
+    this.tweens.add({ targets: gift, y: y - 10, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
+
+    gift.on('pointerdown', () => {
+      if (this.giftBusy) return;
+      this.giftBusy = true;
+      drift.pause();
+      void this.ads.showRewarded('gift').then((result) => {
+        this.giftBusy = false;
+        gift.destroy();
+        if (this.giftSprite === gift) this.giftSprite = null;
+        if (!result.rewarded) return;
+        this.gs.trackQuest('ads');
+        const summary = this.gs.grantGift(rollGift(Math.random()));
+        audio.coin();
+        this.events.emit('toast', summary);
+      });
     });
   }
 
@@ -552,7 +622,10 @@ export class BattleScene extends Phaser.Scene {
 
   private onStageCleared(): void {
     audio.stageUp();
-    this.cameras.main.shake(180, 0.006);
+    // Boss death flash + a solid screen kick (skipped for reduced motion)
+    this.enemy.setTintFill(0xffffff);
+    this.time.delayedCall(90, () => this.enemy.clearTint());
+    if (!this.reduceMotion) this.cameras.main.shake(220, 0.008);
     const banner = this.add
       .text(THEME.width / 2, L.arenaTop + 120, `Stage ${this.gs.battle.stage}!`, {
         fontFamily: THEME.fontFamily,

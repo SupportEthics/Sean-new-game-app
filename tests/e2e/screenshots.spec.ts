@@ -16,6 +16,8 @@ declare global {
 }
 
 test.beforeEach(async ({ page }) => {
+  // Pre-mark the tutorial as done so suites test the normal UI
+  await page.addInitScript(() => localStorage.setItem('pawsblades_tutorial_done', '1'));
   await page.goto('/');
   await page.waitForFunction(
     () => (window as unknown as { __titleReady?: boolean }).__titleReady === true,
@@ -195,6 +197,61 @@ test('quests panel weekly tab', async ({ page }) => {
   await page.mouse.click(195, 212); // WEEKLY tab
   await page.waitForTimeout(400);
   await page.screenshot({ path: 'screenshots/13-quests-weekly.png' });
+});
+
+test('daily login popup', async ({ page }) => {
+  await page.evaluate(() =>
+    (window.__game as unknown as { openLogin(): void }).openLogin(),
+  );
+  await page.waitForFunction(
+    () => (window as unknown as { __loginOpen?: boolean }).__loginOpen === true,
+  );
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: 'screenshots/19-login.png' });
+});
+
+test('awards tab with claimable achievement', async ({ page }) => {
+  await page.evaluate(() => {
+    const g = window.__game as unknown as {
+      gs: { totalKills: number; totalMerges: number };
+      openQuests(): void;
+    };
+    g.gs.totalKills = 1200;
+    g.gs.totalMerges = 150;
+    g.openQuests();
+  });
+  await page.waitForFunction(
+    () => (window as unknown as { __questsOpen?: boolean }).__questsOpen === true,
+  );
+  await page.waitForTimeout(400);
+  await page.mouse.click(327, 212); // AWARDS tab
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: 'screenshots/20-awards.png' });
+});
+
+test('gift parcel drifting through the arena', async ({ page }) => {
+  await page.evaluate(() =>
+    (window.__game as unknown as { spawnGift(): void }).spawnGift(),
+  );
+  await page.waitForTimeout(2500); // mid-drift
+  await page.screenshot({ path: 'screenshots/21-gift.png' });
+});
+
+test('all five pets in the arena', async ({ page }) => {
+  await page.evaluate(() => {
+    const g = window.__game as unknown as {
+      gs: {
+        pets: Record<string, number>;
+        gold: number;
+        hatchEgg(kind: string, roll?: number): unknown;
+      };
+    };
+    g.gs.gold = 1e9;
+    g.gs.pets = { emberbat: 2, wisp: 1, pebble: 3, drake: 1 };
+    g.gs.hatchEgg('gold', 0); // pup — fires pets:changed with all five
+  });
+  await page.waitForTimeout(1200);
+  await page.screenshot({ path: 'screenshots/22-five-pets.png' });
 });
 
 test('twilight biome at stage 12', async ({ page }) => {

@@ -112,6 +112,11 @@ async function boot(): Promise<void> {
       openShop: () => game.scene.getScene('UI')?.scene.launch('Shop'),
       openSkills: () => game.scene.getScene('UI')?.scene.launch('Skills'),
       openFairy: () => game.scene.getScene('UI')?.scene.launch('Fairy'),
+    spawnGift: () => (game.scene.getScene('Battle') as unknown as { spawnGift(): void }).spawnGift(),
+    openLogin: () => {
+      gs.lastLoginClaimDay = '';
+      (game.scene.getScene('UI') as unknown as { maybeShowLogin(force: boolean): void }).maybeShowLogin(true);
+    },
       hatch: (kind: 'gold' | 'gem' | 'free', roll?: number) => gs.hatchEgg(kind, roll),
       addSouls: (n: number) => { gs.souls += n; },
       prestige: () => gs.prestige(),

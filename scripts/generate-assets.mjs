@@ -403,6 +403,27 @@ function fairy(frame) {
   return out;
 }
 
+// ---------- Gift (20x20 logical, drifting rewarded-ad parcel) ----------
+
+function gift(frame) {
+  const p = new Pix(20, 20);
+  const bob = frame === 1 ? 1 : 0;
+  // Parcel body with shaded sides
+  p.cylRect(3, 7 + bob, 14, 10, ['#d0685c', '#b03a2e', '#7a2418']);
+  // Lid
+  p.rect(2, 5 + bob, 16, 3, '#c2482e');
+  p.rect(2, 5 + bob, 16, 1, '#e0705c');
+  // Gold ribbon, vertical + bow
+  p.rect(9, 4 + bob, 3, 13, '#ffd166');
+  p.rect(9, 4 + bob, 1, 13, '#ffe8a0');
+  p.tri(6, 2 + bob, 10, 5 + bob, 6, 6 + bob, '#c99a2e');
+  p.tri(14, 2 + bob, 10, 5 + bob, 14, 6 + bob, '#c99a2e');
+  p.set(10, 4 + bob, '#ffe8a0'); // knot glint
+  const out = finish(p);
+  out.halo('#ffd16666');
+  return out;
+}
+
 // ---------- Weapons (24x28 logical, 12 designs; high tiers glow) ----------
 
 const WEAPONS = [
@@ -807,6 +828,7 @@ writeSheet(`${OUT}/pet-wisp.png`, [petWisp(0), petWisp(1)], 1);
 writeSheet(`${OUT}/pet-pebble.png`, [petPebble(0), petPebble(1)], 1);
 writeSheet(`${OUT}/pet-drake.png`, [petDrake(0), petDrake(1)], 1);
 writeSheet(`${OUT}/fairy.png`, [fairy(0), fairy(1)], 1);
+writeSheet(`${OUT}/gift.png`, [gift(0), gift(1)], 1);
 writeSheet(`${OUT}/gear.png`, WEAPONS.map(weapon), 2);
 writeSheet(
   `${OUT}/deco.png`,

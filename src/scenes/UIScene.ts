@@ -4,6 +4,8 @@ import { GEAR, tierName } from '../config/gear';
 import { formatNumber, gearDps } from '../core/EconomyMath';
 import { GameState } from '../core/GameState';
 import { InterstitialPolicy } from '../core/Interstitials';
+import { Tutorial, TutorialStep } from '../core/Tutorial';
+import { LOGIN_REWARDS } from '../config/loginRewards';
 import { formatDuration } from '../core/OfflineEarnings';
 import { SaveManager } from '../core/SaveManager';
 import { AdPlacement, AdService } from '../services/monetization/AdService';
@@ -58,8 +60,9 @@ export class UIScene extends Phaser.Scene {
   private menuBadge!: Phaser.GameObjects.BitmapText;
   private bin!: Phaser.GameObjects.Container;
   private binLabel!: Phaser.GameObjects.BitmapText;
-  private questBadge!: Phaser.GameObjects.Container;
-  private questBadgeText!: Phaser.GameObjects.BitmapText;
+  private refreshQuestBadge: () => void = () => {};
+  private tutorial!: Tutorial;
+  private tutorialLayer: Phaser.GameObjects.Container | null = null;
   private boostLabels: { label: Phaser.GameObjects.BitmapText; until: () => number; idle: string }[] = [];
   private readonly binBounds = new Phaser.Geom.Rectangle(
     THEME.width - 70,
@@ -136,6 +139,18 @@ export class UIScene extends Phaser.Scene {
     this.createBoostButtons();
     this.createBin();
     this.maybeShowOffline();
+
+    // First-run tutorial: pointers over the real UI, never input-blocking
+    this.tutorial = new Tutorial(this.gs, this.prefTime('tutorial_done') > 0);
+    this.tutorial.onChange((step) => {
+      if (step === 'done') this.setPrefTime('tutorial_done', 1);
+      this.renderTutorial(step);
+    });
+    this.renderTutorial(this.tutorial.currentStep);
+    this.time.delayedCall(800, () => this.maybeShowLogin());
+
+    // The battle scene surfaces its messages (gift prizes) through our toast
+    this.scene.get('Battle').events.on('toast', (msg: string) => this.toast(msg));
 
     if (import.meta.env.DEV) {
       (window as unknown as { __uiReady?: boolean }).__uiReady = true;
@@ -390,15 +405,23 @@ export class UIScene extends Phaser.Scene {
       .setOrigin(0.5, 0)
       .setDepth(32)
       .setVisible(false);
-    // Red counter for finished-but-unclaimed quests
-    this.questBadge = this.makeCountBadge(bx + 20, ty - 20, 32);
-    const refreshQuestBadge = (): void => {
+    // Red counters for finished-but-unclaimed quests/awards: one on the
+    // MENU toggle, and a twin on the QUESTS button so an open menu shows
+    // exactly where the notification lives
+    const toggleBadge = this.makeCountBadge(bx + 20, ty - 20, 32);
+    const questsBadge = this.makeCountBadge(bx + 20, ty + 174 - 20, 32);
+    this.sideMenu.add(questsBadge.container);
+    this.refreshQuestBadge = (): void => {
       const n = this.gs.claimableQuests;
-      this.questBadge.setVisible(n > 0);
-      this.questBadgeText.setText(String(Math.min(n, 9)));
+      const label = String(Math.min(n, 9));
+      // While the menu is open, only the QUESTS button wears the badge
+      toggleBadge.container.setVisible(n > 0 && !this.menuOpen);
+      toggleBadge.text.setText(label);
+      questsBadge.container.setVisible(n > 0);
+      questsBadge.text.setText(label);
     };
-    this.gs.on('quests:changed', refreshQuestBadge);
-    refreshQuestBadge();
+    this.gs.on('quests:changed', this.refreshQuestBadge);
+    this.refreshQuestBadge();
     this.add
       .rectangle(bx, ty, 48, 48, 0xffffff, 0.001)
       .setDepth(31)
@@ -411,23 +434,25 @@ export class UIScene extends Phaser.Scene {
     this.menuOpen = open;
     this.sideMenu.setVisible(open);
     this.menuLabel.setText(open ? 'CLOSE' : 'MENU');
+    this.refreshQuestBadge();
     audio.buy();
   }
 
-  /** Small red circle with a count, used for the quest badge. */
-  private makeCountBadge(x: number, y: number, depth: number): Phaser.GameObjects.Container {
-    const c = this.add.container(0, 0).setDepth(depth).setVisible(false);
+  /** Small red circle with a count (quest/achievement notifications). */
+  private makeCountBadge(
+    x: number,
+    y: number,
+    depth: number,
+  ): { container: Phaser.GameObjects.Container; text: Phaser.GameObjects.BitmapText } {
+    const container = this.add.container(0, 0).setDepth(depth).setVisible(false);
     const circle = this.add.graphics();
     circle.fillStyle(0xd82e2e);
     circle.fillCircle(x, y, 9);
     circle.lineStyle(1, 0x14101c);
     circle.strokeCircle(x, y, 9);
-    this.questBadgeText = this.add
-      .bitmapText(x, y, 'pix', '', 8)
-      .setTint(0xffffff)
-      .setOrigin(0.5);
-    c.add([circle, this.questBadgeText]);
-    return c;
+    const text = this.add.bitmapText(x, y, 'pix', '', 8).setTint(0xffffff).setOrigin(0.5);
+    container.add([circle, text]);
+    return { container, text };
   }
 
   /** X2 DMG / X2 SPEED: rewarded-ad boosts on the arena's right edge. */
@@ -501,6 +526,83 @@ export class UIScene extends Phaser.Scene {
     }
   }
 
+  /** One tutorial step at a time: a banner with the instruction and a
+   * pulsing arrow at the thing to tap. Everything stays interactive. */
+  private renderTutorial(step: TutorialStep): void {
+    if (import.meta.env.DEV) {
+      (window as unknown as { __tutorialStep?: string }).__tutorialStep = step;
+    }
+    this.tutorialLayer?.destroy();
+    this.tutorialLayer = null;
+    if (step === 'done') return;
+
+    const layer = this.add.container(0, 0).setDepth(1500);
+    this.tutorialLayer = layer;
+
+    const texts: Record<Exclude<TutorialStep, 'done'>, string> = {
+      buy: 'TAP BUY TO FORGE A SWORD',
+      merge: 'BUY ANOTHER - DRAG ONE ONTO THE OTHER',
+      equip: 'YOUR BEST SWORDS NOW FIGHT FOR YOU!',
+    };
+    const bannerY = 366;
+    const bg = this.add
+      .rectangle(THEME.width / 2, bannerY, THEME.width - 16, 40, 0x14101c, 0.88)
+      .setStrokeStyle(2, 0xffd166);
+    const msg = this.add
+      .bitmapText(16, bannerY, 'pix', texts[step], 8)
+      .setOrigin(0, 0.5)
+      .setTint(0xffd166);
+    const action = this.add
+      .bitmapText(THEME.width - 20, bannerY, 'pix', step === 'equip' ? 'GOT IT' : 'SKIP', 8)
+      .setOrigin(1, 0.5)
+      .setTint(step === 'equip' ? 0x6fae4e : 0x9a8d6e);
+    const actionHit = this.add
+      .rectangle(THEME.width - 44, bannerY, 72, 44, 0xffffff, 0.001)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', () =>
+        step === 'equip' ? this.tutorial.acknowledgeEquip() : this.tutorial.skip(),
+      );
+    layer.add([bg, msg, action, actionHit]);
+
+    // Pulsing arrow at the step's target
+    let ax = 247;
+    let ay = 722; // buy: points down at the BUY button
+    let up = false;
+    if (step === 'merge') {
+      const c = this.cellCenters[1];
+      ax = c.x;
+      ay = c.y - 42;
+    }
+    if (step === 'equip') {
+      ax = 150;
+      ay = L.arenaTop + 50; // points up at the wall sockets
+      up = true;
+    }
+    const arrow = this.add.graphics();
+    arrow.fillStyle(0xffd166);
+    arrow.lineStyle(2, 0x14101c);
+    if (up) {
+      arrow.fillTriangle(ax - 10, ay + 14, ax + 10, ay + 14, ax, ay);
+      arrow.strokeTriangle(ax - 10, ay + 14, ax + 10, ay + 14, ax, ay);
+    } else {
+      arrow.fillTriangle(ax - 10, ay, ax + 10, ay, ax, ay + 14);
+      arrow.strokeTriangle(ax - 10, ay, ax + 10, ay, ax, ay + 14);
+    }
+    layer.add(arrow);
+    this.tweens.add({
+      targets: arrow,
+      y: up ? -6 : 6,
+      duration: 420,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.inOut',
+    });
+    // The equip step is informational; move on by itself after a while
+    if (step === 'equip') {
+      this.time.delayedCall(7000, () => this.tutorial.acknowledgeEquip());
+    }
+  }
+
   /** The sword bin: appears while dragging a sellable sword; dropping the
    * sword on it refunds a slice of its price in gold. */
   private createBin(): void {
@@ -570,6 +672,87 @@ export class UIScene extends Phaser.Scene {
   }
 
   /** Welcome-back popup: collect offline gold, or double it with an ad. */
+  /** Daily login calendar: pops once per UTC day, after any offline popup
+   * and never over the tutorial. */
+  private maybeShowLogin(force = false): void {
+    if (!this.gs.loginRewardReady()) return;
+    // Not on the very first play session — let new players just play
+    if (!force && this.gs.totalKills < 100) return;
+    if (this.confirmLayer || this.tutorial.active) {
+      this.time.delayedCall(3000, () => this.maybeShowLogin(force));
+      return;
+    }
+
+    const layer = this.add.container(0, 0).setDepth(60);
+    this.confirmLayer = layer;
+    if (import.meta.env.DEV) {
+      (window as unknown as { __loginOpen?: boolean }).__loginOpen = true;
+    }
+    const dim = this.add
+      .rectangle(THEME.width / 2, THEME.height / 2, THEME.width, THEME.height, 0x14101c, 0.7)
+      .setInteractive();
+    const g = this.add.graphics();
+    g.fillStyle(THEME.cardBg);
+    g.fillRoundedRect(25, 290, 340, 250, 12);
+    g.lineStyle(3, THEME.gold);
+    g.strokeRoundedRect(25, 290, 340, 250, 12);
+    const title = this.add
+      .bitmapText(THEME.width / 2, 310, 'pix', 'DAILY REWARD', 16)
+      .setTint(THEME.gold)
+      .setOrigin(0.5, 0);
+    layer.add([dim, g, title]);
+
+    // Seven chips; today's glows
+    const today = this.gs.loginStreakDay % LOGIN_REWARDS.length;
+    LOGIN_REWARDS.forEach((r, i) => {
+      const cx = 48 + i * 49;
+      const cy = 380;
+      const isToday = i === today;
+      const done = i < today;
+      const chip = this.add
+        .rectangle(cx, cy, 44, 62, done ? 0xd8e4c4 : THEME.panelBg)
+        .setStrokeStyle(2, isToday ? THEME.gold : done ? 0x6fae4e : THEME.cardBorder);
+      const dayLbl = this.add
+        .bitmapText(cx, cy - 22, 'pix', `D${r.day}`, 8)
+        .setOrigin(0.5, 0)
+        .setTint(isToday ? 0xc9961e : 0x8a5a2e);
+      const what = this.add
+        .bitmapText(cx, cy - 2, 'pix', r.goldEgg ? 'EGG+' : r.gems ? `${r.gems}` : 'GOLD', 8)
+        .setOrigin(0.5, 0)
+        .setTint(r.gems ? 0x2884a8 : 0xc9961e);
+      const done2 = this.add
+        .bitmapText(cx, cy + 16, 'pix', done ? 'OK' : '', 8)
+        .setOrigin(0.5, 0)
+        .setTint(0x2e7a1e);
+      layer.add([chip, dayLbl, what, done2]);
+      if (isToday) {
+        this.tweens.add({ targets: chip, scaleX: 1.08, scaleY: 1.08, duration: 500, yoyo: true, repeat: -1 });
+      }
+    });
+
+    const btn = this.add.image(THEME.width / 2, 480, 'btn-wide').setTint(0x2e7a1e);
+    const lbl = this.add.bitmapText(THEME.width / 2, 480, 'pix', 'CLAIM', 16).setOrigin(0.5);
+    btn.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
+      const reward = this.gs.claimLoginReward();
+      if (reward) {
+        audio.coin();
+        this.toast(
+          reward.goldEgg
+            ? 'DAY 7! GEMS + A FREE EGG HATCHED'
+            : reward.gems
+              ? `+${reward.gems} GEMS`
+              : 'GOLD COLLECTED',
+        );
+      }
+      layer.destroy();
+      this.confirmLayer = null;
+      if (import.meta.env.DEV) {
+        (window as unknown as { __loginOpen?: boolean }).__loginOpen = false;
+      }
+    });
+    layer.add([btn, lbl]);
+  }
+
   maybeShowOffline(): void {
     const offline = this.registry.get('offline') as { gold: number; seconds: number } | null;
     if (!offline || offline.gold <= 0 || this.confirmLayer) return;
@@ -1050,6 +1233,15 @@ export class UIScene extends Phaser.Scene {
   }
 
   private celebrateMerge(index: number, tier: number): void {
+    // The DPS readout pops to sell the power-up
+    this.tweens.add({
+      targets: this.dpsText,
+      scaleX: 1.3,
+      scaleY: 1.3,
+      duration: 110,
+      yoyo: true,
+      ease: 'Sine.inOut',
+    });
     const { x, y } = this.cellCenters[index];
     const burst = this.add.particles(x, y, 'spark', {
       speed: { min: 40, max: 120 },

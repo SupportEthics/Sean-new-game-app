@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test';
 
+// Pre-mark the tutorial as done so these tests exercise the normal UI
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('pawsblades_tutorial_done', '1'));
+});
+
 // Design-resolution coordinates map 1:1 to the 390x844 viewport (Scale.FIT).
 const BUY_BUTTON = { x: 247, y: 761 }; // "Buy sword" card
 const MERGE_BUTTON = { x: 58, y: 761 }; // "Auto Merge" toggle (merges once on enable)
