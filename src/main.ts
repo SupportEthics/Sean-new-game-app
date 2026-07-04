@@ -96,11 +96,11 @@ async function boot(): Promise<void> {
       addGold: (n: number) => gs.addGold(n),
       addGems: (n: number) => gs.addGems(n),
       setStage: (s: number) => {
-        gs.battle = newBattleState(s);
+        gs.battle = newBattleState(s, 1, gs.enemyHpMultiplier);
         gs.highestStage = Math.max(gs.highestStage, s);
       },
       setWave: (stage: number, wave: number) => {
-        gs.battle = newBattleState(stage, wave);
+        gs.battle = newBattleState(stage, wave, gs.enemyHpMultiplier);
         gs.highestStage = Math.max(gs.highestStage, stage);
       },
       timeTravel: (hours: number) => gs.update(hours * 3600),

@@ -27,8 +27,9 @@ function enemiesInWave(wave: number): number {
   return wave === STAGES.wavesPerStage ? 1 : STAGES.enemiesPerWave;
 }
 
-export function newBattleState(stage: number, wave = 1): BattleState {
-  const hp = enemyHp(stage, wave);
+/** `hpScale` toughens every monster (rebirth difficulty; 1 = base game). */
+export function newBattleState(stage: number, wave = 1, hpScale = 1): BattleState {
+  const hp = enemyHp(stage, wave) * hpScale;
   return {
     stage,
     wave,
@@ -44,7 +45,7 @@ export function newBattleState(stage: number, wave = 1): BattleState {
  * Mutates `state`; returns what happened for the UI/economy to react to.
  * Deterministic — the same code path powers live play, offline fast-forward and tests.
  */
-export function tick(state: BattleState, dps: number, dt: number): TickResult {
+export function tick(state: BattleState, dps: number, dt: number, hpScale = 1): TickResult {
   const result: TickResult = {
     goldEarned: 0,
     kills: 0,
@@ -74,7 +75,7 @@ export function tick(state: BattleState, dps: number, dt: number): TickResult {
     state.enemiesLeftInWave -= 1;
 
     if (state.enemiesLeftInWave > 0) {
-      state.currentEnemyMaxHp = enemyHp(state.stage, state.wave);
+      state.currentEnemyMaxHp = enemyHp(state.stage, state.wave) * hpScale;
       state.currentEnemyHp = state.currentEnemyMaxHp;
       continue;
     }
@@ -83,10 +84,10 @@ export function tick(state: BattleState, dps: number, dt: number): TickResult {
     result.waveCleared = true;
     if (isBossWave(state)) {
       result.stageCleared = true;
-      Object.assign(state, newBattleState(state.stage + 1));
+      Object.assign(state, newBattleState(state.stage + 1, 1, hpScale));
     } else {
       const next = state.wave + 1;
-      Object.assign(state, newBattleState(state.stage, next));
+      Object.assign(state, newBattleState(state.stage, next, hpScale));
     }
     return result; // one wave transition per tick keeps events readable
   }
@@ -94,7 +95,7 @@ export function tick(state: BattleState, dps: number, dt: number): TickResult {
   // Boss timer ran out → retreat to wave 1 of the same stage (no punishment)
   if (isBossWave(state) && state.bossTimeLeft <= 0 && state.currentEnemyHp > 0) {
     result.bossFailed = true;
-    Object.assign(state, newBattleState(state.stage, 1));
+    Object.assign(state, newBattleState(state.stage, 1, hpScale));
   }
 
   return result;

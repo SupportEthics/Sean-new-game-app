@@ -4,7 +4,15 @@
 export const PRESTIGE = {
   /** Rebirth becomes available once the run reaches this stage. */
   minStage: 40,
+  /** Every rebirth toughens monsters: +10% enemy HP per prestige, additive.
+   * Souls/relics/town outpace it, but each cycle starts a little meaner. */
+  enemyHpPerPrestige: 0.1,
 } as const;
+
+/** Enemy HP multiplier after `prestiges` rebirths. */
+export function enemyHpScale(prestiges: number): number {
+  return 1 + prestiges * PRESTIGE.enemyHpPerPrestige;
+}
 
 /** Souls earned for rebirthing at `stage` (uses the run's current stage). */
 export function soulsFor(stage: number): number {

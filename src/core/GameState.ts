@@ -10,7 +10,7 @@ import {
   REMOVE_ADS,
   STARTER_PACK,
 } from '../config/monetization';
-import { PRESTIGE, soulsFor } from '../config/prestige';
+import { enemyHpScale, PRESTIGE, soulsFor } from '../config/prestige';
 import {
   DAILY_QUESTS,
   isNextDay,
@@ -300,9 +300,14 @@ export class GameState {
    */
   get goldPerSecondEstimate(): number {
     const wave = Math.min(this.battle.wave, 9); // never price the boss in
-    const hp = enemyHp(this.battle.stage, wave);
+    const hp = enemyHp(this.battle.stage, wave) * this.enemyHpMultiplier;
     const killsPerSecond = Math.min(this.heroDps / hp, 5); // cap absurd overkill
     return killsPerSecond * goldDrop(this.battle.stage, wave);
+  }
+
+  /** Monsters toughen with every rebirth. */
+  get enemyHpMultiplier(): number {
+    return enemyHpScale(this.prestigeCount);
   }
 
   /** Offline cap in hours, extended by the Endurance relic. */
@@ -423,7 +428,7 @@ export class GameState {
       return;
     }
     const before = this.battle.stage;
-    const result = tick(this.battle, this.heroDps, dt);
+    const result = tick(this.battle, this.heroDps, dt, this.enemyHpMultiplier);
 
     if (result.goldEarned > 0) this.addGold(Math.round(result.goldEarned * this.goldMultiplier));
     this.totalKills += result.kills;
@@ -534,7 +539,8 @@ export class GameState {
     this.grid = this.grid.map(() => null);
     this.highestTier = 1;
     this.buyTierLevel = 1;
-    this.battle = newBattleState(1);
+    // The new cycle's monsters already carry the higher rebirth HP scale
+    this.battle = newBattleState(1, 1, this.enemyHpMultiplier);
     this.emit('prestige:done', this.prestigeCount);
     this.emit('gold:changed', this.gold);
     this.emit('grid:changed', this.grid);
