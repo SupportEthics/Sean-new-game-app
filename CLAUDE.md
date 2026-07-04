@@ -30,8 +30,13 @@ native projects (appId uk.co.supportethics.soulforgeknight), service
 factory picks AdMobAd/RevenueCatIap on native (Google test ad units;
 RevenueCat dormant until real keys land in src/config/native.ts) vs web
 mocks in browsers, saves mirror to Capacitor Preferences (NativeSave.ts),
-`npm run cap:android` / `cap:ios` to open native IDEs. Next: M6 store
-readiness (docs/GETTING-ON-THE-STORES.md is Sean's checklist). Skin catalog lives in src/config/skins.json
+`npm run cap:android` / `cap:ios` to open native IDEs. M6 code-side done:
+app icon + splashes generated into both native projects by
+scripts/generate-store-assets.mjs, UMP consent before AdMob init,
+docs/PRIVACY-POLICY.md + docs/STORE-LISTING.md ready to paste. Remaining
+M6 items need Sean's accounts (docs/GETTING-ON-THE-STORES.md): real AdMob
+IDs + RevenueCat keys into src/config/native.ts, host the privacy policy,
+device screenshots, store submissions. Skin catalog lives in src/config/skins.json
 (single source for game + asset generator); hero sheets are per-skin
 (assets/hero-<id>.png); pet defs in src/config/pets.ts (sheets
 assets/pet-<id>.png); IAP catalog in src/config/monetization.ts.
