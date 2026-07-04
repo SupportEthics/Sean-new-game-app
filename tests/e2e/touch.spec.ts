@@ -71,6 +71,46 @@ test('tapping outside a panel closes it', async ({ page }) => {
   await page.waitForFunction(() => window.__skillsOpen === false);
 });
 
+test('awards list keeps its scroll while quest progress ticks in', async ({ page }) => {
+  await page.evaluate(() =>
+    (window.__game as unknown as { openQuests(): void }).openQuests(),
+  );
+  await page.waitForFunction(
+    () => (window as unknown as { __questsOpen?: boolean }).__questsOpen === true,
+  );
+  await page.waitForTimeout(400);
+  await page.mouse.click(327, 212); // AWARDS tab
+  await page.waitForTimeout(300);
+
+  // Drag the list up
+  await page.mouse.move(195, 500);
+  await page.mouse.down();
+  for (let y = 500; y >= 300; y -= 25) {
+    await page.mouse.move(195, y);
+    await page.waitForTimeout(25);
+  }
+  await page.mouse.up();
+
+  const readScroll = () =>
+    page.evaluate(() => {
+      const game = (window.__game as unknown as { game: Phaser.Game }).game;
+      return (game.scene.getScene('Quests') as unknown as { scrollY: number }).scrollY;
+    });
+  const scrolled = await readScroll();
+  expect(scrolled).toBeGreaterThan(50);
+
+  // Battle progress fires quests:changed and rebuilds the rows — the
+  // player's scroll position must survive it
+  await page.evaluate(() => {
+    (window.__game as unknown as { gs: { trackQuest(id: string, n: number): void } }).gs.trackQuest(
+      'kills',
+      7,
+    );
+  });
+  await page.waitForTimeout(300);
+  await expect(readScroll()).resolves.toBeCloseTo(scrolled, 0);
+});
+
 test('skins grid scrolls from a drag that starts on a card', async ({ page }) => {
   await page.evaluate(() =>
     (window.__game as unknown as { openSkins(): void }).openSkins(),

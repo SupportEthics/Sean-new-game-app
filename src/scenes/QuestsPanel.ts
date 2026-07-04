@@ -134,14 +134,16 @@ export class QuestsPanel extends Phaser.Scene {
 
   private buildRows(): void {
     this.rows.removeAll(true);
-    this.rows.setY(0);
-    this.scrollY = 0;
 
     if (this.sheet === 'awards') {
       this.buildAwardRows();
+      // Progress events rebuild this list constantly while battle runs —
+      // keep (and re-clamp) the player's scroll instead of snapping to top
+      this.setScroll(this.scrollY);
       return;
     }
     this.maxScroll = 0;
+    this.setScroll(0);
     const period = this.sheet;
     this.footer.setText(
       period === 'daily'
