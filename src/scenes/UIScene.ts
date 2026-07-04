@@ -27,14 +27,14 @@ export class UIScene extends Phaser.Scene {
   private gs!: GameState;
   private saveManager!: SaveManager;
 
-  private goldText!: Phaser.GameObjects.Text;
-  private gemText!: Phaser.GameObjects.Text;
-  private dpsText!: Phaser.GameObjects.Text;
-  private levelText!: Phaser.GameObjects.Text;
+  private goldText!: Phaser.GameObjects.BitmapText;
+  private gemText!: Phaser.GameObjects.BitmapText;
+  private dpsText!: Phaser.GameObjects.BitmapText;
+  private levelText!: Phaser.GameObjects.BitmapText;
   private expBar!: Phaser.GameObjects.Rectangle;
-  private stageText!: Phaser.GameObjects.Text;
-  private waveText!: Phaser.GameObjects.Text;
-  private buyLabel!: Phaser.GameObjects.Text;
+  private stageText!: Phaser.GameObjects.BitmapText;
+  private waveText!: Phaser.GameObjects.BitmapText;
+  private buyLabel!: Phaser.GameObjects.BitmapText;
   private buyBg!: Phaser.GameObjects.Image;
   private itemLayer!: Phaser.GameObjects.Container;
   private cellCenters: { x: number; y: number }[] = [];
@@ -102,11 +102,13 @@ export class UIScene extends Phaser.Scene {
     if (key === this.lastHud) return;
     this.lastHud = key;
 
-    this.stageText.setText(`Stage: ${b.stage}`);
+    this.stageText.setText(`STAGE ${b.stage}`);
     this.waveText.setText(
-      b.wave === 10 ? 'BOSS FIGHT!' : `Wave ${b.wave}/10 · ${formatNumber(this.gs.heroDps)}/s`,
+      b.wave === 10
+        ? 'BOSS FIGHT!'
+        : `WAVE ${b.wave}/10 - ${formatNumber(this.gs.heroDps).toUpperCase()}/S`,
     );
-    this.levelText.setText(`Lv ${level}`);
+    this.levelText.setText(`LV ${level}`);
     this.expBar.width = 130 * frac;
   }
 
@@ -140,31 +142,18 @@ export class UIScene extends Phaser.Scene {
     g.fillRect(0, L.headerH - 4, THEME.width, 2);
 
     this.add.image(24, 32, 'coin').setScale(1.3);
-    this.goldText = this.add.text(36, 24, '0', {
-      fontFamily: THEME.fontFamily,
-      fontSize: '15px',
-      fontStyle: 'bold',
-      color: THEME.textGold,
-    });
+    this.goldText = this.add
+      .bitmapText(36, 25, 'pix', '0', 16)
+      .setTint(THEME.gold);
 
     const gem = this.add.graphics();
     gem.fillStyle(THEME.gem);
     gem.fillTriangle(140, 26, 133, 33, 147, 33);
     gem.fillTriangle(133, 33, 147, 33, 140, 41);
-    this.gemText = this.add.text(153, 24, '0', {
-      fontFamily: THEME.fontFamily,
-      fontSize: '15px',
-      fontStyle: 'bold',
-      color: '#a8e8ff',
-    });
+    this.gemText = this.add.bitmapText(153, 25, 'pix', '0', 16).setTint(0xa8e8ff);
 
     this.dpsText = this.add
-      .text(THEME.width - 44, 24, '', {
-        fontFamily: THEME.fontFamily,
-        fontSize: '14px',
-        fontStyle: 'bold',
-        color: THEME.textLight,
-      })
+      .bitmapText(THEME.width - 44, 25, 'pix', '', 16)
       .setOrigin(1, 0);
 
     const mute = this.add
@@ -183,12 +172,7 @@ export class UIScene extends Phaser.Scene {
     g.fillRect(0, y, THEME.width, L.hudH);
 
     // Lv + EXP bar (left)
-    this.levelText = this.add.text(12, y + 13, 'Lv 1', {
-      fontFamily: THEME.fontFamily,
-      fontSize: '15px',
-      fontStyle: 'bold',
-      color: THEME.textLight,
-    });
+    this.levelText = this.add.bitmapText(12, y + 15, 'pix', 'LV 1', 16);
     this.add
       .rectangle(66, y + 22, 134, 14, 0x2a1c10)
       .setOrigin(0, 0.5)
@@ -204,19 +188,12 @@ export class UIScene extends Phaser.Scene {
     box.lineStyle(2, THEME.cardBorder);
     box.strokeRoundedRect(THEME.width - 168, y + 5, 156, L.hudH - 10, 8);
     this.stageText = this.add
-      .text(THEME.width - 90, y + 8, 'Stage: 1', {
-        fontFamily: THEME.fontFamily,
-        fontSize: '14px',
-        fontStyle: 'bold',
-        color: '#b03a2e',
-      })
+      .bitmapText(THEME.width - 90, y + 9, 'pix', 'STAGE 1', 16)
+      .setTint(0xb03a2e)
       .setOrigin(0.5, 0);
     this.waveText = this.add
-      .text(THEME.width - 90, y + 32, '', {
-        fontFamily: THEME.fontFamily,
-        fontSize: '10px',
-        color: THEME.textDark,
-      })
+      .bitmapText(THEME.width - 90, y + 32, 'pix', '', 8)
+      .setTint(0x4a3520)
       .setOrigin(0.5, 0.5);
   }
 
@@ -299,14 +276,7 @@ export class UIScene extends Phaser.Scene {
       .image(289, y, 'btn-wide')
       .setTint(THEME.buttonBg)
       .setInteractive({ useHandCursor: true });
-    this.buyLabel = this.add
-      .text(289, y, '', {
-        fontFamily: THEME.fontFamily,
-        fontSize: '13px',
-        fontStyle: 'bold',
-        color: THEME.buttonText,
-      })
-      .setOrigin(0.5);
+    this.buyLabel = this.add.bitmapText(289, y, 'pix', '', 8).setOrigin(0.5);
     this.buyBg.on('pointerdown', () => {
       if (this.gs.buyGear()) {
         audio.buy();
@@ -326,12 +296,12 @@ export class UIScene extends Phaser.Scene {
     g.fillRect(0, y, THEME.width, 2);
 
     const tabs = [
-      { label: 'Swords', icon: '⚔️', active: true },
-      { label: 'Skills', icon: '📜', active: false },
-      { label: 'Pet', icon: '🐾', active: false },
-      { label: 'Fairies', icon: '✨', active: false },
-      { label: 'Artifacts', icon: '🏺', active: false },
-      { label: 'Shop', icon: '🛒', active: false },
+      { label: 'SWORDS', frame: 0, active: true },
+      { label: 'SKILLS', frame: 1, active: false },
+      { label: 'PET', frame: 2, active: false },
+      { label: 'FAIRY', frame: 3, active: false },
+      { label: 'RELICS', frame: 4, active: false },
+      { label: 'SHOP', frame: 5, active: false },
     ];
     const w = THEME.width / tabs.length;
     tabs.forEach((tab, i) => {
@@ -343,17 +313,11 @@ export class UIScene extends Phaser.Scene {
         hl.fillStyle(THEME.gold);
         hl.fillRect(i * w + 6, y + 2, w - 12, 3);
       }
+      const icon = this.add.image(cx, y + 24, 'icons', tab.frame).setScale(0.75);
+      if (!tab.active) icon.setAlpha(0.4).setTint(0x9a8d6e);
       this.add
-        .text(cx, y + 22, tab.active ? tab.icon : '🔒', { fontSize: '18px' })
-        .setOrigin(0.5)
-        .setAlpha(tab.active ? 1 : 0.55);
-      this.add
-        .text(cx, y + 46, tab.label, {
-          fontFamily: THEME.fontFamily,
-          fontSize: '11px',
-          fontStyle: 'bold',
-          color: tab.active ? THEME.textGold : '#9a8d6e',
-        })
+        .bitmapText(cx, y + 48, 'pix', tab.label, 8)
+        .setTint(tab.active ? 0xffd166 : 0x9a8d6e)
         .setOrigin(0.5);
     });
   }
@@ -374,28 +338,26 @@ export class UIScene extends Phaser.Scene {
         .setStrokeStyle(2, tierColor(tier));
       const icon = this.add.image(-24, 4, 'gear', (tier - 1) % 12).setScale(0.72);
       const dmg = this.add
-        .text(CARD_W / 2 - 5, -CARD_H / 2 + 4, `${formatNumber(gearDps(tier))} DMG`, {
-          fontFamily: THEME.fontFamily,
-          fontSize: '9px',
-          fontStyle: 'bold',
-          color: THEME.textDmg,
-        })
+        .bitmapText(
+          CARD_W / 2 - 5,
+          -CARD_H / 2 + 5,
+          'pix',
+          `${formatNumber(gearDps(tier)).toUpperCase()} DMG`,
+          8,
+        )
+        .setTint(0xb03a2e)
         .setOrigin(1, 0);
       const name = this.add
         .text(8, 2, tierName(tier).replace(/ \+\d+$/, ''), {
           fontFamily: THEME.fontFamily,
           fontSize: '9px',
           color: THEME.textDark,
-          wordWrap: { width: 46 },
+          wordWrap: { width: 40 },
         })
         .setOrigin(0, 0.5);
       const lvl = this.add
-        .text(CARD_W / 2 - 5, CARD_H / 2 - 4, `${tier}`, {
-          fontFamily: THEME.fontFamily,
-          fontSize: '13px',
-          fontStyle: 'bold',
-          color: '#2e7a1e',
-        })
+        .bitmapText(CARD_W / 2 - 5, CARD_H / 2 - 4, 'pix', `${tier}`, 16)
+        .setTint(0x2e7a1e)
         .setOrigin(1, 1);
 
       item.add([face, border, icon, dmg, name, lvl]);
@@ -499,12 +461,12 @@ export class UIScene extends Phaser.Scene {
   // ---- Text refresh ----
 
   private refreshTexts(): void {
-    this.goldText.setText(formatNumber(this.gs.gold));
-    this.gemText.setText(formatNumber(this.gs.gems));
-    this.dpsText.setText(`⚔ ${formatNumber(this.gs.heroDps)}`);
+    this.goldText.setText(formatNumber(this.gs.gold).toUpperCase());
+    this.gemText.setText(formatNumber(this.gs.gems).toUpperCase());
+    this.dpsText.setText(`${formatNumber(this.gs.heroDps).toUpperCase()} DPS`);
 
     this.buyLabel.setText(
-      `Buy sword T${this.gs.buyTier} · ${formatNumber(this.gs.buyCost)}g`,
+      `BUY SWORD T${this.gs.buyTier} - ${formatNumber(this.gs.buyCost).toUpperCase()}G`,
     );
     this.buyBg.setTint(this.gs.canBuy ? THEME.buttonBg : THEME.buttonBgDisabled);
   }

@@ -3,94 +3,76 @@
 // Art direction: EPIC ARMORED BEAST — an armored hedgehog knight with glowing
 // blades battling fierce monsters through dark fantasy biomes.
 
-import { Pix, shade } from './pixel.mjs';
+import { fromMap, pad, Pix, shade } from './pixel.mjs';
 import { writeSheet } from './pixel.mjs';
 
 const OUT = 'public/assets';
 const SCALE = 4;
 
-// ---------- Hero: armored hedgehog knight (24x24, frames: idle0, idle1, attack) ----------
+/** Pad + hard outline: the standard finishing pass for every sprite. */
+function finish(p) {
+  const q = pad(p, 1);
+  q.outline();
+  return q;
+}
 
-function hero(frame) {
-  const p = new Pix(24, 24);
-  const bounce = frame === 1 ? 1 : 0;
-  const lean = frame === 2 ? 1 : 0;
+// ---------- Hero: human knight, hand-plotted (frames: idle0, idle1, attack) ----------
 
-  const SPIKE = '#4a3626';
-  const SPIKE_TIP = '#8a94a8'; // iron-tipped spikes
-  const STEEL = '#6a7488';
-  const STEEL_HI = '#8a94a8';
-  const STEEL_DK = '#4a5262';
-  const GOLD = '#c9a227';
-  const FUR = '#caa87a';
+const KNIGHT_PALETTE = {
+  H: '#cdd6e0', // steel highlight
+  S: '#96a2b4', // steel base
+  D: '#5f6b7c', // steel shadow
+  K: '#14101c', // visor slit
+  G: '#d4a017', // gold trim
+  g: '#a87c12', // gold shadow
+  C: '#a83232', // cape
+  c: '#7c2424', // cape shadow
+  B: '#4a3826', // boots
+  R: '#c94040', // plume
+  r: '#8a2828', // plume shadow
+};
 
-  const cx = 10 + lean;
-  const cy = 13 + bounce;
+// 20 cols x 26 rows, facing right, 1px margin kept clear for the outline
+const KNIGHT_BASE = [
+  '......RRR...........',
+  '.....RRRr...........',
+  '....RRr.............',
+  '.....HHHHHHH........',
+  '....HHSSSSSSH.......',
+  '....HSSSSSSSS.......',
+  '....SSSSSSSSS.......',
+  '....SKKKKKKKS.......',
+  '....SSSSSSSSS.......',
+  '.....DSSSSSD........',
+  '.....GGGGGGG........',
+  '...CHHSSSSSHH.......',
+  '..CCHSSGGSSSHH......',
+  '..CCDSSGgSSSDD......',
+  '..CcDSSSSSSSDD......',
+  '..CcDSSSSSSSDD......',
+  '..Cc.DSSSSSD........',
+  '..cc.GgGgGgG........',
+  '..c..DSSSSSD........',
+  '.....DSSSSSD........',
+  '.....DSS.SSD........',
+  '.....DS...SD........',
+  '.....DS...SD........',
+  '....BBB...BBB.......',
+  '....BBB...BBB.......',
+  '....................',
+];
 
-  // Spiked back — dense fierce mane with iron-tipped spikes
-  p.circle(cx - 1, cy - 1, 7, SPIKE);
-  for (let a = 95; a <= 310; a += 21) {
-    const rad = (a * Math.PI) / 180;
-    const tx = cx - 1 + Math.cos(rad) * 10.5;
-    const ty = cy - 1 + Math.sin(rad) * 10.5;
-    const l = ((a - 14) * Math.PI) / 180;
-    const r = ((a + 14) * Math.PI) / 180;
-    p.tri(
-      tx,
-      ty,
-      cx - 1 + Math.cos(l) * 6,
-      cy - 1 + Math.sin(l) * 6,
-      cx - 1 + Math.cos(r) * 6,
-      cy - 1 + Math.sin(r) * 6,
-      SPIKE,
-    );
-    // Iron tip
-    p.set(tx, ty, SPIKE_TIP);
+function knight(frame) {
+  let rows = KNIGHT_BASE;
+  if (frame === 1) {
+    // Bob down one pixel; legs stay planted (rows below the belt unchanged)
+    rows = ['....................', ...KNIGHT_BASE.slice(0, 18), ...KNIGHT_BASE.slice(19)];
+    rows = rows.slice(0, 26);
+  } else if (frame === 2) {
+    // Attack: upper body leans toward the enemy
+    rows = KNIGHT_BASE.map((row, y) => (y <= 17 ? `.${row.slice(0, -1)}` : row));
   }
-
-  // Body / face
-  const fx = 14 + lean;
-  const fy = 14 + bounce;
-  p.ellipse(fx, fy, 6, 6 - bounce * 0.5, FUR);
-
-  // Chest plate
-  p.rect(fx - 4, fy + 1, 9, 5, STEEL);
-  p.rect(fx - 4, fy + 1, 9, 1, STEEL_HI);
-  p.rect(fx - 4, fy + 5, 9, 1, STEEL_DK);
-  p.set(fx, fy + 3, GOLD); // emblem
-
-  // Helmet: steel cap with cheek guards + nose bar
-  p.ellipse(fx, fy - 4, 6, 3, STEEL);
-  p.rect(fx - 6, fy - 4, 12, 2, STEEL);
-  p.rect(fx - 6, fy - 3, 2, 4, STEEL_DK); // left cheek guard
-  p.rect(fx + 5, fy - 3, 2, 4, STEEL_DK); // right cheek guard
-  p.rect(fx - 6, fy - 5, 12, 1, STEEL_HI);
-  p.set(fx, fy - 6, GOLD); // crest stud
-  p.set(fx + 1, fy - 6, GOLD);
-
-  // Fierce eyes: angled brows over glowing amber eyes
-  const squint = frame === 2 ? 1 : 0;
-  p.set(fx - 3, fy - 2, '#1c1626');
-  p.set(fx - 2, fy - 1, '#1c1626'); // left brow slant
-  p.set(fx + 3, fy - 2, '#1c1626');
-  p.set(fx + 2, fy - 1, '#1c1626'); // right brow slant
-  p.rect(fx - 3, fy - 1 + squint, 2, 2 - squint, '#ffb347');
-  p.rect(fx + 2, fy - 1 + squint, 2, 2 - squint, '#ffb347');
-  p.set(fx - 3, fy - 1 + squint, '#fff3c4');
-  p.set(fx + 2, fy - 1 + squint, '#fff3c4');
-
-  // Snout
-  p.set(fx + 5, fy + 0, '#3a2a1e');
-  p.set(fx + 6, fy + 0, '#3a2a1e');
-
-  // Steel boots
-  p.rect(fx - 5, 21, 4, 3, STEEL_DK);
-  p.rect(fx + 1, 21, 4, 3, STEEL_DK);
-  p.rect(fx - 5, 21, 4, 1, STEEL);
-  p.rect(fx + 1, 21, 4, 1, STEEL);
-
-  p.edgeShade(0.55);
-  return p;
+  return finish(fromMap(rows, KNIGHT_PALETTE));
 }
 
 // ---------- Enemies (20x20, 2 frames each) ----------
@@ -134,8 +116,7 @@ function wolf(frame) {
   // Fur ridge
   p.set(8, 9 + crouch, DK);
   p.set(10, 8 + crouch, DK);
-  p.edgeShade(0.55);
-  return p;
+  return finish(p);
 }
 
 function skeleton(frame) {
@@ -173,8 +154,7 @@ function skeleton(frame) {
   p.rect(9, 16 + bob, 3, 1, BONE);
   p.line(9, 17 + bob, 8, 19, DK);
   p.line(12, 17 + bob, 13, 19, DK);
-  p.edgeShade(0.6);
-  return p;
+  return finish(p);
 }
 
 function spider(frame) {
@@ -208,8 +188,7 @@ function spider(frame) {
   // Fangs
   p.set(9, 9 - step, '#e8e4d8');
   p.set(11, 9 - step, '#e8e4d8');
-  p.edgeShade(0.55);
-  return p;
+  return finish(p);
 }
 
 function golem(frame) {
@@ -240,8 +219,7 @@ function golem(frame) {
   // Legs
   p.rect(6, 16 + bob, 3, 4 - bob, DK);
   p.rect(11, 16 + bob, 3, 4 - bob, DK);
-  p.edgeShade(0.55);
-  return p;
+  return finish(p);
 }
 
 function imp(frame) {
@@ -275,8 +253,7 @@ function imp(frame) {
   // Legs
   p.rect(8, 17, 2, 2, DK);
   p.rect(11, 17, 2, 2, DK);
-  p.edgeShade(0.55);
-  return p;
+  return finish(p);
 }
 
 function wraith(frame) {
@@ -304,8 +281,7 @@ function wraith(frame) {
   // Skeletal hand reaching
   p.line(15, 11 - off, 18, 9 - off, '#b8b2a0');
   p.set(18, 8 - off, '#b8b2a0');
-  p.edgeShade(0.55);
-  return p;
+  return finish(p);
 }
 
 // ---------- Weapons (16x16, 12 designs; high tiers get a glow aura) ----------
@@ -326,11 +302,13 @@ const WEAPONS = [
 ];
 
 function weapon(spec) {
-  const p = new Pix(16, 16);
+  // 18x20 canvas: room for the longest blade plus outline and glow
+  const p = new Pix(18, 20);
   const half = Math.floor(spec.w / 2);
-  const left = 8 - half;
-  const tipY = 15 - (spec.len + 5);
-  const bladeTop = tipY + 2;
+  const left = 9 - half;
+  const gy = 14; // guard row — fixed so every sword sits on the same baseline
+  const bladeTop = gy - spec.len;
+  const tipY = bladeTop - 2;
 
   // Tip (2px tall so the point stays visible)
   p.tri(left - 0.5, bladeTop + 0.5, left + spec.w - 0.5, bladeTop + 0.5, left + spec.w / 2 - 0.5, tipY - 0.5, spec.blade);
@@ -343,20 +321,19 @@ function weapon(spec) {
   }
 
   // Guard (2px, winged)
-  const gy = bladeTop + spec.len;
   p.rect(left - 2, gy, spec.w + 4, 2, spec.guard);
   p.set(left - 2, gy - 1, spec.guard);
   p.set(left + spec.w + 1, gy - 1, spec.guard);
   if (spec.gem) {
-    p.set(8 - (spec.w % 2 === 0 ? 1 : 0), gy, spec.gem);
-    p.set(8, gy, spec.gem);
+    p.set(9 - (spec.w % 2 === 0 ? 1 : 0), gy, spec.gem);
+    p.set(9, gy, spec.gem);
   }
   // Grip + pommel
-  p.rect(7, gy + 2, 2, 2, '#3a2a1e');
-  p.rect(7, gy + 4, 2, 1, spec.guard);
+  p.rect(8, gy + 2, 2, 2, '#3a2a1e');
+  p.rect(8, gy + 4, 2, 1, spec.guard);
 
-  p.edgeShade(0.65);
-  // Glow halo hugs the silhouette instead of boxing it in
+  p.outline();
+  // Glow halo hugs the outline
   if (spec.glow) p.halo(spec.glow);
   return p;
 }
@@ -372,8 +349,7 @@ function deadTree() {
   p.line(6, 5, 6, 2, T);
   p.set(9, 2, shade(T, 0.8));
   p.set(1, 3, shade(T, 0.8));
-  p.edgeShade(0.7);
-  return p;
+  return finish(p);
 }
 
 function skullDeco() {
@@ -383,8 +359,7 @@ function skullDeco() {
   p.set(5, 7, '#14101c');
   p.set(8, 7, '#14101c');
   p.set(6, 9, '#a8a498');
-  p.edgeShade(0.65);
-  return p;
+  return finish(p);
 }
 
 function rock() {
@@ -392,8 +367,7 @@ function rock() {
   p.ellipse(6, 8, 4, 3, '#5a5464');
   p.set(5, 6, '#7a7284');
   p.set(7, 7, '#4a4454');
-  p.edgeShade(0.6);
-  return p;
+  return finish(p);
 }
 
 function stuckSword() {
@@ -403,8 +377,7 @@ function stuckSword() {
   p.line(5, 3, 9, 9, '#c9ced4');
   p.line(3, 2, 6, 2, '#6f7378'); // guard
   p.set(3, 1, '#3a2a1e'); // grip
-  p.edgeShade(0.7);
-  return p;
+  return finish(p);
 }
 
 function bone() {
@@ -412,8 +385,7 @@ function bone() {
   p.line(3, 8, 8, 5, '#d8d4c8');
   p.circle(2.5, 8.5, 1.2, '#d8d4c8');
   p.circle(8.5, 4.5, 1.2, '#d8d4c8');
-  p.edgeShade(0.75);
-  return p;
+  return finish(p);
 }
 
 function bush() {
@@ -421,13 +393,263 @@ function bush() {
   p.ellipse(6, 7, 5, 3.5, '#4f7a38');
   p.ellipse(4, 6, 2.5, 2, '#5c8a42');
   p.set(8, 6, '#5c8a42');
-  p.edgeShade(0.6);
+  return finish(p);
+}
+
+function crate() {
+  const p = new Pix(12, 12);
+  const W = '#8a5f33';
+  const L = '#a87844';
+  const D = '#6b4423';
+  p.rect(1, 2, 10, 9, W);
+  p.rect(1, 2, 10, 1, L);
+  p.rect(1, 2, 1, 9, L);
+  p.rect(1, 10, 10, 1, D);
+  p.rect(10, 2, 1, 9, D);
+  p.line(2, 3, 9, 9, D); // X brace
+  p.line(9, 3, 2, 9, D);
+  return finish(p);
+}
+
+// ---------- Torch (8x16, 2-frame flame) ----------
+
+function torch(frame) {
+  const p = new Pix(10, 18);
+  const sway = frame === 1 ? 1 : 0;
+  // Flame
+  p.ellipse(5 + sway, 4, 2.5, 3.5, '#ff9a3c');
+  p.ellipse(5 + sway, 5, 1.5, 2, '#ffe86b');
+  p.set(5 - sway, 1, '#ff9a3c');
+  // Bracket + handle
+  p.rect(3, 8, 5, 2, '#5f6b7c');
+  p.rect(4, 10, 3, 7, '#6b4423');
+  p.rect(4, 10, 1, 7, '#8a5f33');
+  return finish(p);
+}
+
+// ---------- Floor / wall / fence tiles (16x16; floor+wall grayscale for biome tint) ----------
+
+function floorTile(variant) {
+  const p = new Pix(16, 16);
+  p.rect(0, 0, 16, 16, variant === 2 ? '#b2b2b2' : '#c2c2c2'); // slab
+  p.rect(0, 0, 16, 1, '#d6d6d6'); // top light
+  p.rect(0, 0, 1, 16, '#cecece');
+  p.rect(0, 15, 16, 1, '#8e8e8e'); // grout
+  p.rect(15, 0, 1, 16, '#969696');
+  // Wear speckles (deterministic per variant)
+  for (let i = 0; i < 5; i++) {
+    const x = (i * 5 + variant * 3 + 2) % 14;
+    const y = (i * 7 + variant * 5 + 3) % 13;
+    p.set(x + 1, y + 1, '#aaaaaa');
+  }
+  if (variant === 1) {
+    // Cracked slab
+    p.line(4, 2, 8, 8, '#8e8e8e');
+    p.line(8, 8, 6, 13, '#8e8e8e');
+    p.set(9, 9, '#a2a2a2');
+  }
+  return p;
+}
+
+function wallTile() {
+  const p = new Pix(16, 16);
+  p.rect(0, 0, 16, 16, '#7e7e7e'); // mortar
+  // Two brick rows, offset
+  for (const [bx, by, bw] of [
+    [0, 1, 7], [8, 1, 8], [0, 6, 3], [4, 6, 8], [13, 6, 3], [0, 11, 7], [8, 11, 8],
+  ]) {
+    p.rect(bx, by, bw, 4, '#909090');
+    p.rect(bx, by, bw, 1, '#a4a4a4');
+    p.rect(bx, by + 3, bw, 1, '#7a7a7a');
+  }
+  return p;
+}
+
+function fenceTile() {
+  const p = new Pix(16, 16);
+  for (const x of [1, 9]) {
+    p.tri(x, 4, x + 4, 4, x + 2, 1, '#9a6a3a');
+    p.rect(x, 4, 4, 12, '#9a6a3a');
+    p.rect(x, 4, 1, 12, '#b8834a');
+    p.rect(x + 3, 4, 1, 12, '#7c5228');
+  }
+  p.rect(0, 8, 16, 3, '#7c5228');
+  p.rect(0, 8, 16, 1, '#9a6a3a');
+  return p;
+}
+
+// ---------- Tab icons (12x12) ----------
+
+const ICON_PALETTE = {
+  G: '#ffd166',
+  g: '#c99a2e',
+  S: '#c9ced4',
+  s: '#8a8f96',
+  B: '#a87844',
+  b: '#6b4423',
+  P: '#e8d9b0',
+  R: '#e84a4a',
+};
+
+const ICONS = {
+  sword: [
+    '.........S..',
+    '........SS..',
+    '.......SS...',
+    '......SS....',
+    '.....SS.....',
+    '.gg.SS......',
+    '..gSSg......',
+    '..bSgg......',
+    '.bb..g......',
+    '.b..........',
+    '............',
+    '............',
+  ],
+  scroll: [
+    '............',
+    '..PPPPPPP...',
+    '.P.......P..',
+    '..PPPPPPP...',
+    '..P.....P...',
+    '..P.ss..P...',
+    '..P.....P...',
+    '..P..ss.P...',
+    '..P.....P...',
+    '..PPPPPPP...',
+    '.P.......P..',
+    '..PPPPPPP...',
+  ],
+  paw: [
+    '............',
+    '...P...P....',
+    '..PP...PP...',
+    '.P..P.P..P..',
+    '.PP.....PP..',
+    '............',
+    '...PPPP.....',
+    '..PPPPPP....',
+    '..PPPPPP....',
+    '..PPPPPP....',
+    '...PPPP.....',
+    '............',
+  ],
+  star: [
+    '.....G......',
+    '.....GG.....',
+    '....GGG.....',
+    '.GGGGGGGGG..',
+    '..GGGGGGG...',
+    '...GGGGG....',
+    '...GGGGG....',
+    '..GG...GG...',
+    '.G.......G..',
+    '............',
+    '............',
+    '............',
+  ],
+  urn: [
+    '............',
+    '...gGGg.....',
+    '....GG......',
+    '...GGGG.....',
+    '..GGGGGG....',
+    '..GgGGgG....',
+    '..GGGGGG....',
+    '..GGGGGG....',
+    '...GGGG.....',
+    '....GG......',
+    '...gGGg.....',
+    '............',
+  ],
+  cart: [
+    '............',
+    '.b..........',
+    '.bb.........',
+    '..bBBBBBB...',
+    '..BBBBBBB...',
+    '..BBBBBBB...',
+    '..bBBBBBb...',
+    '...bbbbb....',
+    '...s...s....',
+    '..sss.sss...',
+    '...s...s....',
+    '............',
+  ],
+};
+
+function icon(name) {
+  const p = fromMap(ICONS[name], ICON_PALETTE);
+  p.outline();
+  return p;
+}
+
+// ---------- Pixel bitmap font (5x7 glyphs in 6x8 cells, white for tinting) ----------
+
+export const FONT_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ .,:/+-%!';
+
+const GLYPHS = {
+  '0': ['.###.', '#...#', '#..##', '#.#.#', '##..#', '#...#', '.###.'],
+  '1': ['..#..', '.##..', '..#..', '..#..', '..#..', '..#..', '.###.'],
+  '2': ['.###.', '#...#', '....#', '...#.', '..#..', '.#...', '#####'],
+  '3': ['.###.', '#...#', '....#', '..##.', '....#', '#...#', '.###.'],
+  '4': ['...#.', '..##.', '.#.#.', '#..#.', '#####', '...#.', '...#.'],
+  '5': ['#####', '#....', '####.', '....#', '....#', '#...#', '.###.'],
+  '6': ['.###.', '#....', '####.', '#...#', '#...#', '#...#', '.###.'],
+  '7': ['#####', '....#', '...#.', '..#..', '..#..', '..#..', '..#..'],
+  '8': ['.###.', '#...#', '#...#', '.###.', '#...#', '#...#', '.###.'],
+  '9': ['.###.', '#...#', '#...#', '.####', '....#', '....#', '.###.'],
+  A: ['.###.', '#...#', '#...#', '#####', '#...#', '#...#', '#...#'],
+  B: ['####.', '#...#', '#...#', '####.', '#...#', '#...#', '####.'],
+  C: ['.###.', '#...#', '#....', '#....', '#....', '#...#', '.###.'],
+  D: ['####.', '#...#', '#...#', '#...#', '#...#', '#...#', '####.'],
+  E: ['#####', '#....', '#....', '####.', '#....', '#....', '#####'],
+  F: ['#####', '#....', '#....', '####.', '#....', '#....', '#....'],
+  G: ['.###.', '#...#', '#....', '#.###', '#...#', '#...#', '.####'],
+  H: ['#...#', '#...#', '#...#', '#####', '#...#', '#...#', '#...#'],
+  I: ['.###.', '..#..', '..#..', '..#..', '..#..', '..#..', '.###.'],
+  J: ['..###', '...#.', '...#.', '...#.', '...#.', '#..#.', '.##..'],
+  K: ['#...#', '#..#.', '#.#..', '##...', '#.#..', '#..#.', '#...#'],
+  L: ['#....', '#....', '#....', '#....', '#....', '#....', '#####'],
+  M: ['#...#', '##.##', '#.#.#', '#.#.#', '#...#', '#...#', '#...#'],
+  N: ['#...#', '##..#', '#.#.#', '#..##', '#...#', '#...#', '#...#'],
+  O: ['.###.', '#...#', '#...#', '#...#', '#...#', '#...#', '.###.'],
+  P: ['####.', '#...#', '#...#', '####.', '#....', '#....', '#....'],
+  Q: ['.###.', '#...#', '#...#', '#...#', '#.#.#', '#..#.', '.##.#'],
+  R: ['####.', '#...#', '#...#', '####.', '#.#..', '#..#.', '#...#'],
+  S: ['.####', '#....', '#....', '.###.', '....#', '....#', '####.'],
+  T: ['#####', '..#..', '..#..', '..#..', '..#..', '..#..', '..#..'],
+  U: ['#...#', '#...#', '#...#', '#...#', '#...#', '#...#', '.###.'],
+  V: ['#...#', '#...#', '#...#', '#...#', '.#.#.', '.#.#.', '..#..'],
+  W: ['#...#', '#...#', '#...#', '#.#.#', '#.#.#', '##.##', '#...#'],
+  X: ['#...#', '#...#', '.#.#.', '..#..', '.#.#.', '#...#', '#...#'],
+  Y: ['#...#', '#...#', '.#.#.', '..#..', '..#..', '..#..', '..#..'],
+  Z: ['#####', '....#', '...#.', '..#..', '.#...', '#....', '#####'],
+  ' ': ['.....', '.....', '.....', '.....', '.....', '.....', '.....'],
+  '.': ['.....', '.....', '.....', '.....', '.....', '.##..', '.##..'],
+  ',': ['.....', '.....', '.....', '.....', '..##.', '..#..', '.#...'],
+  ':': ['.....', '.##..', '.##..', '.....', '.##..', '.##..', '.....'],
+  '/': ['....#', '...#.', '...#.', '..#..', '.#...', '.#...', '#....'],
+  '+': ['.....', '..#..', '..#..', '#####', '..#..', '..#..', '.....'],
+  '-': ['.....', '.....', '.....', '#####', '.....', '.....', '.....'],
+  '%': ['##..#', '##..#', '...#.', '..#..', '.#...', '#..##', '#..##'],
+  '!': ['..#..', '..#..', '..#..', '..#..', '..#..', '.....', '..#..'],
+};
+
+function glyph(ch) {
+  const rows = GLYPHS[ch] ?? GLYPHS[' '];
+  const p = new Pix(6, 8);
+  rows.forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) {
+      if (row[x] === '#') p.set(x, y, '#ffffff');
+    }
+  });
   return p;
 }
 
 // ---------- Write everything ----------
 
-writeSheet(`${OUT}/hero.png`, [hero(0), hero(1), hero(2)], SCALE);
+writeSheet(`${OUT}/hero.png`, [knight(0), knight(1), knight(2)], SCALE);
 writeSheet(`${OUT}/enemy-wolf.png`, [wolf(0), wolf(1)], SCALE);
 writeSheet(`${OUT}/enemy-skeleton.png`, [skeleton(0), skeleton(1)], SCALE);
 writeSheet(`${OUT}/enemy-spider.png`, [spider(0), spider(1)], SCALE);
@@ -437,6 +659,14 @@ writeSheet(`${OUT}/enemy-wraith.png`, [wraith(0), wraith(1)], SCALE);
 writeSheet(`${OUT}/gear.png`, WEAPONS.map(weapon), SCALE);
 writeSheet(
   `${OUT}/deco.png`,
-  [deadTree(), skullDeco(), rock(), stuckSword(), bone(), bush()],
+  [deadTree(), skullDeco(), rock(), stuckSword(), bone(), bush(), crate()],
   SCALE,
 );
+writeSheet(`${OUT}/torch.png`, [torch(0), torch(1)], SCALE);
+writeSheet(`${OUT}/tiles.png`, [floorTile(0), floorTile(1), floorTile(2), wallTile(), fenceTile()], SCALE);
+writeSheet(
+  `${OUT}/icons.png`,
+  ['sword', 'scroll', 'paw', 'star', 'urn', 'cart'].map(icon),
+  SCALE,
+);
+writeSheet(`${OUT}/pixfont.png`, [...FONT_CHARS].map(glyph), 2);

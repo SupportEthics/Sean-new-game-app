@@ -2,6 +2,9 @@ import Phaser from 'phaser';
 import { ENEMY_SPECIES } from '../config/stages';
 import { THEME } from '../ui/theme';
 
+/** Character order must match the glyph sheet written by generate-assets.mjs. */
+const FONT_CHARS = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ .,:/+-%!';
+
 /** Loads the generated sprite sheets and builds the shared animations. */
 export class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -21,26 +24,63 @@ export class PreloadScene extends Phaser.Scene {
       barBg.destroy();
     });
 
-    this.load.spritesheet('hero', 'assets/hero.png', { frameWidth: 96, frameHeight: 96 });
+    this.load.spritesheet('hero', 'assets/hero.png', { frameWidth: 88, frameHeight: 112 });
     ENEMY_SPECIES.forEach((s) =>
       this.load.spritesheet(`enemy-${s.key}`, `assets/enemy-${s.key}.png`, {
-        frameWidth: 80,
-        frameHeight: 80,
+        frameWidth: 88,
+        frameHeight: 88,
       }),
     );
-    this.load.spritesheet('gear', 'assets/gear.png', { frameWidth: 64, frameHeight: 64 });
-    this.load.spritesheet('deco', 'assets/deco.png', { frameWidth: 48, frameHeight: 48 });
+    this.load.spritesheet('gear', 'assets/gear.png', { frameWidth: 72, frameHeight: 80 });
+    this.load.spritesheet('deco', 'assets/deco.png', { frameWidth: 56, frameHeight: 56 });
+    this.load.spritesheet('torch', 'assets/torch.png', { frameWidth: 48, frameHeight: 80 });
+    this.load.spritesheet('tiles', 'assets/tiles.png', { frameWidth: 64, frameHeight: 64 });
+    this.load.spritesheet('icons', 'assets/icons.png', { frameWidth: 48, frameHeight: 48 });
+    this.load.image('pixfont', 'assets/pixfont.png');
   }
 
   create(): void {
     // Keep the chunky pixels crisp when scaled
-    const keys = ['hero', 'gear', 'deco', ...ENEMY_SPECIES.map((s) => `enemy-${s.key}`)];
+    const keys = [
+      'hero',
+      'gear',
+      'deco',
+      'torch',
+      'tiles',
+      'icons',
+      'pixfont',
+      ...ENEMY_SPECIES.map((s) => `enemy-${s.key}`),
+    ];
     keys.forEach((k) => this.textures.get(k).setFilter(Phaser.Textures.FilterMode.NEAREST));
+
+    // Bitmap pixel font: glyphs are 12x16 (authored 6x8 at 2x), so sizes 8 and
+    // 16 are both pixel-perfect.
+    this.cache.bitmapFont.add(
+      'pix',
+      Phaser.GameObjects.RetroFont.Parse(this, {
+        image: 'pixfont',
+        width: 12,
+        height: 16,
+        chars: FONT_CHARS,
+        charsPerRow: FONT_CHARS.length,
+        'offset.x': 0,
+        'offset.y': 0,
+        'spacing.x': 0,
+        'spacing.y': 0,
+        lineSpacing: 0,
+      }),
+    );
 
     this.anims.create({
       key: 'hero-idle',
       frames: this.anims.generateFrameNumbers('hero', { frames: [0, 1] }),
       frameRate: 3,
+      repeat: -1,
+    });
+    this.anims.create({
+      key: 'torch-flame',
+      frames: this.anims.generateFrameNumbers('torch', { frames: [0, 1] }),
+      frameRate: 5,
       repeat: -1,
     });
     ENEMY_SPECIES.forEach((s) =>

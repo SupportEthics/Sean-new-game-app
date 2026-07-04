@@ -15,7 +15,8 @@ const L = THEME.layout;
  */
 export class BattleScene extends Phaser.Scene {
   private gs!: GameState;
-  private bg!: Phaser.GameObjects.Graphics;
+  private floorTs!: Phaser.GameObjects.TileSprite;
+  private wallTs!: Phaser.GameObjects.TileSprite;
   private decoLayer!: Phaser.GameObjects.Group;
   private hero!: Phaser.GameObjects.Sprite;
   private weapon!: Phaser.GameObjects.Image;
@@ -48,7 +49,7 @@ export class BattleScene extends Phaser.Scene {
   create(): void {
     this.gs = this.registry.get('gs') as GameState;
 
-    this.bg = this.add.graphics();
+    this.buildArena();
     this.decoLayer = this.add.group();
     this.redrawArena();
 
@@ -107,60 +108,49 @@ export class BattleScene extends Phaser.Scene {
     return Math.floor((this.gs.battle.stage - 1) / 5) % THEME.biomes.length;
   }
 
+  /** Static arena furniture, created once: wall, floor, fence, torches. */
+  private buildArena(): void {
+    const wallH = 44;
+    this.wallTs = this.add
+      .tileSprite(0, L.arenaTop, THEME.width, wallH, 'tiles', 3)
+      .setOrigin(0, 0);
+    this.floorTs = this.add
+      .tileSprite(0, L.arenaTop + wallH, THEME.width, L.arenaBottom - L.arenaTop - wallH, 'tiles', 0)
+      .setOrigin(0, 0);
+    // Fence overlaps the bottom edge of the floor
+    this.add
+      .tileSprite(0, L.arenaBottom - 56, THEME.width, 64, 'tiles', 4)
+      .setOrigin(0, 0)
+      .setDepth(21);
+    // Torches on the wall
+    for (const x of [70, THEME.width - 70]) {
+      this.add.sprite(x, L.arenaTop + 26, 'torch').play('torch-flame').setDepth(2);
+    }
+  }
+
+  /** Per-biome pass: tint the tiles and scatter this stage's props. */
   private redrawArena(): void {
     const biome = THEME.biomes[this.biomeIndex()];
-    const g = this.bg;
-    g.clear();
+    this.floorTs.setTint(biome.dirt);
+    this.wallTs.setTint(biome.dirtDark);
 
-    // Dirt field
-    g.fillStyle(biome.dirt);
-    g.fillRect(0, L.arenaTop, THEME.width, L.arenaBottom - L.arenaTop);
-
-    // Deterministic dirt speckles + patches
-    for (let i = 0; i < 60; i++) {
-      const x = (i * 73 + 41) % THEME.width;
-      const y = L.arenaTop + 34 + ((i * 131 + 17) % (L.arenaBottom - L.arenaTop - 60));
-      g.fillStyle(biome.dirtDark, 0.6);
-      g.fillRect(x, y, 4 + (i % 3) * 2, 3);
-    }
-    for (let i = 0; i < 7; i++) {
-      const x = (i * 149 + 60) % (THEME.width - 60);
-      const y = L.arenaTop + 60 + ((i * 97) % (L.arenaBottom - L.arenaTop - 120));
-      g.fillStyle(biome.dirtDark, 0.35);
-      g.fillEllipse(x + 30, y, 54, 22);
-    }
-
-    // Grass verge along the top
-    g.fillStyle(biome.grass);
-    g.fillRect(0, L.arenaTop, THEME.width, 26);
-    g.fillStyle(biome.grassDark);
-    for (let x = 0; x < THEME.width; x += 12) {
-      g.fillTriangle(x, L.arenaTop + 26, x + 6, L.arenaTop + 18, x + 12, L.arenaTop + 26);
-    }
-
-    // Wooden fence along the bottom
-    const fy = L.arenaBottom - 20;
-    g.fillStyle(THEME.fenceDark);
-    g.fillRect(0, fy + 6, THEME.width, 4);
-    g.fillStyle(THEME.fence);
-    for (let x = 6; x < THEME.width; x += 22) {
-      g.fillRect(x, fy, 8, 18);
-      g.fillTriangle(x, fy, x + 8, fy, x + 4, fy - 5);
-    }
-
-    // Props: bushes on the verge + battlefield litter
     this.decoLayer.clear(true, true);
     const stage = this.gs.battle.stage;
-    for (let i = 0; i < 4; i++) {
-      const x = 24 + ((stage * 53 + i * 97) % (THEME.width - 48));
-      this.decoLayer.add(this.add.image(x, L.arenaTop + 16, 'deco', 5).setDepth(2));
+    // Cracked floor slabs
+    for (let i = 0; i < 3; i++) {
+      const x = 32 + ((stage * 61 + i * 127) % (THEME.width - 64));
+      const y = L.arenaTop + 84 + ((stage * 23 + i * 71) % (L.arenaBottom - L.arenaTop - 160));
+      this.decoLayer.add(
+        this.add.image(x, y, 'tiles', 1).setTint(biome.dirt).setDepth(1).setAlpha(0.9),
+      );
     }
+    // Battlefield litter: skull, rock, stuck sword, bone, crate
     for (let i = 0; i < 6; i++) {
       const x = 28 + ((stage * 37 + i * 79) % (THEME.width - 56));
-      const y = L.arenaTop + 60 + ((stage * 13 + i * 53) % (L.arenaBottom - L.arenaTop - 110));
-      const frame = [1, 2, 3, 4][(stage + i) % 4]; // skull, rock, sword, bone
+      const y = L.arenaTop + 76 + ((stage * 13 + i * 53) % (L.arenaBottom - L.arenaTop - 140));
+      const frame = [1, 2, 3, 4, 6][(stage + i) % 5];
       this.decoLayer.add(
-        this.add.image(x, y, 'deco', frame).setFlipX(i % 2 === 0).setDepth(3).setAlpha(0.9),
+        this.add.image(x, y, 'deco', frame).setFlipX(i % 2 === 0).setDepth(3).setAlpha(0.95),
       );
     }
   }
@@ -191,7 +181,7 @@ export class BattleScene extends Phaser.Scene {
 
     for (let i = 0; i < 2; i++) {
       const s = this.add
-        .sprite(this.enemyX + 60 + i * 26, this.enemyY - 34 + i * 62, 'enemy-wolf')
+        .sprite(this.enemyX + 42 + i * 18, this.enemyY - 46 + i * 78, 'enemy-wolf')
         .setDepth(9)
         .setAlpha(0.92)
         .setScale(0.9)
@@ -337,19 +327,15 @@ export class BattleScene extends Phaser.Scene {
     const b = this.gs.battle;
     const punch = Phaser.Math.Clamp(amount / Math.max(b.currentEnemyMaxHp, 1), 0, 1);
     const t = this.add
-      .text(
+      .bitmapText(
         this.enemyX + Phaser.Math.Between(-18, 18),
         this.enemyY - 88,
-        formatNumber(amount),
-        {
-          fontFamily: THEME.fontFamily,
-          fontSize: `${Math.round(17 + punch * 10)}px`,
-          fontStyle: 'bold',
-          color: '#fff3c4',
-          stroke: '#8a2a1e',
-          strokeThickness: 4,
-        },
+        'pix',
+        formatNumber(amount).toUpperCase(),
+        punch > 0.5 ? 24 : 16,
       )
+      .setTint(punch > 0.5 ? 0xffd166 : 0xfff3c4)
+      .setDropShadow(2, 2, 0x14101c, 1)
       .setOrigin(0.5)
       .setDepth(30);
     this.tweens.add({

@@ -1,8 +1,8 @@
 # Paws & Blades 🦔⚔️
 
 A dark-fantasy idle merge RPG for iOS and Android (working title). An armored
-hedgehog knight auto-battles dire wolves, bone warriors, and stone golems
-while you merge glowing blades to grow stronger — inspired by the
+knight auto-battles dire wolves, bone warriors, and stone golems in a
+top-down dungeon arena while you merge glowing blades to grow stronger — inspired by the
 top-grossing idle RPGs (Idle Sword Master, Legend of Mushroom, Capybara Go),
 planned to be monetized with rewarded ads and in-app purchases.
 

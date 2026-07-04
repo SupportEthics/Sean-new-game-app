@@ -1,11 +1,15 @@
 # Paws & Blades — idle merge RPG (working title)
 
 Dark-fantasy idle RPG for iOS + Android, inspired by Idle Sword Master /
-Legend of Mushroom / Capybara Go. An armored hedgehog knight auto-battles
-monster waves; the player buys and merges gear to grow DPS. Will be monetized
-with rewarded ads + IAP (AdMob + RevenueCat via Capacitor).
-Art direction (Sean's choice): "epic armored beast" — fierce, moody, glowing
-weapons; NOT pastel-cute. Keep new art in that register.
+Legend of Mushroom / Capybara Go. A human armored knight auto-battles
+monster waves in a top-down dungeon arena; the player buys and merges swords
+to grow DPS. Will be monetized with rewarded ads + IAP (AdMob + RevenueCat
+via Capacitor).
+Art direction (Sean's choice, after several rounds): clean hand-plotted
+pixel art with hard dark outlines, like the Idle Sword Master reference —
+NOT soft/blobby/pastel. Sprites are ASCII pixel maps or primitive shapes
+finished with finish() (pad + outline) in scripts/generate-assets.mjs;
+numbers render in the generated bitmap pixel font ('pix').
 
 The full roadmap (M0–M6) and monetization design live in the repo owner's plan;
 current status: **M0–M2 done** (playable core loop in browser with generated

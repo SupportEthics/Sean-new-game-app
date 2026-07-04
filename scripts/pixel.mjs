@@ -128,6 +128,28 @@ export class Pix {
     }
   }
 
+  /**
+   * Hard 1px outline: set every transparent pixel that touches an opaque one
+   * (including diagonals) to `hex`. Author sprites with a 1px transparent
+   * margin so the outline has room to grow.
+   */
+  outline(hex = '#14101c') {
+    const marks = [];
+    for (let y = 0; y < this.h; y++) {
+      for (let x = 0; x < this.w; x++) {
+        if (this.isOpaque(x, y)) continue;
+        let touch = false;
+        for (let dy = -1; dy <= 1 && !touch; dy++) {
+          for (let dx = -1; dx <= 1 && !touch; dx++) {
+            if ((dx || dy) && this.isOpaque(x + dx, y + dy)) touch = true;
+          }
+        }
+        if (touch) marks.push([x, y]);
+      }
+    }
+    for (const [x, y] of marks) this.set(x, y, hex);
+  }
+
   /** Set every transparent pixel that touches an opaque one — a glow halo. */
   halo(hex) {
     const marks = [];
@@ -161,6 +183,32 @@ export class Pix {
       }
     }
   }
+}
+
+/** Return a copy of `src` with `n` pixels of transparent margin on every side. */
+export function pad(src, n) {
+  const p = new Pix(src.w + n * 2, src.h + n * 2);
+  p.stamp(src, n, n);
+  return p;
+}
+
+/**
+ * Parse an ASCII pixel map into a Pix. Each character indexes `palette`;
+ * '.' and ' ' are transparent. Rows may have trailing transparency omitted.
+ */
+export function fromMap(rows, palette) {
+  const w = Math.max(...rows.map((r) => r.length));
+  const p = new Pix(w, rows.length);
+  rows.forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) {
+      const ch = row[x];
+      if (ch === '.' || ch === ' ') continue;
+      const hex = palette[ch];
+      if (!hex) throw new Error(`fromMap: no palette entry for '${ch}' at ${x},${y}`);
+      p.set(x, y, hex);
+    }
+  });
+  return p;
 }
 
 /** Join frames horizontally into one sheet and write a PNG scaled by `scale`. */
