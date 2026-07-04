@@ -126,5 +126,8 @@ describe('SaveManager', () => {
     expect(loaded!.state.loginRewardReady()).toBe(true);
     expect(loaded!.state.totalMerges).toBe(0);
     expect(loaded!.state.achievementsClaimed).toEqual([]);
+    // v15 -> v16: the town starts unbuilt
+    expect(loaded!.state.townBuildings).toEqual({});
+    expect(loaded!.state.buildingLevel('farm')).toBe(0);
   });
 });

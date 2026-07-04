@@ -31,7 +31,7 @@ achievements (AWARDS tab in QuestsPanel, lifetime counters incl.
 totalMerges), procedural chiptune music loop (AudioService.startMusic on
 first gesture), x2 dmg/speed ad boosts, sword sell bin (30% refund, never
 equipped), all 5 pets fight in the arena, skills on long cooldowns with
-AD CAST. Playable core loop in
+AD CAST, town (post-2nd-rebirth: farm/blacksmith/mine/jeweler in config/town.ts, jeweler gem vault). Playable core loop in
 browser, hi-detail pixel art, 25 hero skins incl. 5 premium IAP behind a
 web-mock IapService, save v15. M5 Capacitor wrap done: android/ + ios/
 native projects (appId uk.co.supportethics.soulforgeknight), service

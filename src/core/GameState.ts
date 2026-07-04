@@ -36,6 +36,7 @@ import {
 } from '../config/pets';
 import { SKILLS, skillDefById } from '../config/skills';
 import { soulUpgradeById, soulUpgradeCost } from '../config/soulsTree';
+import { buildingById, buildingCost, TOWN } from '../config/town';
 import { RAIDS, raidGems, raidGoldPerKill, raidMonsterHp } from '../config/raids';
 import { DEFAULT_SKIN, SkinDef, skinById } from '../config/skins';
 import { BattleState, newBattleState, tick, TickResult } from './BattleSim';
@@ -83,6 +84,7 @@ export interface GameEvents {
   'skills:changed': undefined;
   'fairy:changed': number;
   'login:changed': undefined;
+  'town:changed': undefined;
 }
 
 /** Sim-time seconds left on a skill's buff and cooldown. */
@@ -173,6 +175,8 @@ export interface SerializedState {
   lastLoginClaimDay: string;
   totalMerges: number;
   achievementsClaimed: string[];
+  townBuildings: Record<string, number>;
+  jewelerCollectedAt: number;
   daily: DailyState;
   weekly: PeriodQuestState;
   monthly: PeriodQuestState;
@@ -236,6 +240,10 @@ export class GameState {
   totalMerges = 0;
   /** Achievement ids already claimed. */
   achievementsClaimed: string[] = [];
+  /** Town building levels by id (unlocks after the second rebirth). */
+  townBuildings: Record<string, number> = {};
+  /** Epoch ms the jeweler's gem vault was last emptied. */
+  jewelerCollectedAt = 0;
   daily: DailyState = freshDaily(utcDay(0));
   weekly: PeriodQuestState = freshPeriod('');
   monthly: PeriodQuestState = freshPeriod('');
@@ -269,6 +277,7 @@ export class GameState {
       this.petDpsMultiplier *
       this.skillDpsMultiplier *
       this.fairyDpsMultiplier *
+      this.townDpsMultiplier *
       (this.dmgBoostActive() ? BOOSTS.dmgMult : 1) *
       (1 + this.soulLevel('might') * 0.1)
     );
@@ -279,7 +288,8 @@ export class GameState {
     return (
       (1 + this.soulLevel('fortune') * 0.1) *
       this.skillGoldMultiplier *
-      this.fairyGoldMultiplier
+      this.fairyGoldMultiplier *
+      this.townGoldMultiplier
     );
   }
 
@@ -875,6 +885,68 @@ export class GameState {
     return false;
   }
 
+  // ---- Town ----
+
+  get townUnlocked(): boolean {
+    return this.prestigeCount >= TOWN.unlockPrestiges;
+  }
+
+  buildingLevel(id: string): number {
+    return this.townBuildings[id] ?? 0;
+  }
+
+  /** Gold price of the next level, or null at the cap. */
+  buildingUpgradeCost(id: string): number | null {
+    const def = buildingById(id);
+    if (!def) return null;
+    const level = this.buildingLevel(id);
+    return level >= def.maxLevel ? null : buildingCost(def, level);
+  }
+
+  buyBuilding(id: string): boolean {
+    if (!this.townUnlocked) return false;
+    const cost = this.buildingUpgradeCost(id);
+    if (cost === null || this.gold < cost) return false;
+    // The jeweler's clock starts on its first level, not at epoch
+    if (id === 'jeweler' && this.buildingLevel('jeweler') === 0) {
+      this.jewelerCollectedAt = Date.now();
+    }
+    this.gold -= cost;
+    this.townBuildings[id] = this.buildingLevel(id) + 1;
+    this.emit('gold:changed', this.gold);
+    this.emit('town:changed', undefined);
+    return true;
+  }
+
+  get townGoldMultiplier(): number {
+    return 1 + this.buildingLevel('farm') * (buildingById('farm')?.perLevel ?? 0);
+  }
+
+  get townDpsMultiplier(): number {
+    return 1 + this.buildingLevel('blacksmith') * (buildingById('blacksmith')?.perLevel ?? 0);
+  }
+
+  get townOfflineMultiplier(): number {
+    return 1 + this.buildingLevel('mine') * (buildingById('mine')?.perLevel ?? 0);
+  }
+
+  /** Gems waiting in the jeweler's vault (level x days, capped). */
+  jewelerVault(now: number = Date.now()): number {
+    const level = this.buildingLevel('jeweler');
+    if (level === 0) return 0;
+    const days = Math.min((now - this.jewelerCollectedAt) / 86_400_000, TOWN.jewelerCapDays);
+    return Math.floor(Math.max(0, days) * level);
+  }
+
+  collectJeweler(now: number = Date.now()): number {
+    const gems = this.jewelerVault(now);
+    if (gems <= 0) return 0;
+    this.jewelerCollectedAt = now;
+    this.addGems(gems);
+    this.emit('town:changed', undefined);
+    return gems;
+  }
+
   // ---- Boosts + gifts ----
 
   dmgBoostActive(now: number = Date.now()): boolean {
@@ -1184,6 +1256,8 @@ export class GameState {
       lastLoginClaimDay: this.lastLoginClaimDay,
       totalMerges: this.totalMerges,
       achievementsClaimed: [...this.achievementsClaimed],
+      townBuildings: { ...this.townBuildings },
+      jewelerCollectedAt: this.jewelerCollectedAt,
       daily: {
         ...this.daily,
         progress: { ...this.daily.progress },
@@ -1238,6 +1312,8 @@ export class GameState {
     gs.lastLoginClaimDay = data.lastLoginClaimDay;
     gs.totalMerges = data.totalMerges;
     gs.achievementsClaimed = [...data.achievementsClaimed];
+    gs.townBuildings = { ...data.townBuildings };
+    gs.jewelerCollectedAt = data.jewelerCollectedAt;
     gs.daily = {
       ...data.daily,
       progress: { ...data.daily.progress },

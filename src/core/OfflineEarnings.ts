@@ -17,7 +17,7 @@ export function computeOffline(gs: GameState, awaySeconds: number): OfflineResul
   const seconds = Math.min(Math.max(awaySeconds, 0), gs.offlineCapHours * 3600);
   if (seconds < 60) return { seconds, gold: 0 };
   const gold = Math.floor(
-    estimateGoldPerSecond(gs) * seconds * ECONOMY.offlineRateMultiplier,
+    estimateGoldPerSecond(gs) * seconds * ECONOMY.offlineRateMultiplier * gs.townOfflineMultiplier,
   );
   return { seconds, gold };
 }

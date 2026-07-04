@@ -107,6 +107,12 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.achievementsClaimed = [];
     return save;
   },
+  // v15 -> v16: the town
+  (save) => {
+    save.state.townBuildings = {};
+    save.state.jewelerCollectedAt = 0;
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

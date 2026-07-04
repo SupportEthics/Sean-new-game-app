@@ -19,6 +19,7 @@ import { SkillsPanel } from './scenes/SkillsPanel';
 import { SkinsPanel } from './scenes/SkinsPanel';
 import { SoulsPanel } from './scenes/SoulsPanel';
 import { TitleScene } from './scenes/TitleScene';
+import { TownPanel } from './scenes/TownPanel';
 import { UIScene } from './scenes/UIScene';
 import { hydrateSaveFromPreferences, MirroredStorage } from './services/NativeSave';
 import { createMonetization } from './services/monetization/factory';
@@ -59,7 +60,7 @@ async function boot(): Promise<void> {
       width: THEME.width,
       height: THEME.height,
     },
-    scene: [BootScene, PreloadScene, TitleScene, BattleScene, UIScene, SkinsPanel, RaidPanel, SoulsPanel, QuestsPanel, PetsPanel, ShopPanel, SkillsPanel, FairyPanel],
+    scene: [BootScene, PreloadScene, TitleScene, BattleScene, UIScene, SkinsPanel, RaidPanel, SoulsPanel, QuestsPanel, PetsPanel, ShopPanel, SkillsPanel, FairyPanel, TownPanel],
     callbacks: {
       preBoot: (g) => {
         g.registry.set('gs', gs);
@@ -112,6 +113,7 @@ async function boot(): Promise<void> {
       openShop: () => game.scene.getScene('UI')?.scene.launch('Shop'),
       openSkills: () => game.scene.getScene('UI')?.scene.launch('Skills'),
       openFairy: () => game.scene.getScene('UI')?.scene.launch('Fairy'),
+    openTown: () => game.scene.getScene('UI')?.scene.launch('Town'),
     spawnGift: () => (game.scene.getScene('Battle') as unknown as { spawnGift(): void }).spawnGift(),
     openLogin: () => {
       gs.lastLoginClaimDay = '';

@@ -254,6 +254,30 @@ test('all five pets in the arena', async ({ page }) => {
   await page.screenshot({ path: 'screenshots/22-five-pets.png' });
 });
 
+test('town panel after second rebirth', async ({ page }) => {
+  await page.evaluate(() => {
+    const g = window.__game as unknown as {
+      gs: {
+        prestigeCount: number;
+        gold: number;
+        townBuildings: Record<string, number>;
+        jewelerCollectedAt: number;
+      };
+      openTown(): void;
+    };
+    g.gs.prestigeCount = 2;
+    g.gs.gold = 500_000;
+    g.gs.townBuildings = { farm: 4, blacksmith: 2, jeweler: 2 };
+    g.gs.jewelerCollectedAt = Date.now() - 36 * 3600 * 1000; // 1.5 days -> vault has gems
+    g.openTown();
+  });
+  await page.waitForFunction(
+    () => (window as unknown as { __townOpen?: boolean }).__townOpen === true,
+  );
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: 'screenshots/24-town.png' });
+});
+
 test('twilight biome at stage 12', async ({ page }) => {
   await page.evaluate(() => window.__game.setWave(12, 3));
   await page.waitForTimeout(1200);

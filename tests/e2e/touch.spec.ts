@@ -28,9 +28,9 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('side MENU expands and opens the skins panel', async ({ page }) => {
-  await page.touchscreen.tap(30, 170); // MENU toggle
+  await page.touchscreen.tap(30, 144); // MENU toggle (TOWN sits below it)
   await page.waitForTimeout(300);
-  await page.touchscreen.tap(30, 228); // SKINS inside the fanned-out menu
+  await page.touchscreen.tap(30, 260); // SKINS inside the fanned-out grid
   await page.waitForFunction(
     () => (window as unknown as { __skinsOpen?: boolean }).__skinsOpen === true,
   );
