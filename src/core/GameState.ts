@@ -1,5 +1,5 @@
 import { ECONOMY } from '../config/economy';
-import { acornsFor, PRESTIGE } from '../config/prestige';
+import { PRESTIGE, soulsFor } from '../config/prestige';
 import { RAIDS, raidGems, raidGoldPerKill, raidMonsterHp } from '../config/raids';
 import { DEFAULT_SKIN, SkinDef, skinById } from '../config/skins';
 import { BattleState, newBattleState, tick, TickResult } from './BattleSim';
@@ -67,7 +67,7 @@ export interface SerializedState {
   activeSkin: string;
   unlockedCells: number;
   prestigeCount: number;
-  acorns: number;
+  souls: number;
   raidHighest: number;
   raidReadyAt: number;
 }
@@ -91,7 +91,8 @@ export class GameState {
   activeSkin: string = DEFAULT_SKIN;
   unlockedCells: number = GEAR.baseCells;
   prestigeCount = 0;
-  acorns = 0;
+  /** Rebirth currency, banked for the M3 upgrade tree. */
+  souls = 0;
   /** Highest raid level cleared (next level = raidHighest + 1). */
   raidHighest = 0;
   /** Epoch ms when the next raid may start. */
@@ -258,19 +259,19 @@ export class GameState {
     return this.battle.stage >= PRESTIGE.minStage && !this.raid;
   }
 
-  /** Acorns this rebirth would bank right now. */
+  /** Souls this rebirth would bank right now. */
   get prestigeReward(): number {
-    return acornsFor(this.battle.stage);
+    return soulsFor(this.battle.stage);
   }
 
   /**
-   * Rebirth: reset the run (gold, gear, stages) and bank acorns. Permanent
+   * Rebirth: reset the run (gold, gear, stages) and bank Souls. Permanent
    * account progress survives: skins, gems, board cells, sword-slot record
    * (highestStage), raids and prestige count.
    */
   prestige(): boolean {
     if (!this.canPrestige) return false;
-    this.acorns += this.prestigeReward;
+    this.souls += this.prestigeReward;
     this.prestigeCount += 1;
     this.gold = ECONOMY.startingGold;
     this.grid = this.grid.map(() => null);
@@ -296,6 +297,11 @@ export class GameState {
 
   raidCooldownLeft(now: number): number {
     return Math.max(0, this.raidReadyAt - now);
+  }
+
+  /** Rewarded-ad payoff: skip the remaining raid cooldown. */
+  resetRaidCooldown(): void {
+    this.raidReadyAt = 0;
   }
 
   canStartRaid(level: number, now: number): boolean {
@@ -446,7 +452,7 @@ export class GameState {
       activeSkin: this.activeSkin,
       unlockedCells: this.unlockedCells,
       prestigeCount: this.prestigeCount,
-      acorns: this.acorns,
+      souls: this.souls,
       raidHighest: this.raidHighest,
       raidReadyAt: this.raidReadyAt,
     };
@@ -466,7 +472,7 @@ export class GameState {
     gs.activeSkin = data.activeSkin;
     gs.unlockedCells = data.unlockedCells;
     gs.prestigeCount = data.prestigeCount;
-    gs.acorns = data.acorns;
+    gs.souls = data.souls;
     gs.raidHighest = data.raidHighest;
     gs.raidReadyAt = data.raidReadyAt;
     return gs;

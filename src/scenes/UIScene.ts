@@ -29,6 +29,7 @@ export class UIScene extends Phaser.Scene {
 
   private goldText!: Phaser.GameObjects.BitmapText;
   private gemText!: Phaser.GameObjects.BitmapText;
+  private soulsText!: Phaser.GameObjects.BitmapText;
   private dpsText!: Phaser.GameObjects.BitmapText;
   private levelText!: Phaser.GameObjects.BitmapText;
   private expBar!: Phaser.GameObjects.Rectangle;
@@ -162,6 +163,12 @@ export class UIScene extends Phaser.Scene {
     gem.fillTriangle(140, 26, 133, 33, 147, 33);
     gem.fillTriangle(133, 33, 147, 33, 140, 41);
     this.gemText = this.add.bitmapText(153, 25, 'pix', '0', 16).setTint(0xa8e8ff);
+
+    // Souls counter appears once the player has rebirthed
+    this.soulsText = this.add
+      .bitmapText(226, 25, 'pix', '', 16)
+      .setTint(0xc9a4ff)
+      .setVisible(false);
 
     this.dpsText = this.add
       .bitmapText(THEME.width - 44, 25, 'pix', '', 16)
@@ -324,7 +331,7 @@ export class UIScene extends Phaser.Scene {
         THEME.width / 2,
         378,
         'pix',
-        `RESETS GOLD, SWORDS AND STAGE.\nKEEPS SKINS, GEMS AND BOARD.\n\nEARN ${this.gs.prestigeReward} ACORNS`,
+        `RESETS GOLD, SWORDS AND STAGE.\nKEEPS SKINS, GEMS AND BOARD.\n\nEARN ${this.gs.prestigeReward} SOULS`,
         8,
       )
       .setTint(0x4a3520)
@@ -654,6 +661,9 @@ export class UIScene extends Phaser.Scene {
   private refreshTexts(): void {
     this.goldText.setText(formatNumber(this.gs.gold).toUpperCase());
     this.gemText.setText(formatNumber(this.gs.gems).toUpperCase());
+    this.soulsText
+      .setVisible(this.gs.prestigeCount > 0)
+      .setText(`${formatNumber(this.gs.souls).toUpperCase()}S`);
     this.dpsText.setText(`${formatNumber(this.gs.heroDps).toUpperCase()} DPS`);
 
     this.buyLabel.setText(

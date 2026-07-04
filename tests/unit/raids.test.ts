@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { acornsFor, PRESTIGE } from '../../src/config/prestige';
+import { PRESTIGE, soulsFor } from '../../src/config/prestige';
 import { RAIDS, raidGems, raidGoldPerKill, raidMonsterHp } from '../../src/config/raids';
 import { newBattleState } from '../../src/core/BattleSim';
 import { GameState } from '../../src/core/GameState';
@@ -31,7 +31,7 @@ describe('prestige', () => {
 
     expect(gs.prestige()).toBe(true);
     expect(gs.prestigeCount).toBe(1);
-    expect(gs.acorns).toBe(acornsFor(45));
+    expect(gs.souls).toBe(soulsFor(45));
     expect(gs.battle.stage).toBe(1);
     expect(gs.gold).toBeLessThan(100); // reset to starting gold
     expect(gs.grid.every((c) => c === null)).toBe(true);
@@ -42,10 +42,10 @@ describe('prestige', () => {
     expect(gs.highestStage).toBe(45); // sword-slot record kept
   });
 
-  it('acorns scale with the stage reached', () => {
-    expect(acornsFor(39)).toBe(0);
-    expect(acornsFor(40)).toBeGreaterThan(0);
-    expect(acornsFor(60)).toBeGreaterThan(acornsFor(40));
+  it('souls scale with the stage reached', () => {
+    expect(soulsFor(39)).toBe(0);
+    expect(soulsFor(40)).toBeGreaterThan(0);
+    expect(soulsFor(60)).toBeGreaterThan(soulsFor(40));
   });
 });
 
@@ -133,13 +133,23 @@ describe('raids', () => {
     expect(raidGems(5, 20)).toBeGreaterThan(raidGems(1, 20));
   });
 
+  it('resetRaidCooldown (rewarded ad) clears the wait', () => {
+    const gs = prestiged();
+    gs.grid[0] = 12;
+    gs.startRaid(1, 1000);
+    gs.update(RAIDS.durationSeconds + 1);
+    expect(gs.canStartRaid(1, 2000)).toBe(false);
+    gs.resetRaidCooldown();
+    expect(gs.canStartRaid(1, 2000)).toBe(true);
+  });
+
   it('prestige/raid fields survive serialize round-trip', () => {
     const gs = prestiged();
     gs.raidHighest = 3;
     gs.raidReadyAt = 12345;
     const revived = GameState.deserialize(gs.serialize());
     expect(revived.prestigeCount).toBe(1);
-    expect(revived.acorns).toBe(gs.acorns);
+    expect(revived.souls).toBe(gs.souls);
     expect(revived.raidHighest).toBe(3);
     expect(revived.raidReadyAt).toBe(12345);
   });

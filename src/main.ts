@@ -8,6 +8,7 @@ import { PreloadScene } from './scenes/PreloadScene';
 import { RaidPanel } from './scenes/RaidPanel';
 import { SkinsPanel } from './scenes/SkinsPanel';
 import { UIScene } from './scenes/UIScene';
+import { WebMockAd } from './services/monetization/AdService';
 import { WebMockIap } from './services/monetization/WebMockIap';
 import { THEME } from './ui/theme';
 
@@ -19,6 +20,7 @@ const gs = loaded?.state ?? new GameState();
 // Web/browser IAP mock; the native RevenueCat implementation replaces this
 // inside the Capacitor shells (M5).
 const iap = new WebMockIap();
+const ads = new WebMockAd();
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,
@@ -36,6 +38,7 @@ const game = new Phaser.Game({
       g.registry.set('gs', gs);
       g.registry.set('saveManager', saveManager);
       g.registry.set('iap', iap);
+      g.registry.set('ads', ads);
     },
   },
 });
@@ -60,6 +63,7 @@ if (import.meta.env.DEV) {
     openRaids: () => game.scene.getScene('UI')?.scene.launch('Raids'),
     prestige: () => gs.prestige(),
     iap,
+    ads,
     reset: () => {
       localStorage.clear();
       location.reload();

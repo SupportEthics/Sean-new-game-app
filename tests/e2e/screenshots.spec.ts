@@ -64,6 +64,7 @@ test('raids panel after prestige', async ({ page }) => {
       openRaids(): void;
     };
     g.gs.prestigeCount = 1;
+    (g.gs as unknown as { raidReadyAt: number }).raidReadyAt = Date.now() + 8 * 60_000;
     g.openRaids();
   });
   await page.waitForFunction(

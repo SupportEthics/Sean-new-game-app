@@ -25,12 +25,19 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.unlockedCells = 20;
     return save;
   },
-  // v3 -> v4: prestige + raids
+  // v3 -> v4: prestige + raids (the currency was still called 'acorns' then)
   (save) => {
     save.state.prestigeCount = 0;
-    save.state.acorns = 0;
+    (save.state as unknown as { acorns: number }).acorns = 0;
     save.state.raidHighest = 0;
     save.state.raidReadyAt = 0;
+    return save;
+  },
+  // v4 -> v5: prestige currency renamed acorns -> souls (theme alignment)
+  (save) => {
+    const legacy = save.state as unknown as { acorns?: number; souls?: number };
+    save.state.souls = legacy.acorns ?? 0;
+    delete legacy.acorns;
     return save;
   },
 ];

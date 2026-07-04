@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { RAIDS, raidGems, raidGoldPerKill } from '../config/raids';
 import { formatNumber } from '../core/EconomyMath';
 import { GameState } from '../core/GameState';
+import { AdService } from '../services/monetization/AdService';
 import { audio } from '../services/AudioService';
 import { THEME } from '../ui/theme';
 
@@ -15,6 +16,10 @@ const ROW_PITCH = 62;
 /** Raid level list: fight the next level, review cleared ones. */
 export class RaidPanel extends Phaser.Scene {
   private gs!: GameState;
+  private ads!: AdService;
+  private adBtn!: Phaser.GameObjects.Image;
+  private adLabel!: Phaser.GameObjects.BitmapText;
+  private adPlaying = false;
   private rows!: Phaser.GameObjects.Container;
   private scrollY = 0;
   private maxScroll = 0;
@@ -29,6 +34,7 @@ export class RaidPanel extends Phaser.Scene {
 
   create(): void {
     this.gs = this.registry.get('gs') as GameState;
+    this.ads = this.registry.get('ads') as AdService;
     this.scrollY = 0;
 
     const blocker = this.add
@@ -48,9 +54,19 @@ export class RaidPanel extends Phaser.Scene {
       .setTint(THEME.gold)
       .setOrigin(0.5, 0);
     this.cooldownText = this.add
-      .bitmapText(THEME.width / 2, PANEL_Y + PANEL_H - 18, 'pix', '', 8)
+      .bitmapText(THEME.width / 2, PANEL_Y + PANEL_H - 46, 'pix', '', 8)
       .setTint(0x8a5a2e)
       .setOrigin(0.5, 0);
+    this.adBtn = this.add
+      .image(THEME.width / 2, PANEL_Y + PANEL_H - 22, 'btn-wide')
+      .setTint(0x2884a8)
+      .setVisible(false)
+      .setInteractive({ useHandCursor: true });
+    this.adLabel = this.add
+      .bitmapText(THEME.width / 2, PANEL_Y + PANEL_H - 22, 'pix', 'WATCH AD - RAID NOW!', 8)
+      .setOrigin(0.5)
+      .setVisible(false);
+    this.adBtn.on('pointerdown', () => this.watchAd());
 
     const close = this.add
       .bitmapText(PANEL_X + PANEL_W - 22, PANEL_Y + 12, 'pix', 'X', 16)
@@ -60,11 +76,11 @@ export class RaidPanel extends Phaser.Scene {
 
     this.rows = this.add.container(0, 0);
     const maskShape = this.make.graphics();
-    maskShape.fillRect(PANEL_X + 2, PANEL_Y + 44, PANEL_W - 4, PANEL_H - 70);
+    maskShape.fillRect(PANEL_X + 2, PANEL_Y + 44, PANEL_W - 4, PANEL_H - 104);
     this.rows.setMask(maskShape.createGeometryMask());
 
     this.buildRows();
-    this.maxScroll = Math.max(0, RAIDS.maxLevel * ROW_PITCH + 16 - (PANEL_H - 70));
+    this.maxScroll = Math.max(0, RAIDS.maxLevel * ROW_PITCH + 16 - (PANEL_H - 104));
 
     blocker.on('pointermove', (ptr: Phaser.Input.Pointer) => {
       if (!ptr.isDown) return;
@@ -109,10 +125,33 @@ export class RaidPanel extends Phaser.Scene {
       const m = Math.floor(left / 60000);
       const sec = Math.floor((left % 60000) / 1000);
       this.cooldownText.setText(`NEXT RAID READY IN ${m}:${String(sec).padStart(2, '0')}`);
+      const canAd = !this.adPlaying && this.ads.isReady('raid_reset');
+      this.adBtn.setVisible(true).setTint(canAd ? 0x2884a8 : THEME.buttonBgDisabled);
+      this.adLabel.setVisible(true).setText(this.adPlaying ? 'AD PLAYING...' : 'WATCH AD - RAID NOW!');
     } else {
       if (this.cooldownText.text !== '') this.buildRows();
       this.cooldownText.setText('');
+      this.adBtn.setVisible(false);
+      this.adLabel.setVisible(false);
     }
+  }
+
+  private watchAd(): void {
+    if (this.adPlaying || this.gs.raidCooldownLeft(Date.now()) === 0) return;
+    if (!this.ads.isReady('raid_reset')) return;
+    this.adPlaying = true;
+    this.refreshCooldown();
+    void this.ads.showRewarded('raid_reset').then((result) => {
+      this.adPlaying = false;
+      if (result.rewarded) {
+        this.gs.resetRaidCooldown();
+        audio.coin();
+      }
+      if (this.scene.isActive()) {
+        this.refreshCooldown();
+        this.buildRows();
+      }
+    });
   }
 
   private buildRows(): void {
