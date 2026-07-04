@@ -25,8 +25,13 @@ ad breaks (core/Interstitials.ts policy, disabled by remove_ads), 4 active
 skills (Whirlwind/Gold Rush/Time Warp/Battle Fury on sim-time cooldowns),
 fairy companion (stage 10, gold-levelled +DPS/+gold). Playable core loop in
 browser, hi-detail pixel art, 25 hero skins incl. 5 premium IAP behind a
-web-mock IapService, save v13. Next: M5 Capacitor wrap (real AdMob +
-RevenueCat), M6 store readiness. Skin catalog lives in src/config/skins.json
+web-mock IapService, save v13. M5 Capacitor wrap done: android/ + ios/
+native projects (appId uk.co.supportethics.soulforgeknight), service
+factory picks AdMobAd/RevenueCatIap on native (Google test ad units;
+RevenueCat dormant until real keys land in src/config/native.ts) vs web
+mocks in browsers, saves mirror to Capacitor Preferences (NativeSave.ts),
+`npm run cap:android` / `cap:ios` to open native IDEs. Next: M6 store
+readiness (docs/GETTING-ON-THE-STORES.md is Sean's checklist). Skin catalog lives in src/config/skins.json
 (single source for game + asset generator); hero sheets are per-skin
 (assets/hero-<id>.png); pet defs in src/config/pets.ts (sheets
 assets/pet-<id>.png); IAP catalog in src/config/monetization.ts.

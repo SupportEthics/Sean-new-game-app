@@ -34,5 +34,5 @@ saves automatically.
 - [x] M2 Generated pixel-art sprite sheets, animations, biomes, SFX
 - [x] M3 Retention: offline earnings, Soul Relics, daily quests, pets, prestige
 - [x] M4 Monetization: shop, gem packs, piggy bank, interstitials (web-mock layer) + skills, fairy, weekly/monthly quests
-- [ ] M5 Capacitor wrap (Android + iOS)
+- [x] M5 Capacitor wrap: android/ + ios/ shells, AdMob + RevenueCat services, durable native saves
 - [ ] M6 Store readiness (icons, listings, privacy, compliance)
