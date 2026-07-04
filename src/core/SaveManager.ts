@@ -69,6 +69,30 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.lastFreeEggDay = '';
     return save;
   },
+  // v9 -> v10: the shop — remove-ads, starter pack, piggy bank, free chest
+  (save) => {
+    save.state.removeAds = false;
+    save.state.starterPackOwned = false;
+    save.state.piggyGems = 0;
+    save.state.freeChestReadyAt = 0;
+    return save;
+  },
+  // v10 -> v11: active skills
+  (save) => {
+    save.state.skillTimers = {};
+    return save;
+  },
+  // v11 -> v12: the fairy
+  (save) => {
+    save.state.fairyLevel = 0;
+    return save;
+  },
+  // v12 -> v13: weekly + monthly quest sheets
+  (save) => {
+    save.state.weekly = { key: '', progress: {}, claimed: [] };
+    save.state.monthly = { key: '', progress: {}, claimed: [] };
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

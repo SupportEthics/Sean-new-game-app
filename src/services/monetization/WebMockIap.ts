@@ -17,15 +17,20 @@ export class WebMockIap implements IapService {
   }
 
   async purchase(sku: string): Promise<PurchaseResult> {
-    if (!productBySku(sku)) return { success: false, error: 'Unknown product' };
+    const product = productBySku(sku);
+    if (!product) return { success: false, error: 'Unknown product' };
     await new Promise((r) => setTimeout(r, 400)); // simulated store roundtrip
-    const owned = await this.restore();
-    if (!owned.includes(sku)) {
-      owned.push(sku);
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(owned));
-      } catch {
-        /* storage unavailable */
+    // Consumables can be bought again and again; only non-consumables are
+    // remembered for the restore flow.
+    if (product.kind === 'nonconsumable') {
+      const owned = await this.restore();
+      if (!owned.includes(sku)) {
+        owned.push(sku);
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(owned));
+        } catch {
+          /* storage unavailable */
+        }
       }
     }
     return { success: true };

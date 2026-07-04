@@ -107,5 +107,16 @@ describe('SaveManager', () => {
     expect(loaded!.state.pets).toEqual({});
     expect(loaded!.state.goldEggsBought).toBe(0);
     expect(loaded!.state.freeEggAvailable()).toBe(true);
+    // v9 -> v10: shop — ads on, no starter pack, empty piggy, chest ready
+    expect(loaded!.state.removeAds).toBe(false);
+    expect(loaded!.state.starterPackOwned).toBe(false);
+    expect(loaded!.state.piggyGems).toBe(0);
+    expect(loaded!.state.freeChestReady()).toBe(true);
+    // v10 -> v11 -> v12: skills idle, fairy unrecruited
+    expect(loaded!.state.skillTimers).toEqual({});
+    expect(loaded!.state.fairyLevel).toBe(0);
+    // v12 -> v13: weekly/monthly sheets exist and roll on first use
+    expect(loaded!.state.questProgress('kills', 'weekly')).toBe(0);
+    expect(loaded!.state.questProgress('kills', 'monthly')).toBe(0);
   });
 });

@@ -3,6 +3,7 @@ import { ECONOMY } from '../config/economy';
 import { GEAR, tierName } from '../config/gear';
 import { formatNumber, gearDps } from '../core/EconomyMath';
 import { GameState } from '../core/GameState';
+import { InterstitialPolicy } from '../core/Interstitials';
 import { formatDuration } from '../core/OfflineEarnings';
 import { SaveManager } from '../core/SaveManager';
 import { AdPlacement, AdService } from '../services/monetization/AdService';
@@ -83,6 +84,17 @@ export class UIScene extends Phaser.Scene {
     });
     this.gs.on('stage:changed', () => this.rebuildItems()); // slot unlocks re-badge cards
     this.refreshTexts();
+
+    // Interstitial ad breaks between stages, paced by the core policy and
+    // switched off entirely by the remove_ads purchase.
+    const interstitials = new InterstitialPolicy();
+    this.gs.on('stage:changed', () => {
+      interstitials.onStageCleared();
+      if (interstitials.shouldShow(this.gs.removeAds, !!this.gs.raid)) {
+        interstitials.shown();
+        this.showAdBreak();
+      }
+    });
 
     // Auto actions tick — one buy + one merge per beat, while the rewarded-ad
     // window is active
@@ -318,6 +330,36 @@ export class UIScene extends Phaser.Scene {
   }
 
   /** Small self-dismissing message above the toggles row. */
+  /** Full-screen mock ad break; the real AdMob interstitial replaces the
+   * overlay at M5 (the service call stays identical). */
+  private showAdBreak(): void {
+    const veil = this.add
+      .rectangle(THEME.width / 2, THEME.height / 2, THEME.width, THEME.height, 0x14101c, 0.92)
+      .setDepth(2000)
+      .setInteractive();
+    const label = this.add
+      .bitmapText(THEME.width / 2, THEME.height / 2 - 30, 'pix', 'AD BREAK', 16)
+      .setOrigin(0.5)
+      .setDepth(2001)
+      .setTint(0xffd166);
+    const hint = this.add
+      .bitmapText(
+        THEME.width / 2,
+        THEME.height / 2 + 10,
+        'pix',
+        'REMOVE ADS FOREVER IN THE SHOP',
+        8,
+      )
+      .setOrigin(0.5)
+      .setDepth(2001)
+      .setTint(0x9a8d6e);
+    void this.ads.showInterstitial().then(() => {
+      veil.destroy();
+      label.destroy();
+      hint.destroy();
+    });
+  }
+
   private toast(msg: string): void {
     const t = this.add
       .bitmapText(THEME.width / 2, L.panelTop - 24, 'pix', msg, 8)
@@ -612,11 +654,11 @@ export class UIScene extends Phaser.Scene {
 
     const tabs = [
       { label: 'SWORDS', frame: 0, active: true, panel: null },
-      { label: 'SKILLS', frame: 1, active: false, panel: null },
+      { label: 'SKILLS', frame: 1, active: true, panel: 'Skills' },
       { label: 'PET', frame: 2, active: true, panel: 'Pets' },
-      { label: 'FAIRY', frame: 3, active: false, panel: null },
+      { label: 'FAIRY', frame: 3, active: true, panel: 'Fairy' },
       { label: 'RELICS', frame: 4, active: true, panel: 'Souls' },
-      { label: 'SHOP', frame: 5, active: false, panel: null },
+      { label: 'SHOP', frame: 5, active: true, panel: 'Shop' },
     ];
     const w = THEME.width / tabs.length;
     tabs.forEach((tab, i) => {

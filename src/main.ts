@@ -5,10 +5,13 @@ import { computeOffline } from './core/OfflineEarnings';
 import { LocalStorageAdapter, SaveManager } from './core/SaveManager';
 import { BattleScene } from './scenes/BattleScene';
 import { BootScene } from './scenes/BootScene';
+import { FairyPanel } from './scenes/FairyPanel';
 import { PetsPanel } from './scenes/PetsPanel';
 import { PreloadScene } from './scenes/PreloadScene';
 import { QuestsPanel } from './scenes/QuestsPanel';
 import { RaidPanel } from './scenes/RaidPanel';
+import { ShopPanel } from './scenes/ShopPanel';
+import { SkillsPanel } from './scenes/SkillsPanel';
 import { SkinsPanel } from './scenes/SkinsPanel';
 import { SoulsPanel } from './scenes/SoulsPanel';
 import { TitleScene } from './scenes/TitleScene';
@@ -38,7 +41,7 @@ const game = new Phaser.Game({
     width: THEME.width,
     height: THEME.height,
   },
-  scene: [BootScene, PreloadScene, TitleScene, BattleScene, UIScene, SkinsPanel, RaidPanel, SoulsPanel, QuestsPanel, PetsPanel],
+  scene: [BootScene, PreloadScene, TitleScene, BattleScene, UIScene, SkinsPanel, RaidPanel, SoulsPanel, QuestsPanel, PetsPanel, ShopPanel, SkillsPanel, FairyPanel],
   callbacks: {
     preBoot: (g) => {
       g.registry.set('gs', gs);
@@ -71,6 +74,9 @@ if (import.meta.env.DEV) {
     openSouls: () => game.scene.getScene('UI')?.scene.launch('Souls'),
     openQuests: () => game.scene.getScene('UI')?.scene.launch('Quests'),
     openPets: () => game.scene.getScene('UI')?.scene.launch('Pets'),
+    openShop: () => game.scene.getScene('UI')?.scene.launch('Shop'),
+    openSkills: () => game.scene.getScene('UI')?.scene.launch('Skills'),
+    openFairy: () => game.scene.getScene('UI')?.scene.launch('Fairy'),
     hatch: (kind: 'gold' | 'gem' | 'free', roll?: number) => gs.hatchEgg(kind, roll),
     addSouls: (n: number) => { gs.souls += n; },
     prestige: () => gs.prestige(),

@@ -33,6 +33,6 @@ saves automatically.
 - [x] M1 Core loop: auto-battle, waves & bosses, merge grid, autosave
 - [x] M2 Generated pixel-art sprite sheets, animations, biomes, SFX
 - [x] M3 Retention: offline earnings, Soul Relics, daily quests, pets, prestige
-- [ ] M4 Monetization (ads + IAP behind a web-mock layer)
+- [x] M4 Monetization: shop, gem packs, piggy bank, interstitials (web-mock layer) + skills, fairy, weekly/monthly quests
 - [ ] M5 Capacitor wrap (Android + iOS)
 - [ ] M6 Store readiness (icons, listings, privacy, compliance)

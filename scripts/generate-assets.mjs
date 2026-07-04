@@ -375,6 +375,34 @@ function petDrake(frame) {
   return finish(p);
 }
 
+// ---------- Fairy (24x24 logical, glowing helper sprite) ----------
+
+function fairy(frame) {
+  const p = new Pix(24, 24);
+  const GLOW = '#b8f06b';
+  const up = frame === 0;
+  const wy = up ? 3 : 8;
+  // Gossamer wings, flapping
+  p.tri(3, wy, 9, 11, 8, 16, '#e8ffd0');
+  p.tri(21, wy, 15, 11, 16, 16, '#e8ffd0');
+  p.line(3, wy, 8, 14, '#8cc850');
+  p.line(21, wy, 16, 14, '#8cc850');
+  // Glowing dress
+  p.domeEllipse(12, 14, 4, 5.5, ['#eaffd8', GLOW, '#5c9a3a']);
+  // Head + tiny bun
+  p.domeEllipse(12, 6, 3, 3, ['#ffe2c8', '#eab88c', '#b08858']);
+  p.rect(10, 2, 4, 2, '#8a5a2e');
+  p.set(11, 6, '#14101c'); // eyes
+  p.set(14, 6, '#14101c');
+  // Sparkle trail
+  p.set(6, 19 + (up ? 0 : 1), GLOW);
+  p.set(18, 20 - (up ? 0 : 1), GLOW);
+  p.set(12, 22, '#eaffd8');
+  const out = finish(p);
+  out.halo('#b8f06b88');
+  return out;
+}
+
 // ---------- Weapons (24x28 logical, 12 designs; high tiers glow) ----------
 
 const WEAPONS = [
@@ -778,6 +806,7 @@ writeSheet(`${OUT}/pet-emberbat.png`, [petEmberbat(0), petEmberbat(1)], 1);
 writeSheet(`${OUT}/pet-wisp.png`, [petWisp(0), petWisp(1)], 1);
 writeSheet(`${OUT}/pet-pebble.png`, [petPebble(0), petPebble(1)], 1);
 writeSheet(`${OUT}/pet-drake.png`, [petDrake(0), petDrake(1)], 1);
+writeSheet(`${OUT}/fairy.png`, [fairy(0), fairy(1)], 1);
 writeSheet(`${OUT}/gear.png`, WEAPONS.map(weapon), 2);
 writeSheet(
   `${OUT}/deco.png`,

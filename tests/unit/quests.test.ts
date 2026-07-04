@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { DAILY_QUESTS, questById, STREAK_BONUS_PER_DAY, utcDay } from '../../src/config/quests';
+import {
+  DAILY_QUESTS,
+  questBy,
+  questById,
+  STREAK_BONUS_PER_DAY,
+  utcDay,
+  utcMonth,
+  utcWeek,
+} from '../../src/config/quests';
 import { GameState } from '../../src/core/GameState';
 
 const DAY1 = Date.parse('2026-07-04T10:00:00Z');
@@ -81,5 +89,60 @@ describe('daily quests', () => {
     const revived = GameState.deserialize(gs.serialize());
     expect(revived.questProgress('kills')).toBe(42);
     expect(revived.daily.day).toBe(utcDay(DAY1));
+  });
+});
+
+describe('weekly and monthly quests', () => {
+  it('one action counts toward all three sheets', () => {
+    const gs = new GameState();
+    gs.trackQuest('kills', 250, DAY1);
+    expect(gs.questProgress('kills', 'daily')).toBe(questById('kills').target);
+    expect(gs.questProgress('kills', 'weekly')).toBe(250);
+    expect(gs.questProgress('kills', 'monthly')).toBe(250);
+  });
+
+  it('weekly sheets survive a day rollover but reset on Monday', () => {
+    const gs = new GameState();
+    // 2026-07-04 is a Saturday; the week key is Monday 2026-06-29
+    expect(utcWeek(DAY1)).toBe('2026-06-29');
+    gs.trackQuest('kills', 500, DAY1);
+    gs.trackQuest('kills', 500, DAY2); // Sunday: same week
+    expect(gs.questProgress('kills', 'weekly')).toBe(1000);
+    expect(gs.questProgress('kills', 'daily')).toBe(200); // daily reset, re-capped
+    const MONDAY = Date.parse('2026-07-06T08:00:00Z');
+    gs.trackQuest('kills', 1, MONDAY);
+    expect(gs.questProgress('kills', 'weekly')).toBe(1);
+    expect(gs.weekly.key).toBe('2026-07-06');
+  });
+
+  it('monthly sheets reset on the 1st', () => {
+    const gs = new GameState();
+    expect(utcMonth(DAY1)).toBe('2026-07');
+    gs.trackQuest('merges', 50, DAY1);
+    gs.trackQuest('merges', 50, DAY4); // still July
+    expect(gs.questProgress('merges', 'monthly')).toBe(100);
+    const AUGUST = Date.parse('2026-08-01T00:30:00Z');
+    gs.trackQuest('merges', 2, AUGUST);
+    expect(gs.questProgress('merges', 'monthly')).toBe(2);
+  });
+
+  it('weekly claims pay their own gems, independent of daily claims', () => {
+    const gs = new GameState();
+    const weekly = questBy('weekly', 'raids');
+    gs.trackQuest('raids', weekly.target, DAY1);
+    expect(gs.claimQuest('raids', DAY1)).toBe(true); // daily
+    expect(gs.claimQuest('raids', DAY1, 'weekly')).toBe(true);
+    expect(gs.claimQuest('raids', DAY1, 'weekly')).toBe(false); // once
+    expect(gs.gems).toBe(questById('raids').gems + weekly.gems);
+  });
+
+  it('period sheets survive serialize round-trip', () => {
+    const gs = new GameState();
+    gs.trackQuest('stages', 12, DAY1);
+    const revived = GameState.deserialize(gs.serialize());
+    expect(revived.questProgress('stages', 'weekly')).toBe(12);
+    expect(revived.questProgress('stages', 'monthly')).toBe(12);
+    expect(revived.weekly.key).toBe(utcWeek(DAY1));
+    expect(revived.monthly.key).toBe(utcMonth(DAY1));
   });
 });

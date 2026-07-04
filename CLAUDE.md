@@ -14,18 +14,22 @@ finished with finish() (pad + outline) in scripts/generate-assets.mjs;
 numbers render in the generated bitmap pixel font ('pix').
 
 The full roadmap (M0–M6) and monetization design live in the repo owner's plan;
-current status: **M0–M3 done** — skins, 4-sword loadout, 6x7 board with
-purchasable cells, prestige (rebirth at stage 40, Souls banked), raids
-(post-prestige, 20 levels, ad cooldown reset), offline earnings (2x-ad popup),
-Soul Relics tree, daily quests + streak, pets (5 companions hatched from
-gold/gem/free-ad eggs, dup = level-up, top 3 fight in the arena). Playable
-core loop in browser, hi-detail pixel art, 25 hero skins incl. 5 premium IAP
-behind a web-mock IapService, save v9. Next: M4 monetization (shop, gem
-packs, piggy bank, interstitials), M5 Capacitor wrap (real AdMob +
+current status: **M0–M4 done, all six tab-bar tabs live** — skins, 4-sword
+loadout, 6x7 board with purchasable cells, prestige (rebirth at stage 40,
+Souls banked), raids (post-prestige, 20 levels, ad cooldown reset), offline
+earnings (2x-ad popup), Soul Relics tree, daily + weekly + monthly quests
+(daily streak), pets (5 companions from gold/gem/free-ad eggs, dup =
+level-up, top 3 fight in the arena), shop (4 gem packs, $0.99 starter pack,
+$4.99 remove-ads, piggy bank cracked via IAP, free ad chest), interstitial
+ad breaks (core/Interstitials.ts policy, disabled by remove_ads), 4 active
+skills (Whirlwind/Gold Rush/Time Warp/Battle Fury on sim-time cooldowns),
+fairy companion (stage 10, gold-levelled +DPS/+gold). Playable core loop in
+browser, hi-detail pixel art, 25 hero skins incl. 5 premium IAP behind a
+web-mock IapService, save v13. Next: M5 Capacitor wrap (real AdMob +
 RevenueCat), M6 store readiness. Skin catalog lives in src/config/skins.json
 (single source for game + asset generator); hero sheets are per-skin
 (assets/hero-<id>.png); pet defs in src/config/pets.ts (sheets
-assets/pet-<id>.png).
+assets/pet-<id>.png); IAP catalog in src/config/monetization.ts.
 
 ## Commands
 

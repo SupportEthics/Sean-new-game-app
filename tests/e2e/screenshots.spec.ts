@@ -127,6 +127,76 @@ test('pets fighting beside the hero', async ({ page }) => {
   await page.screenshot({ path: 'screenshots/09-arena-pets.png' });
 });
 
+test('shop panel', async ({ page }) => {
+  await page.evaluate(() => {
+    const g = window.__game as unknown as {
+      gs: { piggyGems: number };
+      openShop(): void;
+    };
+    g.gs.piggyGems = 84;
+    g.openShop();
+  });
+  await page.waitForFunction(
+    () => (window as unknown as { __shopOpen?: boolean }).__shopOpen === true,
+  );
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: 'screenshots/10-shop.png' });
+});
+
+test('skills panel with one buff active', async ({ page }) => {
+  await page.evaluate(() => {
+    const g = window.__game as unknown as {
+      gs: { highestStage: number; castSkill(id: string): boolean };
+      openSkills(): void;
+    };
+    g.gs.highestStage = 25;
+    g.gs.castSkill('whirlwind');
+    g.openSkills();
+  });
+  await page.waitForFunction(
+    () => (window as unknown as { __skillsOpen?: boolean }).__skillsOpen === true,
+  );
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: 'screenshots/11-skills.png' });
+});
+
+test('fairy panel levelled up', async ({ page }) => {
+  await page.evaluate(() => {
+    const g = window.__game as unknown as {
+      gs: { highestStage: number; fairyLevel: number; gold: number };
+      openFairy(): void;
+    };
+    g.gs.highestStage = 12;
+    g.gs.fairyLevel = 6;
+    g.gs.gold = 1e6;
+    g.openFairy();
+  });
+  await page.waitForFunction(
+    () => (window as unknown as { __fairyOpen?: boolean }).__fairyOpen === true,
+  );
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: 'screenshots/12-fairy.png' });
+});
+
+test('quests panel weekly tab', async ({ page }) => {
+  await page.evaluate(() => {
+    const g = window.__game as unknown as {
+      gs: { trackQuest(id: string, n: number): void };
+      openQuests(): void;
+    };
+    g.gs.trackQuest('kills', 850);
+    g.gs.trackQuest('merges', 40);
+    g.openQuests();
+  });
+  await page.waitForFunction(
+    () => (window as unknown as { __questsOpen?: boolean }).__questsOpen === true,
+  );
+  await page.waitForTimeout(400);
+  await page.mouse.click(195, 212); // WEEKLY tab
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: 'screenshots/13-quests-weekly.png' });
+});
+
 test('twilight biome at stage 12', async ({ page }) => {
   await page.evaluate(() => window.__game.setWave(12, 3));
   await page.waitForTimeout(1200);

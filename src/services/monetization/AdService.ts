@@ -19,6 +19,8 @@ export interface AdResult {
 export interface AdService {
   isReady(placement: AdPlacement): boolean;
   showRewarded(placement: AdPlacement): Promise<AdResult>;
+  /** Full-screen ad break between stages; resolves when it closes. */
+  showInterstitial(): Promise<void>;
   readonly isMock: boolean;
 }
 
@@ -33,5 +35,9 @@ export class WebMockAd implements AdService {
   async showRewarded(): Promise<AdResult> {
     await new Promise((r) => setTimeout(r, 1500)); // simulated ad playback
     return { rewarded: true };
+  }
+
+  async showInterstitial(): Promise<void> {
+    await new Promise((r) => setTimeout(r, 1200)); // the UI overlays its own mock
   }
 }

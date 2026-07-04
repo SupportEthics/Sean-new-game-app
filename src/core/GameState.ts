@@ -1,10 +1,20 @@
 import { ECONOMY } from '../config/economy';
+import { FAIRY, fairyLevelCost } from '../config/fairy';
+import {
+  FREE_CHEST,
+  gemPackBySku,
+  PIGGY,
+  REMOVE_ADS,
+  STARTER_PACK,
+} from '../config/monetization';
 import { PRESTIGE, soulsFor } from '../config/prestige';
 import {
   DAILY_QUESTS,
   isNextDay,
+  periodKey,
   QuestMetric,
-  questById,
+  QuestPeriod,
+  questBy,
   STREAK_BONUS_CAP,
   STREAK_BONUS_PER_DAY,
   utcDay,
@@ -20,12 +30,20 @@ import {
   petById,
   rollPet,
 } from '../config/pets';
+import { SKILLS, skillDefById } from '../config/skills';
 import { soulUpgradeById, soulUpgradeCost } from '../config/soulsTree';
 import { RAIDS, raidGems, raidGoldPerKill, raidMonsterHp } from '../config/raids';
 import { DEFAULT_SKIN, SkinDef, skinById } from '../config/skins';
 import { BattleState, newBattleState, tick, TickResult } from './BattleSim';
 import { GEAR, unlockedSlots } from '../config/gear';
-import { buyTierUpgradeCost, cellCost, gearCost, heroDps } from './EconomyMath';
+import {
+  buyTierUpgradeCost,
+  cellCost,
+  enemyHp,
+  gearCost,
+  goldDrop,
+  heroDps,
+} from './EconomyMath';
 import {
   emptyGrid,
   findBestMerge,
@@ -56,6 +74,15 @@ export interface GameEvents {
   'raid:started': number;
   'raid:ended': RaidResult;
   'pets:changed': Record<string, number>;
+  'shop:changed': undefined;
+  'skills:changed': undefined;
+  'fairy:changed': number;
+}
+
+/** Sim-time seconds left on a skill's buff and cooldown. */
+export interface SkillTimer {
+  active: number;
+  cooldown: number;
 }
 
 export type EggKind = 'gold' | 'gem' | 'free';
@@ -80,6 +107,17 @@ export interface DailyState {
 
 export function freshDaily(day: string): DailyState {
   return { day, progress: {}, claimed: [], streak: 0, lastAllDoneDay: '' };
+}
+
+/** Weekly/monthly quest sheet: same shape as daily, minus the streak. */
+export interface PeriodQuestState {
+  key: string; // the utcWeek/utcMonth this sheet belongs to
+  progress: Record<string, number>;
+  claimed: string[];
+}
+
+export function freshPeriod(key: string): PeriodQuestState {
+  return { key, progress: {}, claimed: [] };
 }
 
 export interface RaidState {
@@ -117,7 +155,15 @@ export interface SerializedState {
   pets: Record<string, number>;
   goldEggsBought: number;
   lastFreeEggDay: string;
+  removeAds: boolean;
+  starterPackOwned: boolean;
+  piggyGems: number;
+  freeChestReadyAt: number;
+  skillTimers: Record<string, SkillTimer>;
+  fairyLevel: number;
   daily: DailyState;
+  weekly: PeriodQuestState;
+  monthly: PeriodQuestState;
   prestigeCount: number;
   souls: number;
   raidHighest: number;
@@ -155,7 +201,21 @@ export class GameState {
   goldEggsBought = 0;
   /** UTC day the free ad egg was last claimed. */
   lastFreeEggDay = '';
+  /** True once the remove_ads IAP is owned — kills interstitial breaks. */
+  removeAds = false;
+  /** The one-time starter bundle can only be bought once. */
+  starterPackOwned = false;
+  /** Gems banked in the piggy; grows as bosses fall, cashed out via IAP. */
+  piggyGems = 0;
+  /** Epoch ms when the free ad chest can next be opened. */
+  freeChestReadyAt = 0;
+  /** Buff/cooldown seconds by skill id; ticks down on sim time. */
+  skillTimers: Record<string, SkillTimer> = {};
+  /** Fairy helper level; 0 = not recruited yet. */
+  fairyLevel = 0;
   daily: DailyState = freshDaily(utcDay(0));
+  weekly: PeriodQuestState = freshPeriod('');
+  monthly: PeriodQuestState = freshPeriod('');
   /** Highest raid level cleared (next level = raidHighest + 1). */
   raidHighest = 0;
   /** Epoch ms when the next raid may start. */
@@ -184,13 +244,31 @@ export class GameState {
       heroDps(gridTiers(this.grid), this.equipSlots) *
       this.skinDpsMultiplier *
       this.petDpsMultiplier *
+      this.skillDpsMultiplier *
+      this.fairyDpsMultiplier *
       (1 + this.soulLevel('might') * 0.1)
     );
   }
 
-  /** Gold income multiplier from Soul Relics. */
+  /** Gold income multiplier from Soul Relics, skill buffs and the fairy. */
   get goldMultiplier(): number {
-    return 1 + this.soulLevel('fortune') * 0.1;
+    return (
+      (1 + this.soulLevel('fortune') * 0.1) *
+      this.skillGoldMultiplier *
+      this.fairyGoldMultiplier
+    );
+  }
+
+  /**
+   * Estimated active gold income at the current position: how fast a
+   * mid-wave enemy dies, times its bounty. Used by offline earnings and the
+   * starter pack's gold grant. Deterministic, so it's unit-testable.
+   */
+  get goldPerSecondEstimate(): number {
+    const wave = Math.min(this.battle.wave, 9); // never price the boss in
+    const hp = enemyHp(this.battle.stage, wave);
+    const killsPerSecond = Math.min(this.heroDps / hp, 5); // cap absurd overkill
+    return killsPerSecond * goldDrop(this.battle.stage, wave);
   }
 
   /** Offline cap in hours, extended by the Endurance relic. */
@@ -304,6 +382,7 @@ export class GameState {
   }
 
   private step(dt: number): void {
+    this.tickSkillTimers(dt);
     if (this.raid) {
       this.raidStep(dt);
       return;
@@ -318,6 +397,11 @@ export class GameState {
     if (result.stageCleared) {
       this.highestStage = Math.max(this.highestStage, this.battle.stage);
       this.trackQuest('stages');
+      // The piggy bank fattens every time a boss falls
+      if (this.piggyGems < PIGGY.cap) {
+        this.piggyGems = Math.min(PIGGY.cap, this.piggyGems + PIGGY.gemsPerStage);
+        this.emit('shop:changed', undefined);
+      }
       this.emit('stage:changed', this.battle.stage);
     }
     if (result.bossFailed) this.emit('boss:failed', before);
@@ -584,46 +668,243 @@ export class GameState {
     return { pet, level: this.petLevel(pet.id), wasMaxed };
   }
 
-  // ---- Daily quests ----
+  // ---- Skills ----
 
-  /** Start a fresh quest sheet when the UTC day rolls over. */
-  rollDaily(now: number = Date.now()): void {
-    const today = utcDay(now);
-    if (this.daily.day === today) return;
-    const streak = this.daily.streak;
-    const lastAllDoneDay = this.daily.lastAllDoneDay;
-    this.daily = freshDaily(today);
-    this.daily.streak = streak;
-    this.daily.lastAllDoneDay = lastAllDoneDay;
-    this.emit('quests:changed', undefined);
+  private skillTimer(id: string): SkillTimer {
+    return this.skillTimers[id] ?? { active: 0, cooldown: 0 };
   }
 
-  trackQuest(id: QuestMetric, amount = 1, now: number = Date.now()): void {
-    this.rollDaily(now);
-    const target = questById(id).target;
-    const current = this.daily.progress[id] ?? 0;
-    if (current >= target) return;
-    this.daily.progress[id] = Math.min(target, current + amount);
-    this.emit('quests:changed', undefined);
+  skillActiveLeft(id: string): number {
+    return this.skillTimer(id).active;
   }
 
-  questProgress(id: QuestMetric): number {
-    return this.daily.progress[id] ?? 0;
+  skillCooldownLeft(id: string): number {
+    return this.skillTimer(id).cooldown;
   }
 
-  canClaimQuest(id: QuestMetric): boolean {
-    return (
-      this.questProgress(id) >= questById(id).target && !this.daily.claimed.includes(id)
+  skillUnlocked(id: string): boolean {
+    const def = skillDefById(id);
+    return def !== undefined && this.highestStage >= def.unlockStage;
+  }
+
+  /** DPS multiplier from active skill buffs (stacks multiplicatively). */
+  get skillDpsMultiplier(): number {
+    return SKILLS.reduce(
+      (m, def) => (def.dpsMult && this.skillActiveLeft(def.id) > 0 ? m * def.dpsMult : m),
+      1,
     );
   }
 
-  /** Claim a finished quest; completing the full sheet grows the streak. */
-  claimQuest(id: QuestMetric, now: number = Date.now()): boolean {
+  get skillGoldMultiplier(): number {
+    return SKILLS.reduce(
+      (m, def) => (def.goldMult && this.skillActiveLeft(def.id) > 0 ? m * def.goldMult : m),
+      1,
+    );
+  }
+
+  canCastSkill(id: string): boolean {
+    const def = skillDefById(id);
+    if (!def || !this.skillUnlocked(id) || this.skillCooldownLeft(id) > 0) return false;
+    if (def.warpSeconds && this.raid) return false; // no warping the raid timer
+    return true;
+  }
+
+  castSkill(id: string): boolean {
+    if (!this.canCastSkill(id)) return false;
+    const def = skillDefById(id)!;
+    this.skillTimers[id] = { active: def.durationSeconds, cooldown: def.cooldownSeconds };
+    this.emit('skills:changed', undefined);
+    // Time Warp: the warped seconds tick every timer too — time really passed
+    if (def.warpSeconds) this.update(def.warpSeconds);
+    return true;
+  }
+
+  private tickSkillTimers(dt: number): void {
+    let changed = false;
+    for (const id of Object.keys(this.skillTimers)) {
+      const t = this.skillTimers[id];
+      const wasActive = t.active > 0;
+      const wasCooling = t.cooldown > 0;
+      t.active = Math.max(0, t.active - dt);
+      t.cooldown = Math.max(0, t.cooldown - dt);
+      if ((wasActive && t.active === 0) || (wasCooling && t.cooldown === 0)) changed = true;
+      if (t.active === 0 && t.cooldown === 0) delete this.skillTimers[id];
+    }
+    if (changed) this.emit('skills:changed', undefined);
+  }
+
+  // ---- Fairy ----
+
+  get fairyUnlocked(): boolean {
+    return this.highestStage >= FAIRY.unlockStage;
+  }
+
+  get fairyDpsMultiplier(): number {
+    return 1 + this.fairyLevel * FAIRY.dpsPerLevel;
+  }
+
+  get fairyGoldMultiplier(): number {
+    return 1 + this.fairyLevel * FAIRY.goldPerLevel;
+  }
+
+  /** Gold price of the next fairy level, or null at the cap. */
+  get fairyUpgradeCost(): number | null {
+    return this.fairyLevel >= FAIRY.maxLevel ? null : fairyLevelCost(this.fairyLevel + 1);
+  }
+
+  get canUpgradeFairy(): boolean {
+    return (
+      this.fairyUnlocked &&
+      this.fairyUpgradeCost !== null &&
+      this.gold >= this.fairyUpgradeCost
+    );
+  }
+
+  upgradeFairy(): boolean {
+    if (!this.canUpgradeFairy) return false;
+    this.gold -= this.fairyUpgradeCost as number;
+    this.fairyLevel += 1;
+    this.emit('gold:changed', this.gold);
+    this.emit('fairy:changed', this.fairyLevel);
+    return true;
+  }
+
+  // ---- Shop / IAP fulfillment ----
+
+  /** True when the piggy holds enough gems to be worth cracking. */
+  get canCrackPiggy(): boolean {
+    return this.piggyGems >= PIGGY.minToCrack;
+  }
+
+  freeChestReady(now: number = Date.now()): boolean {
+    return now >= this.freeChestReadyAt;
+  }
+
+  /** Rewarded-ad payoff: open the free chest and start its cooldown. */
+  openFreeChest(now: number = Date.now()): number | null {
+    if (!this.freeChestReady(now)) return null;
+    this.freeChestReadyAt = now + FREE_CHEST.cooldownHours * 3_600_000;
+    this.addGems(FREE_CHEST.gems);
+    this.emit('shop:changed', undefined);
+    return FREE_CHEST.gems;
+  }
+
+  /**
+   * Grant what a completed purchase bought. Called by the shop after the
+   * IAP service confirms payment — never before. Returns false for SKUs
+   * this method doesn't handle (skins fulfill via grantSkin) or repeats of
+   * one-time products.
+   */
+  fulfillProduct(sku: string): boolean {
+    const pack = gemPackBySku(sku);
+    if (pack) {
+      this.addGems(pack.gems);
+      this.emit('shop:changed', undefined);
+      return true;
+    }
+    if (sku === STARTER_PACK.sku) {
+      if (this.starterPackOwned) return false;
+      this.starterPackOwned = true;
+      this.addGems(STARTER_PACK.gems);
+      this.addGold(Math.floor(this.goldPerSecondEstimate * STARTER_PACK.goldMinutes * 60));
+      this.emit('shop:changed', undefined);
+      return true;
+    }
+    if (sku === REMOVE_ADS.sku) {
+      if (this.removeAds) return false;
+      this.removeAds = true;
+      this.emit('shop:changed', undefined);
+      return true;
+    }
+    if (sku === PIGGY.product.sku) {
+      if (!this.canCrackPiggy) return false;
+      this.addGems(this.piggyGems);
+      this.piggyGems = 0;
+      this.emit('shop:changed', undefined);
+      return true;
+    }
+    return false;
+  }
+
+  // ---- Quests (daily / weekly / monthly) ----
+
+  /** The progress/claimed sheet for a period. */
+  private questSheet(period: QuestPeriod): {
+    progress: Record<string, number>;
+    claimed: string[];
+  } {
+    if (period === 'daily') return this.daily;
+    return period === 'weekly' ? this.weekly : this.monthly;
+  }
+
+  /** Start fresh quest sheets when their UTC period rolls over. */
+  rollDaily(now: number = Date.now()): void {
+    let changed = false;
+    const today = utcDay(now);
+    if (this.daily.day !== today) {
+      const streak = this.daily.streak;
+      const lastAllDoneDay = this.daily.lastAllDoneDay;
+      this.daily = freshDaily(today);
+      this.daily.streak = streak;
+      this.daily.lastAllDoneDay = lastAllDoneDay;
+      changed = true;
+    }
+    const week = periodKey('weekly', now);
+    if (this.weekly.key !== week) {
+      this.weekly = freshPeriod(week);
+      changed = true;
+    }
+    const month = periodKey('monthly', now);
+    if (this.monthly.key !== month) {
+      this.monthly = freshPeriod(month);
+      changed = true;
+    }
+    if (changed) this.emit('quests:changed', undefined);
+  }
+
+  /** Progress counts toward every period's sheet at once. */
+  trackQuest(id: QuestMetric, amount = 1, now: number = Date.now()): void {
     this.rollDaily(now);
-    if (!this.canClaimQuest(id)) return false;
-    this.daily.claimed.push(id);
-    this.addGems(questById(id).gems);
-    if (this.daily.claimed.length === DAILY_QUESTS.length) {
+    let changed = false;
+    for (const period of ['daily', 'weekly', 'monthly'] as QuestPeriod[]) {
+      const sheet = this.questSheet(period);
+      const target = questBy(period, id).target;
+      const current = sheet.progress[id] ?? 0;
+      if (current >= target) continue;
+      sheet.progress[id] = Math.min(target, current + amount);
+      changed = true;
+    }
+    if (changed) this.emit('quests:changed', undefined);
+  }
+
+  questProgress(id: QuestMetric, period: QuestPeriod = 'daily'): number {
+    return this.questSheet(period).progress[id] ?? 0;
+  }
+
+  questClaimed(id: QuestMetric, period: QuestPeriod = 'daily'): boolean {
+    return this.questSheet(period).claimed.includes(id);
+  }
+
+  canClaimQuest(id: QuestMetric, period: QuestPeriod = 'daily'): boolean {
+    const sheet = this.questSheet(period);
+    return (
+      this.questProgress(id, period) >= questBy(period, id).target &&
+      !sheet.claimed.includes(id)
+    );
+  }
+
+  /** Claim a finished quest; full-clearing the dailies grows the streak. */
+  claimQuest(
+    id: QuestMetric,
+    now: number = Date.now(),
+    period: QuestPeriod = 'daily',
+  ): boolean {
+    this.rollDaily(now);
+    if (!this.canClaimQuest(id, period)) return false;
+    const sheet = this.questSheet(period);
+    sheet.claimed.push(id);
+    this.addGems(questBy(period, id).gems);
+    if (period === 'daily' && this.daily.claimed.length === DAILY_QUESTS.length) {
       this.daily.streak =
         this.daily.lastAllDoneDay && isNextDay(this.daily.lastAllDoneDay, this.daily.day)
           ? this.daily.streak + 1
@@ -712,10 +993,28 @@ export class GameState {
       pets: { ...this.pets },
       goldEggsBought: this.goldEggsBought,
       lastFreeEggDay: this.lastFreeEggDay,
+      removeAds: this.removeAds,
+      starterPackOwned: this.starterPackOwned,
+      piggyGems: this.piggyGems,
+      freeChestReadyAt: this.freeChestReadyAt,
+      skillTimers: Object.fromEntries(
+        Object.entries(this.skillTimers).map(([id, t]) => [id, { ...t }]),
+      ),
+      fairyLevel: this.fairyLevel,
       daily: {
         ...this.daily,
         progress: { ...this.daily.progress },
         claimed: [...this.daily.claimed],
+      },
+      weekly: {
+        ...this.weekly,
+        progress: { ...this.weekly.progress },
+        claimed: [...this.weekly.claimed],
+      },
+      monthly: {
+        ...this.monthly,
+        progress: { ...this.monthly.progress },
+        claimed: [...this.monthly.claimed],
       },
       prestigeCount: this.prestigeCount,
       souls: this.souls,
@@ -742,10 +1041,28 @@ export class GameState {
     gs.pets = { ...data.pets };
     gs.goldEggsBought = data.goldEggsBought;
     gs.lastFreeEggDay = data.lastFreeEggDay;
+    gs.removeAds = data.removeAds;
+    gs.starterPackOwned = data.starterPackOwned;
+    gs.piggyGems = data.piggyGems;
+    gs.freeChestReadyAt = data.freeChestReadyAt;
+    gs.skillTimers = Object.fromEntries(
+      Object.entries(data.skillTimers).map(([id, t]) => [id, { ...t }]),
+    );
+    gs.fairyLevel = data.fairyLevel;
     gs.daily = {
       ...data.daily,
       progress: { ...data.daily.progress },
       claimed: [...data.daily.claimed],
+    };
+    gs.weekly = {
+      ...data.weekly,
+      progress: { ...data.weekly.progress },
+      claimed: [...data.weekly.claimed],
+    };
+    gs.monthly = {
+      ...data.monthly,
+      progress: { ...data.monthly.progress },
+      claimed: [...data.monthly.claimed],
     };
     gs.prestigeCount = data.prestigeCount;
     gs.souls = data.souls;

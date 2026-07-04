@@ -56,6 +56,10 @@ export class PreloadScene extends Phaser.Scene {
         frameHeight: 32,
       }),
     );
+    this.load.spritesheet('fairy', assetUrl('assets/fairy.png'), {
+      frameWidth: 28,
+      frameHeight: 28,
+    });
     this.load.spritesheet('gear', assetUrl('assets/gear.png'), { frameWidth: 56, frameHeight: 64 });
     this.load.spritesheet('deco', assetUrl('assets/deco.png'), { frameWidth: 28, frameHeight: 28 });
     this.load.spritesheet('torch', assetUrl('assets/torch.png'), { frameWidth: 20, frameHeight: 34 });
@@ -76,6 +80,7 @@ export class PreloadScene extends Phaser.Scene {
       ...SKINS.map((s) => `hero-${s.id}`),
       ...ENEMY_SPECIES.map((s) => `enemy-${s.key}`),
       ...PETS.map((p) => `pet-${p.id}`),
+      'fairy',
     ];
     keys.forEach((k) => this.textures.get(k).setFilter(Phaser.Textures.FilterMode.NEAREST));
 
@@ -127,6 +132,12 @@ export class PreloadScene extends Phaser.Scene {
         repeat: -1,
       }),
     );
+    this.anims.create({
+      key: 'fairy-idle',
+      frames: this.anims.generateFrameNumbers('fairy', { frames: [0, 1] }),
+      frameRate: 5,
+      repeat: -1,
+    });
 
     this.scene.start('Title');
   }

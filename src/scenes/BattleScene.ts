@@ -23,6 +23,7 @@ export class BattleScene extends Phaser.Scene {
   private hero!: Phaser.GameObjects.Sprite;
   private petSprites: Phaser.GameObjects.Sprite[] = [];
   private petShadows: Phaser.GameObjects.Image[] = [];
+  private fairySprite: Phaser.GameObjects.Sprite | null = null;
   private blades: { img: Phaser.GameObjects.Image; glow: Phaser.GameObjects.Image }[] = [];
   private slotIcons: Phaser.GameObjects.Image[] = [];
   private slotLocks: Phaser.GameObjects.BitmapText[] = [];
@@ -100,9 +101,11 @@ export class BattleScene extends Phaser.Scene {
     this.gs.on('raid:started', (level) => this.onRaidStarted(level));
     this.gs.on('raid:ended', (r) => this.onRaidEnded(r));
     this.gs.on('pets:changed', () => this.syncPets());
+    this.gs.on('fairy:changed', () => this.syncFairy());
 
     this.syncWeapon();
     this.syncPets();
+    this.syncFairy();
     this.syncWave(true);
   }
 
@@ -252,6 +255,25 @@ export class BattleScene extends Phaser.Scene {
           .play(`pet-${id}-idle`)
           .setDepth(slot.y > this.heroY ? 12 : 6),
       );
+    });
+  }
+
+  /** The fairy flutters above the hero's shoulder once recruited. */
+  private syncFairy(): void {
+    if (this.gs.fairyLevel <= 0 || this.fairySprite) {
+      return;
+    }
+    this.fairySprite = this.add
+      .sprite(this.heroX - 34, this.heroY - 44, 'fairy')
+      .play('fairy-idle')
+      .setDepth(11);
+    this.tweens.add({
+      targets: this.fairySprite,
+      y: this.heroY - 50,
+      duration: 1100,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.inOut',
     });
   }
 
