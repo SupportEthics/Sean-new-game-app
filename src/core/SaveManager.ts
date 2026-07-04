@@ -46,6 +46,29 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.buyTierLevel = Math.max(1, (save.state.highestTier ?? 1) - 3);
     return save;
   },
+  // v6 -> v7: Soul Relics
+  (save) => {
+    save.state.soulUpgrades = {};
+    return save;
+  },
+  // v7 -> v8: daily quests
+  (save) => {
+    save.state.daily = {
+      day: '1970-01-01',
+      progress: {},
+      claimed: [],
+      streak: 0,
+      lastAllDoneDay: '',
+    };
+    return save;
+  },
+  // v8 -> v9: pets + eggs
+  (save) => {
+    save.state.pets = {};
+    save.state.goldEggsBought = 0;
+    save.state.lastFreeEggDay = '';
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

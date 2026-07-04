@@ -3,6 +3,7 @@ import { ECONOMY } from '../config/economy';
 import { GEAR, tierName } from '../config/gear';
 import { formatNumber, gearDps } from '../core/EconomyMath';
 import { GameState } from '../core/GameState';
+import { formatDuration } from '../core/OfflineEarnings';
 import { SaveManager } from '../core/SaveManager';
 import { AdPlacement, AdService } from '../services/monetization/AdService';
 import { audio } from '../services/AudioService';
@@ -102,6 +103,7 @@ export class UIScene extends Phaser.Scene {
     });
 
     this.createSideButtons();
+    this.maybeShowOffline();
 
     if (import.meta.env.DEV) {
       (window as unknown as { __uiReady?: boolean }).__uiReady = true;
@@ -286,10 +288,18 @@ export class UIScene extends Phaser.Scene {
     this.raidLock = raid.lock;
     this.raidIcon = raidIcon;
 
+    const quests = this.sideButton(L.arenaTop + 190, 'QUESTS', () => {
+      if (!this.scene.isActive('Quests')) {
+        audio.buy();
+        this.scene.launch('Quests');
+      }
+    });
+    quests.icon(this.add.image(0, 0, 'icons', 1).setScale(0.9));
+
     // Rebirth appears once the run reaches the prestige stage
     this.rebirthButton = this.add.container(0, 0).setVisible(false);
     const x = 30;
-    const y = L.arenaTop + 190;
+    const y = L.arenaTop + 248;
     const g = this.add.graphics();
     g.fillStyle(0x4a1e60, 0.95);
     g.fillRoundedRect(x - 24, y - 24, 48, 48, 8);
@@ -322,6 +332,75 @@ export class UIScene extends Phaser.Scene {
       delay: 900,
       duration: 500,
       onComplete: () => t.destroy(),
+    });
+  }
+
+  /** Welcome-back popup: collect offline gold, or double it with an ad. */
+  maybeShowOffline(): void {
+    const offline = this.registry.get('offline') as { gold: number; seconds: number } | null;
+    if (!offline || offline.gold <= 0 || this.confirmLayer) return;
+    this.registry.set('offline', null); // consume
+
+    const layer = this.add.container(0, 0).setDepth(60);
+    this.confirmLayer = layer;
+    const dim = this.add
+      .rectangle(THEME.width / 2, THEME.height / 2, THEME.width, THEME.height, 0x14101c, 0.7)
+      .setInteractive();
+    const g = this.add.graphics();
+    g.fillStyle(THEME.cardBg);
+    g.fillRoundedRect(45, 300, 300, 230, 12);
+    g.lineStyle(3, THEME.gold);
+    g.strokeRoundedRect(45, 300, 300, 230, 12);
+    const title = this.add
+      .bitmapText(THEME.width / 2, 318, 'pix', 'WHILE YOU WERE AWAY', 16)
+      .setTint(0x8a5a2e)
+      .setOrigin(0.5, 0);
+    const body = this.add
+      .bitmapText(
+        THEME.width / 2,
+        352,
+        'pix',
+        `YOUR KNIGHT FOUGHT FOR ${formatDuration(offline.seconds)}`,
+        8,
+      )
+      .setTint(0x4a3520)
+      .setOrigin(0.5, 0);
+    const coin = this.add.image(THEME.width / 2 - 60, 396, 'coin').setScale(2);
+    const amount = this.add
+      .bitmapText(THEME.width / 2 - 40, 388, 'pix', formatNumber(offline.gold).toUpperCase(), 16)
+      .setTint(0xc9961e)
+      .setOrigin(0, 0);
+
+    const collect = this.add
+      .image(THEME.width / 2, 445, 'btn-wide')
+      .setTint(THEME.buttonBgDisabled)
+      .setInteractive({ useHandCursor: true });
+    const collectLbl = this.add
+      .bitmapText(THEME.width / 2, 445, 'pix', 'COLLECT', 8)
+      .setOrigin(0.5);
+    const double = this.add
+      .image(THEME.width / 2, 492, 'btn-wide')
+      .setTint(0x2884a8)
+      .setInteractive({ useHandCursor: true });
+    const doubleLbl = this.add
+      .bitmapText(THEME.width / 2, 492, 'pix', 'WATCH AD - COLLECT 2X', 8)
+      .setOrigin(0.5);
+    layer.add([dim, g, title, body, coin, amount, collect, collectLbl, double, doubleLbl]);
+
+    const close = (mult: number) => {
+      this.gs.addGold(offline.gold * mult);
+      audio.coin();
+      layer.destroy();
+      this.confirmLayer = null;
+    };
+    collect.on('pointerdown', () => close(1));
+    double.on('pointerdown', () => {
+      if (!this.ads.isReady('offline_double')) return close(1);
+      doubleLbl.setText('AD PLAYING...');
+      void this.ads.showRewarded('offline_double').then((r) => {
+        if (r.rewarded) this.gs.trackQuest('ads');
+        close(r.rewarded ? 2 : 1);
+      });
     });
   }
 
@@ -444,6 +523,7 @@ export class UIScene extends Phaser.Scene {
     void this.ads.showRewarded(key as AdPlacement).then((result) => {
       this.adPending = null;
       if (result.rewarded) {
+        this.gs.trackQuest('ads');
         this.setAutoWindow(key, Date.now() + ECONOMY.automationAdMinutes * 60_000);
         audio.coin();
         // Instant gratification on activation
@@ -531,17 +611,17 @@ export class UIScene extends Phaser.Scene {
     g.fillRect(0, y, THEME.width, 2);
 
     const tabs = [
-      { label: 'SWORDS', frame: 0, active: true },
-      { label: 'SKILLS', frame: 1, active: false },
-      { label: 'PET', frame: 2, active: false },
-      { label: 'FAIRY', frame: 3, active: false },
-      { label: 'RELICS', frame: 4, active: false },
-      { label: 'SHOP', frame: 5, active: false },
+      { label: 'SWORDS', frame: 0, active: true, panel: null },
+      { label: 'SKILLS', frame: 1, active: false, panel: null },
+      { label: 'PET', frame: 2, active: true, panel: 'Pets' },
+      { label: 'FAIRY', frame: 3, active: false, panel: null },
+      { label: 'RELICS', frame: 4, active: true, panel: 'Souls' },
+      { label: 'SHOP', frame: 5, active: false, panel: null },
     ];
     const w = THEME.width / tabs.length;
     tabs.forEach((tab, i) => {
       const cx = w / 2 + i * w;
-      if (tab.active) {
+      if (tab.active && !tab.panel) {
         const hl = this.add.graphics();
         hl.fillStyle(THEME.cardBg, 0.18);
         hl.fillRect(i * w + 2, y + 2, w - 4, THEME.height - y - 4);
@@ -554,6 +634,17 @@ export class UIScene extends Phaser.Scene {
         .bitmapText(cx, y + 48, 'pix', tab.label, 8)
         .setTint(tab.active ? 0xffd166 : 0x9a8d6e)
         .setOrigin(0.5);
+      if (tab.panel) {
+        this.add
+          .rectangle(cx, y + 32, w - 4, 60, 0xffffff, 0.001)
+          .setInteractive({ useHandCursor: true })
+          .on('pointerdown', () => {
+            if (!this.scene.isActive(tab.panel as string)) {
+              audio.buy();
+              this.scene.launch(tab.panel as string);
+            }
+          });
+      }
     });
   }
 

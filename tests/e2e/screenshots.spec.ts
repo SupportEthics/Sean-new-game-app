@@ -88,6 +88,45 @@ test('raids panel after prestige', async ({ page }) => {
   await page.screenshot({ path: 'screenshots/07-raids.png' });
 });
 
+test('pets panel with hatched squad', async ({ page }) => {
+  await page.evaluate(() => {
+    const g = window.__game as unknown as {
+      gs: { pets: Record<string, number>; gold: number; gems: number };
+      hatch(kind: string, roll?: number): unknown;
+      openPets(): void;
+    };
+    g.gs.gold = 50_000;
+    g.gs.gems = 60;
+    g.gs.pets = { pup: 4, emberbat: 2, drake: 1 };
+    g.openPets();
+  });
+  await page.waitForFunction(
+    () => (window as unknown as { __petsOpen?: boolean }).__petsOpen === true,
+  );
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: 'screenshots/08-pets.png' });
+});
+
+test('pets fighting beside the hero', async ({ page }) => {
+  await page.evaluate(() => {
+    const g = window.__game as unknown as {
+      gs: {
+        pets: Record<string, number>;
+        emit?: unknown;
+        hatchEgg(kind: string, roll?: number): unknown;
+        gold: number;
+      };
+    };
+    // Hatch through the API so pets:changed fires and the arena renders them
+    g.gs.gold = 1e9;
+    g.gs.hatchEgg('gold', 0); // pup
+    g.gs.hatchEgg('gold', 0.75); // emberbat
+    g.gs.hatchEgg('gold', 0.99); // drake
+  });
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: 'screenshots/09-arena-pets.png' });
+});
+
 test('twilight biome at stage 12', async ({ page }) => {
   await page.evaluate(() => window.__game.setWave(12, 3));
   await page.waitForTimeout(1200);

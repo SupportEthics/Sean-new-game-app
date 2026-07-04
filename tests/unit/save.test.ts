@@ -103,5 +103,9 @@ describe('SaveManager', () => {
     expect(loaded!.state.souls).toBe(0);
     expect(loaded!.state.raidHighest).toBe(0);
     expect(loaded!.state.raidReadyAt).toBe(0);
+    // v8 -> v9: pets arrive empty with the free egg still available
+    expect(loaded!.state.pets).toEqual({});
+    expect(loaded!.state.goldEggsBought).toBe(0);
+    expect(loaded!.state.freeEggAvailable()).toBe(true);
   });
 });

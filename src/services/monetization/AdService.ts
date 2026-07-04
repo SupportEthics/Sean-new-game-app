@@ -8,7 +8,8 @@ export type AdPlacement =
   | 'offline_double'
   | 'free_chest'
   | 'auto_merge'
-  | 'auto_buy';
+  | 'auto_buy'
+  | 'pet_egg';
 
 export interface AdResult {
   /** True when the ad played to completion and the reward should be granted. */

@@ -21,6 +21,8 @@ export class BattleScene extends Phaser.Scene {
   private wallTs!: Phaser.GameObjects.TileSprite;
   private decoLayer!: Phaser.GameObjects.Group;
   private hero!: Phaser.GameObjects.Sprite;
+  private petSprites: Phaser.GameObjects.Sprite[] = [];
+  private petShadows: Phaser.GameObjects.Image[] = [];
   private blades: { img: Phaser.GameObjects.Image; glow: Phaser.GameObjects.Image }[] = [];
   private slotIcons: Phaser.GameObjects.Image[] = [];
   private slotLocks: Phaser.GameObjects.BitmapText[] = [];
@@ -97,8 +99,10 @@ export class BattleScene extends Phaser.Scene {
     this.gs.on('grid:changed', () => this.syncWeapon());
     this.gs.on('raid:started', (level) => this.onRaidStarted(level));
     this.gs.on('raid:ended', (r) => this.onRaidEnded(r));
+    this.gs.on('pets:changed', () => this.syncPets());
 
     this.syncWeapon();
+    this.syncPets();
     this.syncWave(true);
   }
 
@@ -228,6 +232,27 @@ export class BattleScene extends Phaser.Scene {
       ? Phaser.Display.Color.HexStringToColor(aura.slice(0, 7)).color
       : THEME.gold;
     this.blades.forEach((b) => b.glow.setTint(this.auraTint));
+  }
+
+  /** Companions flanking the hero, one per active pet, on the reserved spots. */
+  private syncPets(): void {
+    this.petSprites.forEach((s) => s.destroy());
+    this.petShadows.forEach((s) => s.destroy());
+    this.petSprites = [];
+    this.petShadows = [];
+    this.gs.activePets.forEach((id, i) => {
+      const slot = BattleScene.PET_SLOTS[i];
+      if (!slot) return;
+      this.petShadows.push(
+        this.add.image(slot.x, slot.y + 12, 'shadow').setScale(0.6).setDepth(4),
+      );
+      this.petSprites.push(
+        this.add
+          .sprite(slot.x, slot.y, `pet-${id}`)
+          .play(`pet-${id}-idle`)
+          .setDepth(slot.y > this.heroY ? 12 : 6),
+      );
+    });
   }
 
   private createEnemy(): void {

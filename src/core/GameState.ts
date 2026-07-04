@@ -1,5 +1,26 @@
 import { ECONOMY } from '../config/economy';
 import { PRESTIGE, soulsFor } from '../config/prestige';
+import {
+  DAILY_QUESTS,
+  isNextDay,
+  QuestMetric,
+  questById,
+  STREAK_BONUS_CAP,
+  STREAK_BONUS_PER_DAY,
+  utcDay,
+} from '../config/quests';
+import {
+  ACTIVE_PET_SLOTS,
+  eggPool,
+  goldEggCost,
+  EGGS,
+  PET_DUP_GEMS,
+  PET_MAX_LEVEL,
+  PetDef,
+  petById,
+  rollPet,
+} from '../config/pets';
+import { soulUpgradeById, soulUpgradeCost } from '../config/soulsTree';
 import { RAIDS, raidGems, raidGoldPerKill, raidMonsterHp } from '../config/raids';
 import { DEFAULT_SKIN, SkinDef, skinById } from '../config/skins';
 import { BattleState, newBattleState, tick, TickResult } from './BattleSim';
@@ -30,11 +51,36 @@ export interface GameEvents {
   'skins:changed': string[];
   'cells:changed': number;
   'prestige:done': number;
+  'souls:changed': number;
+  'quests:changed': undefined;
   'raid:started': number;
   'raid:ended': RaidResult;
+  'pets:changed': Record<string, number>;
+}
+
+export type EggKind = 'gold' | 'gem' | 'free';
+
+export interface HatchResult {
+  pet: PetDef;
+  /** Level after hatching (0 delta means it was already maxed). */
+  level: number;
+  /** True when the pet was already max level; consolation gems were paid. */
+  wasMaxed: boolean;
 }
 
 type Handler<T> = (payload: T) => void;
+
+export interface DailyState {
+  day: string; // UTC calendar day the progress belongs to
+  progress: Record<string, number>;
+  claimed: string[];
+  streak: number;
+  lastAllDoneDay: string; // last day every quest was claimed
+}
+
+export function freshDaily(day: string): DailyState {
+  return { day, progress: {}, claimed: [], streak: 0, lastAllDoneDay: '' };
+}
 
 export interface RaidState {
   level: number;
@@ -67,6 +113,11 @@ export interface SerializedState {
   activeSkin: string;
   unlockedCells: number;
   buyTierLevel: number;
+  soulUpgrades: Record<string, number>;
+  pets: Record<string, number>;
+  goldEggsBought: number;
+  lastFreeEggDay: string;
+  daily: DailyState;
   prestigeCount: number;
   souls: number;
   raidHighest: number;
@@ -94,8 +145,17 @@ export class GameState {
   /** The tier the shop sells at; raised with gold via upgradeBuyTier(). */
   buyTierLevel = 1;
   prestigeCount = 0;
-  /** Rebirth currency, banked for the M3 upgrade tree. */
+  /** Rebirth currency, spent on permanent Soul Relics. */
   souls = 0;
+  /** Soul Relic levels by upgrade id. */
+  soulUpgrades: Record<string, number> = {};
+  /** Pet levels by pet id; absent = not hatched yet. */
+  pets: Record<string, number> = {};
+  /** Lifetime gold eggs bought — drives the escalating gold-egg price. */
+  goldEggsBought = 0;
+  /** UTC day the free ad egg was last claimed. */
+  lastFreeEggDay = '';
+  daily: DailyState = freshDaily(utcDay(0));
   /** Highest raid level cleared (next level = raidHighest + 1). */
   raidHighest = 0;
   /** Epoch ms when the next raid may start. */
@@ -120,7 +180,42 @@ export class GameState {
   // ---- Derived values ----
 
   get heroDps(): number {
-    return heroDps(gridTiers(this.grid), this.equipSlots) * this.skinDpsMultiplier;
+    return (
+      heroDps(gridTiers(this.grid), this.equipSlots) *
+      this.skinDpsMultiplier *
+      this.petDpsMultiplier *
+      (1 + this.soulLevel('might') * 0.1)
+    );
+  }
+
+  /** Gold income multiplier from Soul Relics. */
+  get goldMultiplier(): number {
+    return 1 + this.soulLevel('fortune') * 0.1;
+  }
+
+  /** Offline cap in hours, extended by the Endurance relic. */
+  get offlineCapHours(): number {
+    return ECONOMY.offlineCapHours + this.soulLevel('endurance');
+  }
+
+  soulLevel(id: string): number {
+    return this.soulUpgrades[id] ?? 0;
+  }
+
+  soulUpgradePrice(id: string): number | null {
+    const def = soulUpgradeById(id);
+    if (!def) return null;
+    const level = this.soulLevel(id);
+    return level >= def.maxLevel ? null : soulUpgradeCost(def, level);
+  }
+
+  buySoulUpgrade(id: string): boolean {
+    const price = this.soulUpgradePrice(id);
+    if (price === null || this.souls < price) return false;
+    this.souls -= price;
+    this.soulUpgrades[id] = this.soulLevel(id) + 1;
+    this.emit('souls:changed', this.souls);
+    return true;
   }
 
   /** Sword slots currently unlocked (1..4, by highest stage reached). */
@@ -216,11 +311,13 @@ export class GameState {
     const before = this.battle.stage;
     const result = tick(this.battle, this.heroDps, dt);
 
-    if (result.goldEarned > 0) this.addGold(result.goldEarned);
+    if (result.goldEarned > 0) this.addGold(Math.round(result.goldEarned * this.goldMultiplier));
     this.totalKills += result.kills;
+    if (result.kills > 0) this.trackQuest('kills', result.kills);
 
     if (result.stageCleared) {
       this.highestStage = Math.max(this.highestStage, this.battle.stage);
+      this.trackQuest('stages');
       this.emit('stage:changed', this.battle.stage);
     }
     if (result.bossFailed) this.emit('boss:failed', before);
@@ -255,6 +352,7 @@ export class GameState {
     const newTier = merge(this.grid, from, to, this.unlockedCells);
     if (newTier === null) return null;
     this.highestTier = Math.max(this.highestTier, newTier);
+    this.trackQuest('merges');
     this.emit('gear:merged', { index: to, tier: newTier });
     this.emit('grid:changed', this.grid);
     return newTier;
@@ -348,6 +446,7 @@ export class GameState {
       goldEarned: 0,
     };
     this.raidReadyAt = now + RAIDS.cooldownMinutes * 60_000;
+    this.trackQuest('raids', 1, now);
     this.emit('raid:started', level);
     return true;
   }
@@ -377,8 +476,9 @@ export class GameState {
       result.goldEarned += gold;
       raid.monsterHp = raid.monsterMaxHp;
     }
-    if (result.goldEarned > 0) this.addGold(result.goldEarned);
+    if (result.goldEarned > 0) this.addGold(Math.round(result.goldEarned * this.goldMultiplier));
     this.totalKills += result.kills;
+    if (result.kills > 0) this.trackQuest('kills', result.kills);
     this.emit('battle:tick', result);
 
     raid.timeLeft -= dt;
@@ -389,7 +489,8 @@ export class GameState {
     const raid = this.raid!;
     this.raid = null;
     const cleared = raid.kills >= RAIDS.clearKills;
-    const gems = raidGems(raid.level, raid.kills);
+    const gems =
+      raidGems(raid.level, raid.kills) + (raid.kills > 0 ? this.soulLevel('raider') : 0);
     if (gems > 0) this.addGems(gems);
     if (cleared) this.raidHighest = Math.max(this.raidHighest, raid.level);
     this.emit('raid:ended', {
@@ -399,6 +500,139 @@ export class GameState {
       gems,
       cleared,
     });
+  }
+
+  // ---- Pets ----
+
+  petLevel(id: string): number {
+    return this.pets[id] ?? 0;
+  }
+
+  /** Every pet level ever hatched keeps helping (collection incentive). */
+  get petDpsMultiplier(): number {
+    return (
+      1 +
+      Object.entries(this.pets).reduce(
+        (sum, [id, level]) => sum + level * (petById(id)?.dpsPerLevel ?? 0),
+        0,
+      )
+    );
+  }
+
+  /** Pets shown fighting in the arena: highest level first, ties by roster order. */
+  get activePets(): string[] {
+    return Object.entries(this.pets)
+      .filter(([, level]) => level > 0)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, ACTIVE_PET_SLOTS)
+      .map(([id]) => id);
+  }
+
+  /** Current gold-egg price (escalates with every gold egg bought). */
+  get goldEggCost(): number {
+    return goldEggCost(this.goldEggsBought);
+  }
+
+  get gemEggCost(): number {
+    return EGGS.gemCost;
+  }
+
+  freeEggAvailable(now: number = Date.now()): boolean {
+    return this.lastFreeEggDay !== utcDay(now);
+  }
+
+  canHatchEgg(kind: EggKind, now: number = Date.now()): boolean {
+    switch (kind) {
+      case 'gold':
+        return this.gold >= this.goldEggCost;
+      case 'gem':
+        return this.gems >= this.gemEggCost;
+      case 'free':
+        return this.freeEggAvailable(now);
+    }
+  }
+
+  /**
+   * Buy + crack an egg. `roll` is injectable for deterministic tests; the
+   * free (ad-rewarded) egg is limited to one per UTC day.
+   */
+  hatchEgg(
+    kind: EggKind,
+    roll: number = Math.random(),
+    now: number = Date.now(),
+  ): HatchResult | null {
+    if (!this.canHatchEgg(kind, now)) return null;
+    if (kind === 'gold') {
+      this.gold -= this.goldEggCost;
+      this.goldEggsBought += 1;
+      this.emit('gold:changed', this.gold);
+    } else if (kind === 'gem') {
+      this.gems -= this.gemEggCost;
+      this.emit('gems:changed', this.gems);
+    } else {
+      this.lastFreeEggDay = utcDay(now);
+    }
+
+    const pet = rollPet(roll, eggPool(kind));
+    const wasMaxed = this.petLevel(pet.id) >= PET_MAX_LEVEL;
+    if (wasMaxed) {
+      this.addGems(PET_DUP_GEMS);
+    } else {
+      this.pets[pet.id] = this.petLevel(pet.id) + 1;
+    }
+    this.emit('pets:changed', this.pets);
+    return { pet, level: this.petLevel(pet.id), wasMaxed };
+  }
+
+  // ---- Daily quests ----
+
+  /** Start a fresh quest sheet when the UTC day rolls over. */
+  rollDaily(now: number = Date.now()): void {
+    const today = utcDay(now);
+    if (this.daily.day === today) return;
+    const streak = this.daily.streak;
+    const lastAllDoneDay = this.daily.lastAllDoneDay;
+    this.daily = freshDaily(today);
+    this.daily.streak = streak;
+    this.daily.lastAllDoneDay = lastAllDoneDay;
+    this.emit('quests:changed', undefined);
+  }
+
+  trackQuest(id: QuestMetric, amount = 1, now: number = Date.now()): void {
+    this.rollDaily(now);
+    const target = questById(id).target;
+    const current = this.daily.progress[id] ?? 0;
+    if (current >= target) return;
+    this.daily.progress[id] = Math.min(target, current + amount);
+    this.emit('quests:changed', undefined);
+  }
+
+  questProgress(id: QuestMetric): number {
+    return this.daily.progress[id] ?? 0;
+  }
+
+  canClaimQuest(id: QuestMetric): boolean {
+    return (
+      this.questProgress(id) >= questById(id).target && !this.daily.claimed.includes(id)
+    );
+  }
+
+  /** Claim a finished quest; completing the full sheet grows the streak. */
+  claimQuest(id: QuestMetric, now: number = Date.now()): boolean {
+    this.rollDaily(now);
+    if (!this.canClaimQuest(id)) return false;
+    this.daily.claimed.push(id);
+    this.addGems(questById(id).gems);
+    if (this.daily.claimed.length === DAILY_QUESTS.length) {
+      this.daily.streak =
+        this.daily.lastAllDoneDay && isNextDay(this.daily.lastAllDoneDay, this.daily.day)
+          ? this.daily.streak + 1
+          : 1;
+      this.daily.lastAllDoneDay = this.daily.day;
+      this.addGems(Math.min(this.daily.streak * STREAK_BONUS_PER_DAY, STREAK_BONUS_CAP));
+    }
+    this.emit('quests:changed', undefined);
+    return true;
   }
 
   // ---- Skins ----
@@ -474,6 +708,15 @@ export class GameState {
       activeSkin: this.activeSkin,
       unlockedCells: this.unlockedCells,
       buyTierLevel: this.buyTierLevel,
+      soulUpgrades: { ...this.soulUpgrades },
+      pets: { ...this.pets },
+      goldEggsBought: this.goldEggsBought,
+      lastFreeEggDay: this.lastFreeEggDay,
+      daily: {
+        ...this.daily,
+        progress: { ...this.daily.progress },
+        claimed: [...this.daily.claimed],
+      },
       prestigeCount: this.prestigeCount,
       souls: this.souls,
       raidHighest: this.raidHighest,
@@ -495,6 +738,15 @@ export class GameState {
     gs.activeSkin = data.activeSkin;
     gs.unlockedCells = data.unlockedCells;
     gs.buyTierLevel = data.buyTierLevel;
+    gs.soulUpgrades = { ...data.soulUpgrades };
+    gs.pets = { ...data.pets };
+    gs.goldEggsBought = data.goldEggsBought;
+    gs.lastFreeEggDay = data.lastFreeEggDay;
+    gs.daily = {
+      ...data.daily,
+      progress: { ...data.daily.progress },
+      claimed: [...data.daily.claimed],
+    };
     gs.prestigeCount = data.prestigeCount;
     gs.souls = data.souls;
     gs.raidHighest = data.raidHighest;

@@ -159,6 +159,7 @@ export class RaidPanel extends Phaser.Scene {
     void this.ads.showRewarded('raid_reset').then((result) => {
       this.adPlaying = false;
       if (result.rewarded) {
+        this.gs.trackQuest('ads');
         this.gs.resetRaidCooldown();
         audio.coin();
       }

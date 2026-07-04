@@ -290,6 +290,91 @@ function wraith(frame) {
   return finish(p);
 }
 
+// ---------- Pets (28x28 logical, 2 frames each) ----------
+
+function petPup(frame) {
+  const p = new Pix(28, 28);
+  const FUR = ['#8a92a2', '#6a707e', '#484c58'];
+  const hop = frame === 1 ? 1 : 0;
+  p.tri(2, 12 - hop, 7, 15 - hop, 5, 19 - hop, '#484c58'); // tail
+  p.domeEllipse(13, 17 - hop, 7, 5, FUR); // body
+  p.cylRect(8, 21 - hop, 2, 6 + hop, FUR);
+  p.cylRect(16, 21 - hop, 2, 6 + hop, FUR);
+  p.domeEllipse(20, 10 - hop, 5, 4.5, FUR); // head
+  p.tri(17, 4 - hop, 19, 8 - hop, 16, 8 - hop, '#484c58'); // ears
+  p.tri(21, 3 - hop, 23, 7 - hop, 19, 7 - hop, '#6a707e');
+  p.rect(24, 9 - hop, 3, 2, '#484c58'); // muzzle
+  p.set(21, 8 - hop, '#ffb347'); // eye
+  p.set(25, 11 - hop, '#14101c'); // nose
+  return finish(p);
+}
+
+function petEmberbat(frame) {
+  const p = new Pix(28, 28);
+  const C = '#c2482e';
+  const up = frame === 0;
+  const wy = up ? 5 : 12;
+  p.tri(1, wy, 9, 13, 8, 18, '#8a2e1c');
+  p.tri(27, wy, 19, 13, 20, 18, '#8a2e1c');
+  p.line(1, wy, 8, 16, '#5c1f12');
+  p.line(27, wy, 20, 16, '#5c1f12');
+  p.domeEllipse(14, 13, 5, 5, ['#e0705c', C, '#8a2e1c']);
+  p.tri(11, 6, 13, 10, 10, 10, C);
+  p.tri(17, 6, 15, 10, 18, 10, C);
+  p.rect(11, 12, 2, 1, '#ffe86b');
+  p.rect(16, 12, 2, 1, '#ffe86b');
+  p.set(13, 15, '#ffffff');
+  p.set(15, 15, '#ffffff');
+  return finish(p);
+}
+
+function petWisp(frame) {
+  const p = new Pix(28, 28);
+  const C = '#8ee8ff';
+  const off = frame === 1 ? 1 : 0;
+  p.domeEllipse(14, 12 - off, 6, 7, ['#d4f6ff', C, '#4fb4d0']);
+  for (let x = 9; x <= 19; x += 3) {
+    const drop = (x / 3 + frame) % 2 === 0 ? 4 : 2;
+    p.rect(x, 17 - off, 2, drop, C);
+  }
+  p.set(14, 3 - off, C); // flame tip
+  p.set(13, 4 - off, '#d4f6ff');
+  p.rect(11, 11 - off, 2, 2, '#14101c');
+  p.rect(16, 11 - off, 2, 2, '#14101c');
+  return finish(p);
+}
+
+function petPebble(frame) {
+  const p = new Pix(28, 28);
+  const ROCK = ['#9a92a8', '#7a7284', '#565060'];
+  const bob = frame === 1 ? 1 : 0;
+  p.domeEllipse(14, 15 + bob, 8, 7, ROCK);
+  p.rect(8, 22 + bob, 4, 4 - bob, '#565060');
+  p.rect(16, 22 + bob, 4, 4 - bob, '#565060');
+  p.rect(10, 12 + bob, 2, 2, '#ffb347');
+  p.rect(16, 12 + bob, 2, 2, '#ffb347');
+  p.line(9, 18 + bob, 12, 19 + bob, '#565060');
+  p.noise(8, 10, 12, 10, '#5a7a4a', 8);
+  return finish(p);
+}
+
+function petDrake(frame) {
+  const p = new Pix(28, 28);
+  const C = ['#8ab894', '#4e8a5e', '#2e5c3c'];
+  const flap = frame === 0 ? 0 : 2;
+  p.tri(2, 20, 8, 18, 7, 23, '#2e5c3c'); // tail
+  p.tri(9, 8 - flap, 15, 14, 8, 15, '#2e5c3c'); // wing
+  p.domeEllipse(15, 17, 7, 5.5, C); // body
+  p.cylRect(11, 22, 2, 4, C);
+  p.cylRect(18, 22, 2, 4, C);
+  p.domeEllipse(21, 9, 4.5, 4, C); // head
+  p.rect(25, 9, 2, 2, '#2e5c3c'); // snout
+  p.set(22, 7, '#ffe86b'); // eye
+  p.tri(19, 4, 21, 8, 17, 8, '#2e5c3c'); // horn
+  p.set(26, 12, '#ff9a3c'); // flame puff
+  return finish(p);
+}
+
 // ---------- Weapons (24x28 logical, 12 designs; high tiers glow) ----------
 
 const WEAPONS = [
@@ -688,6 +773,11 @@ writeSheet(`${OUT}/enemy-spider.png`, [spider(0), spider(1)], 1);
 writeSheet(`${OUT}/enemy-golem.png`, [golem(0), golem(1)], 1);
 writeSheet(`${OUT}/enemy-imp.png`, [imp(0), imp(1)], 1);
 writeSheet(`${OUT}/enemy-wraith.png`, [wraith(0), wraith(1)], 1);
+writeSheet(`${OUT}/pet-pup.png`, [petPup(0), petPup(1)], 1);
+writeSheet(`${OUT}/pet-emberbat.png`, [petEmberbat(0), petEmberbat(1)], 1);
+writeSheet(`${OUT}/pet-wisp.png`, [petWisp(0), petWisp(1)], 1);
+writeSheet(`${OUT}/pet-pebble.png`, [petPebble(0), petPebble(1)], 1);
+writeSheet(`${OUT}/pet-drake.png`, [petDrake(0), petDrake(1)], 1);
 writeSheet(`${OUT}/gear.png`, WEAPONS.map(weapon), 2);
 writeSheet(
   `${OUT}/deco.png`,

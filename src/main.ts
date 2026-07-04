@@ -1,12 +1,16 @@
 import Phaser from 'phaser';
 import { newBattleState } from './core/BattleSim';
 import { GameState } from './core/GameState';
+import { computeOffline } from './core/OfflineEarnings';
 import { LocalStorageAdapter, SaveManager } from './core/SaveManager';
 import { BattleScene } from './scenes/BattleScene';
 import { BootScene } from './scenes/BootScene';
+import { PetsPanel } from './scenes/PetsPanel';
 import { PreloadScene } from './scenes/PreloadScene';
+import { QuestsPanel } from './scenes/QuestsPanel';
 import { RaidPanel } from './scenes/RaidPanel';
 import { SkinsPanel } from './scenes/SkinsPanel';
+import { SoulsPanel } from './scenes/SoulsPanel';
 import { TitleScene } from './scenes/TitleScene';
 import { UIScene } from './scenes/UIScene';
 import { WebMockAd } from './services/monetization/AdService';
@@ -16,7 +20,8 @@ import { THEME } from './ui/theme';
 const saveManager = new SaveManager(new LocalStorageAdapter());
 const loaded = saveManager.load();
 const gs = loaded?.state ?? new GameState();
-// Offline earnings popup arrives in M3; loaded.awaySeconds is ready for it.
+const offline = loaded ? computeOffline(gs, loaded.awaySeconds) : null;
+gs.rollDaily();
 
 // Web/browser IAP mock; the native RevenueCat implementation replaces this
 // inside the Capacitor shells (M5).
@@ -33,13 +38,14 @@ const game = new Phaser.Game({
     width: THEME.width,
     height: THEME.height,
   },
-  scene: [BootScene, PreloadScene, TitleScene, BattleScene, UIScene, SkinsPanel, RaidPanel],
+  scene: [BootScene, PreloadScene, TitleScene, BattleScene, UIScene, SkinsPanel, RaidPanel, SoulsPanel, QuestsPanel, PetsPanel],
   callbacks: {
     preBoot: (g) => {
       g.registry.set('gs', gs);
       g.registry.set('saveManager', saveManager);
       g.registry.set('iap', iap);
       g.registry.set('ads', ads);
+      g.registry.set('offline', offline);
     },
   },
 });
@@ -62,7 +68,16 @@ if (import.meta.env.DEV) {
     save: () => saveManager.save(gs),
     openSkins: () => game.scene.getScene('UI')?.scene.launch('Skins'),
     openRaids: () => game.scene.getScene('UI')?.scene.launch('Raids'),
+    openSouls: () => game.scene.getScene('UI')?.scene.launch('Souls'),
+    openQuests: () => game.scene.getScene('UI')?.scene.launch('Quests'),
+    openPets: () => game.scene.getScene('UI')?.scene.launch('Pets'),
+    hatch: (kind: 'gold' | 'gem' | 'free', roll?: number) => gs.hatchEgg(kind, roll),
+    addSouls: (n: number) => { gs.souls += n; },
     prestige: () => gs.prestige(),
+    showOffline: (gold: number, seconds: number) => {
+      game.registry.set('offline', { gold, seconds });
+      (game.scene.getScene('UI') as unknown as { maybeShowOffline(): void }).maybeShowOffline();
+    },
     iap,
     ads,
     reset: () => {

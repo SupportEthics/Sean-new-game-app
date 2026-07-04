@@ -12,13 +12,18 @@ finished with finish() (pad + outline) in scripts/generate-assets.mjs;
 numbers render in the generated bitmap pixel font ('pix').
 
 The full roadmap (M0–M6) and monetization design live in the repo owner's plan;
-current status: **M0–M2 done + skins, 4-sword loadout, 6x7 board, core prestige (rebirth at stage 40, acorns banked), raids (post-prestige, 20 levels)** (playable core loop in browser,
-hi-detail pixel art, 25 hero skins incl. 5 premium IAP behind a web-mock
-IapService, save v2). Next: M3 retention (offline earnings, pets — arena has
-reserved PET_SLOTS, acorn upgrade tree), M4 monetization (shop, ads, raid
-cooldown ad-reset), M5 Capacitor wrap, M6 store readiness. Skin catalog lives in src/config/skins.json (single
-source for game + asset generator); hero sheets are per-skin
-(assets/hero-<id>.png).
+current status: **M0–M3 done** — skins, 4-sword loadout, 6x7 board with
+purchasable cells, prestige (rebirth at stage 40, Souls banked), raids
+(post-prestige, 20 levels, ad cooldown reset), offline earnings (2x-ad popup),
+Soul Relics tree, daily quests + streak, pets (5 companions hatched from
+gold/gem/free-ad eggs, dup = level-up, top 3 fight in the arena). Playable
+core loop in browser, hi-detail pixel art, 25 hero skins incl. 5 premium IAP
+behind a web-mock IapService, save v9. Next: M4 monetization (shop, gem
+packs, piggy bank, interstitials), M5 Capacitor wrap (real AdMob +
+RevenueCat), M6 store readiness. Skin catalog lives in src/config/skins.json
+(single source for game + asset generator); hero sheets are per-skin
+(assets/hero-<id>.png); pet defs in src/config/pets.ts (sheets
+assets/pet-<id>.png).
 
 ## Commands
 

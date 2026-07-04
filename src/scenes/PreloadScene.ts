@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { PETS } from '../config/pets';
 import { SKINS } from '../config/skins';
 import { ENEMY_SPECIES } from '../config/stages';
 import { THEME } from '../ui/theme';
@@ -49,6 +50,12 @@ export class PreloadScene extends Phaser.Scene {
         frameHeight: 48,
       }),
     );
+    PETS.forEach((p) =>
+      this.load.spritesheet(`pet-${p.id}`, assetUrl(`assets/pet-${p.id}.png`), {
+        frameWidth: 32,
+        frameHeight: 32,
+      }),
+    );
     this.load.spritesheet('gear', assetUrl('assets/gear.png'), { frameWidth: 56, frameHeight: 64 });
     this.load.spritesheet('deco', assetUrl('assets/deco.png'), { frameWidth: 28, frameHeight: 28 });
     this.load.spritesheet('torch', assetUrl('assets/torch.png'), { frameWidth: 20, frameHeight: 34 });
@@ -68,6 +75,7 @@ export class PreloadScene extends Phaser.Scene {
       'pixfont',
       ...SKINS.map((s) => `hero-${s.id}`),
       ...ENEMY_SPECIES.map((s) => `enemy-${s.key}`),
+      ...PETS.map((p) => `pet-${p.id}`),
     ];
     keys.forEach((k) => this.textures.get(k).setFilter(Phaser.Textures.FilterMode.NEAREST));
 
@@ -108,6 +116,14 @@ export class PreloadScene extends Phaser.Scene {
         key: `enemy-${s.key}-idle`,
         frames: this.anims.generateFrameNumbers(`enemy-${s.key}`, { frames: [0, 1] }),
         frameRate: 4,
+        repeat: -1,
+      }),
+    );
+    PETS.forEach((p) =>
+      this.anims.create({
+        key: `pet-${p.id}-idle`,
+        frames: this.anims.generateFrameNumbers(`pet-${p.id}`, { frames: [0, 1] }),
+        frameRate: 3,
         repeat: -1,
       }),
     );
