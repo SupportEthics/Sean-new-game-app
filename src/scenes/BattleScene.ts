@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { RAIDS } from '../config/raids';
 import { skinById } from '../config/skins';
 import { ENEMY_SPECIES, STAGES } from '../config/stages';
 import { isBossWave } from '../core/BattleSim';
@@ -91,6 +92,8 @@ export class BattleScene extends Phaser.Scene {
       }
     });
     this.gs.on('grid:changed', () => this.syncWeapon());
+    this.gs.on('raid:started', (level) => this.onRaidStarted(level));
+    this.gs.on('raid:ended', (r) => this.onRaidEnded(r));
 
     this.syncWeapon();
     this.syncWave(true);
@@ -286,6 +289,12 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private syncWave(force: boolean): void {
+    if (this.gs.raid) {
+      // Raid mode: the boss bar doubles as the raid timer
+      this.bossBar.width =
+        196 * Phaser.Math.Clamp(this.gs.raid.timeLeft / RAIDS.durationSeconds, 0, 1);
+      return;
+    }
     const b = this.gs.battle;
     const key = `${b.stage}-${b.wave}-${b.enemiesLeftInWave}`;
     const boss = isBossWave(b);
@@ -339,9 +348,53 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private syncHpBar(): void {
-    const b = this.gs.battle;
-    const frac = b.currentEnemyMaxHp > 0 ? b.currentEnemyHp / b.currentEnemyMaxHp : 0;
+    const raid = this.gs.raid;
+    const frac = raid
+      ? raid.monsterHp / raid.monsterMaxHp
+      : this.gs.battle.currentEnemyMaxHp > 0
+        ? this.gs.battle.currentEnemyHp / this.gs.battle.currentEnemyMaxHp
+        : 0;
     this.hpBar.width = 42 * Phaser.Math.Clamp(frac, 0, 1);
+  }
+
+  private onRaidStarted(level: number): void {
+    const species = ENEMY_SPECIES[(level * 3) % ENEMY_SPECIES.length];
+    const tex = `enemy-${species.key}`;
+    this.enemy.setTexture(tex);
+    this.enemy.play(`${tex}-idle`);
+    this.enemy.setScale(1.4).setTint(0xffb0b0);
+    this.enemyShadow.setScale(1.5);
+    this.extraEnemies.forEach((e) => e.setVisible(false));
+    this.enemyName.setText(`RAID LV ${level}`).setVisible(true);
+    this.bossBarBg.setVisible(true);
+    this.bossBar.setVisible(true).setFillStyle(0x9b7ede);
+    this.lastWaveKey = ''; // force resync after the raid
+  }
+
+  private onRaidEnded(r: { kills: number; gold: number; gems: number; cleared: boolean }): void {
+    this.enemy.clearTint();
+    this.bossBar.setFillStyle(THEME.bossTimer);
+    this.enemyName.setVisible(false);
+    this.syncWave(true);
+
+    audio.stageUp();
+    const msg = r.cleared
+      ? `RAID CLEARED! +${formatNumber(r.gold).toUpperCase()} GOLD +${r.gems} GEMS`
+      : `RAID OVER - ${r.kills}/${RAIDS.clearKills} KILLS +${r.gems} GEMS`;
+    const banner = this.add
+      .bitmapText(THEME.width / 2, L.arenaTop + 150, 'pix', msg, 8)
+      .setTint(r.cleared ? THEME.gold : 0xffb4b4)
+      .setDropShadow(1, 1, 0x14101c, 1)
+      .setOrigin(0.5)
+      .setDepth(40);
+    this.tweens.add({
+      targets: banner,
+      y: banner.y - 24,
+      alpha: 0,
+      delay: 2200,
+      duration: 500,
+      onComplete: () => banner.destroy(),
+    });
   }
 
   // ---- Reactions ----

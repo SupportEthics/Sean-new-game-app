@@ -25,6 +25,14 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.unlockedCells = 20;
     return save;
   },
+  // v3 -> v4: prestige + raids
+  (save) => {
+    save.state.prestigeCount = 0;
+    save.state.acorns = 0;
+    save.state.raidHighest = 0;
+    save.state.raidReadyAt = 0;
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

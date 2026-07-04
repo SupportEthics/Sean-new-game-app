@@ -57,6 +57,22 @@ test('skins panel', async ({ page }) => {
   await page.screenshot({ path: 'screenshots/05-skins.png' });
 });
 
+test('raids panel after prestige', async ({ page }) => {
+  await page.evaluate(() => {
+    const g = window.__game as unknown as {
+      gs: { prestigeCount: number };
+      openRaids(): void;
+    };
+    g.gs.prestigeCount = 1;
+    g.openRaids();
+  });
+  await page.waitForFunction(
+    () => (window as unknown as { __raidsOpen?: boolean }).__raidsOpen === true,
+  );
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: 'screenshots/07-raids.png' });
+});
+
 test('twilight biome at stage 12', async ({ page }) => {
   await page.evaluate(() => window.__game.setWave(12, 3));
   await page.waitForTimeout(1200);

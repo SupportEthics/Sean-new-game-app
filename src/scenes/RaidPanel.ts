@@ -1,0 +1,178 @@
+import Phaser from 'phaser';
+import { RAIDS, raidGems, raidGoldPerKill } from '../config/raids';
+import { formatNumber } from '../core/EconomyMath';
+import { GameState } from '../core/GameState';
+import { audio } from '../services/AudioService';
+import { THEME } from '../ui/theme';
+
+const PANEL_X = 12;
+const PANEL_Y = 116;
+const PANEL_W = THEME.width - 24;
+const PANEL_H = 620;
+const ROW_H = 56;
+const ROW_PITCH = 62;
+
+/** Raid level list: fight the next level, review cleared ones. */
+export class RaidPanel extends Phaser.Scene {
+  private gs!: GameState;
+  private rows!: Phaser.GameObjects.Container;
+  private scrollY = 0;
+  private maxScroll = 0;
+  private dragStartY = 0;
+  private dragStartScroll = 0;
+  private dragging = false;
+  private cooldownText!: Phaser.GameObjects.BitmapText;
+
+  constructor() {
+    super('Raids');
+  }
+
+  create(): void {
+    this.gs = this.registry.get('gs') as GameState;
+    this.scrollY = 0;
+
+    const blocker = this.add
+      .rectangle(THEME.width / 2, THEME.height / 2, THEME.width, THEME.height, 0x14101c, 0.72)
+      .setInteractive();
+
+    const g = this.add.graphics();
+    g.fillStyle(THEME.panelBg);
+    g.fillRoundedRect(PANEL_X, PANEL_Y, PANEL_W, PANEL_H, 12);
+    g.lineStyle(3, THEME.cardBorder);
+    g.strokeRoundedRect(PANEL_X, PANEL_Y, PANEL_W, PANEL_H, 12);
+    g.fillStyle(THEME.headerBg);
+    g.fillRoundedRect(PANEL_X, PANEL_Y, PANEL_W, 40, { tl: 12, tr: 12, bl: 0, br: 0 });
+
+    this.add
+      .bitmapText(THEME.width / 2, PANEL_Y + 12, 'pix', 'RAIDS', 16)
+      .setTint(THEME.gold)
+      .setOrigin(0.5, 0);
+    this.cooldownText = this.add
+      .bitmapText(THEME.width / 2, PANEL_Y + PANEL_H - 18, 'pix', '', 8)
+      .setTint(0x8a5a2e)
+      .setOrigin(0.5, 0);
+
+    const close = this.add
+      .bitmapText(PANEL_X + PANEL_W - 22, PANEL_Y + 12, 'pix', 'X', 16)
+      .setOrigin(0.5, 0)
+      .setInteractive({ useHandCursor: true });
+    close.on('pointerdown', () => this.scene.stop());
+
+    this.rows = this.add.container(0, 0);
+    const maskShape = this.make.graphics();
+    maskShape.fillRect(PANEL_X + 2, PANEL_Y + 44, PANEL_W - 4, PANEL_H - 70);
+    this.rows.setMask(maskShape.createGeometryMask());
+
+    this.buildRows();
+    this.maxScroll = Math.max(0, RAIDS.maxLevel * ROW_PITCH + 16 - (PANEL_H - 70));
+
+    blocker.on('pointermove', (ptr: Phaser.Input.Pointer) => {
+      if (!ptr.isDown) return;
+      if (!this.dragging) {
+        this.dragging = true;
+        this.dragStartY = ptr.y;
+        this.dragStartScroll = this.scrollY;
+      }
+      this.setScroll(this.dragStartScroll + (this.dragStartY - ptr.y));
+    });
+    blocker.on('pointerup', () => (this.dragging = false));
+    this.input.on(
+      'wheel',
+      (_p: unknown, _o: unknown, _dx: number, dy: number) =>
+        this.setScroll(this.scrollY + dy * 0.6),
+    );
+
+    // Cooldown countdown + row refresh when it elapses
+    this.time.addEvent({
+      delay: 1000,
+      loop: true,
+      callback: () => this.refreshCooldown(),
+    });
+    this.refreshCooldown();
+
+    if (import.meta.env.DEV) {
+      (window as unknown as { __raidsOpen?: boolean }).__raidsOpen = true;
+      this.events.once('shutdown', () => {
+        (window as unknown as { __raidsOpen?: boolean }).__raidsOpen = false;
+      });
+    }
+  }
+
+  private setScroll(v: number): void {
+    this.scrollY = Phaser.Math.Clamp(v, 0, this.maxScroll);
+    this.rows.setY(-this.scrollY);
+  }
+
+  private refreshCooldown(): void {
+    const left = this.gs.raidCooldownLeft(Date.now());
+    if (left > 0) {
+      const m = Math.floor(left / 60000);
+      const sec = Math.floor((left % 60000) / 1000);
+      this.cooldownText.setText(`NEXT RAID READY IN ${m}:${String(sec).padStart(2, '0')}`);
+    } else {
+      if (this.cooldownText.text !== '') this.buildRows();
+      this.cooldownText.setText('');
+    }
+  }
+
+  private buildRows(): void {
+    this.rows.removeAll(true);
+    const now = Date.now();
+    const left = PANEL_X + 10;
+    const top = PANEL_Y + 50;
+
+    for (let level = 1; level <= RAIDS.maxLevel; level++) {
+      const y = top + (level - 1) * ROW_PITCH + ROW_H / 2;
+      const cleared = level <= this.gs.raidHighest;
+      const isNext = level === this.gs.raidNextLevel && !cleared;
+      const locked = !cleared && !isNext;
+      const canFight = isNext && this.gs.canStartRaid(level, now);
+
+      const row = this.add.container(0, 0);
+      const bg = this.add
+        .rectangle(THEME.width / 2, y, PANEL_W - 20, ROW_H, cleared ? 0xd8e4c4 : THEME.cardBg)
+        .setStrokeStyle(2, cleared ? 0x6fae4e : isNext ? THEME.gold : THEME.cardBorder);
+      if (locked) bg.setFillStyle(0xb8ab8e, 0.6);
+
+      const title = this.add
+        .bitmapText(left + 6, y - 18, 'pix', `RAID LV ${level}`, 16)
+        .setTint(locked ? 0x8a7d60 : 0x4a3520);
+      const gold = formatNumber(raidGoldPerKill(level)).toUpperCase();
+      const gems = raidGems(level, RAIDS.durationSeconds); // optimistic cap preview
+      const reward = this.add
+        .bitmapText(left + 6, y + 6, 'pix', `${gold} GOLD/KILL - UP TO ${gems} GEMS`, 8)
+        .setTint(locked ? 0x8a7d60 : 0x8a5a2e);
+
+      let stateText = 'LOCKED';
+      let stateTint = 0x8a7d60;
+      if (cleared) {
+        stateText = 'CLEARED';
+        stateTint = 0x2e7a1e;
+      } else if (isNext) {
+        stateText = canFight ? 'FIGHT!' : 'WAIT';
+        stateTint = canFight ? 0xffffff : 0x8a5a2e;
+      }
+      const state = this.add
+        .bitmapText(PANEL_X + PANEL_W - 24, y, 'pix', stateText, canFight ? 16 : 8)
+        .setOrigin(1, 0.5)
+        .setTint(stateTint);
+      if (canFight) {
+        const btn = this.add
+          .image(PANEL_X + PANEL_W - 52, y, 'btn-sm')
+          .setTint(THEME.buttonBg);
+        state.setDepth(1).setX(PANEL_X + PANEL_W - 24);
+        btn.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
+          if (this.gs.startRaid(level, Date.now())) {
+            audio.bossWarn();
+            this.scene.stop();
+          }
+        });
+        row.add([bg, title, reward, btn, state]);
+      } else {
+        row.add([bg, title, reward, state]);
+      }
+      this.rows.add(row);
+    }
+    this.rows.setY(-this.scrollY);
+  }
+}

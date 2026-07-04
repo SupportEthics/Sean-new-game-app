@@ -96,5 +96,10 @@ describe('SaveManager', () => {
     // v2 -> v3: board grew to 42 with the original 20 cells unlocked
     expect(loaded!.state.grid).toHaveLength(42);
     expect(loaded!.state.unlockedCells).toBe(20);
+    // v3 -> v4: prestige + raids
+    expect(loaded!.state.prestigeCount).toBe(0);
+    expect(loaded!.state.acorns).toBe(0);
+    expect(loaded!.state.raidHighest).toBe(0);
+    expect(loaded!.state.raidReadyAt).toBe(0);
   });
 });

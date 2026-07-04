@@ -1,4 +1,6 @@
 import { ECONOMY } from '../config/economy';
+import { acornsFor, PRESTIGE } from '../config/prestige';
+import { RAIDS, raidGems, raidGoldPerKill, raidMonsterHp } from '../config/raids';
 import { DEFAULT_SKIN, SkinDef, skinById } from '../config/skins';
 import { BattleState, newBattleState, tick, TickResult } from './BattleSim';
 import { GEAR, unlockedSlots } from '../config/gear';
@@ -27,9 +29,29 @@ export interface GameEvents {
   'skin:changed': string;
   'skins:changed': string[];
   'cells:changed': number;
+  'prestige:done': number;
+  'raid:started': number;
+  'raid:ended': RaidResult;
 }
 
 type Handler<T> = (payload: T) => void;
+
+export interface RaidState {
+  level: number;
+  timeLeft: number;
+  monsterHp: number;
+  monsterMaxHp: number;
+  kills: number;
+  goldEarned: number;
+}
+
+export interface RaidResult {
+  level: number;
+  kills: number;
+  gold: number;
+  gems: number;
+  cleared: boolean;
+}
 
 /** Serializable snapshot of everything that must survive a restart. */
 export interface SerializedState {
@@ -44,6 +66,10 @@ export interface SerializedState {
   ownedSkins: string[];
   activeSkin: string;
   unlockedCells: number;
+  prestigeCount: number;
+  acorns: number;
+  raidHighest: number;
+  raidReadyAt: number;
 }
 
 const TICK_SECONDS = 0.1;
@@ -64,6 +90,14 @@ export class GameState {
   ownedSkins: string[] = [DEFAULT_SKIN];
   activeSkin: string = DEFAULT_SKIN;
   unlockedCells: number = GEAR.baseCells;
+  prestigeCount = 0;
+  acorns = 0;
+  /** Highest raid level cleared (next level = raidHighest + 1). */
+  raidHighest = 0;
+  /** Epoch ms when the next raid may start. */
+  raidReadyAt = 0;
+  /** Active raid, or null. Not persisted — quitting abandons the raid. */
+  raid: RaidState | null = null;
 
   private handlers = new Map<keyof GameEvents, Set<Handler<never>>>();
   private tickAccumulator = 0;
@@ -154,6 +188,10 @@ export class GameState {
   }
 
   private step(dt: number): void {
+    if (this.raid) {
+      this.raidStep(dt);
+      return;
+    }
     const before = this.battle.stage;
     const result = tick(this.battle, this.heroDps, dt);
 
@@ -212,6 +250,127 @@ export class GameState {
   autoMergeOnce(): number | null {
     const pair = findBestMerge(this.grid);
     return pair ? this.mergeAt(pair.from, pair.to) : null;
+  }
+
+  // ---- Prestige ----
+
+  get canPrestige(): boolean {
+    return this.battle.stage >= PRESTIGE.minStage && !this.raid;
+  }
+
+  /** Acorns this rebirth would bank right now. */
+  get prestigeReward(): number {
+    return acornsFor(this.battle.stage);
+  }
+
+  /**
+   * Rebirth: reset the run (gold, gear, stages) and bank acorns. Permanent
+   * account progress survives: skins, gems, board cells, sword-slot record
+   * (highestStage), raids and prestige count.
+   */
+  prestige(): boolean {
+    if (!this.canPrestige) return false;
+    this.acorns += this.prestigeReward;
+    this.prestigeCount += 1;
+    this.gold = ECONOMY.startingGold;
+    this.grid = this.grid.map(() => null);
+    this.highestTier = 1;
+    this.battle = newBattleState(1);
+    this.emit('prestige:done', this.prestigeCount);
+    this.emit('gold:changed', this.gold);
+    this.emit('grid:changed', this.grid);
+    this.emit('stage:changed', 1);
+    return true;
+  }
+
+  // ---- Raids ----
+
+  get raidsUnlocked(): boolean {
+    return this.prestigeCount >= 1;
+  }
+
+  /** Highest raid level currently attemptable. */
+  get raidNextLevel(): number {
+    return Math.min(this.raidHighest + 1, RAIDS.maxLevel);
+  }
+
+  raidCooldownLeft(now: number): number {
+    return Math.max(0, this.raidReadyAt - now);
+  }
+
+  canStartRaid(level: number, now: number): boolean {
+    return (
+      this.raidsUnlocked &&
+      !this.raid &&
+      level >= 1 &&
+      level <= this.raidNextLevel &&
+      this.raidCooldownLeft(now) === 0
+    );
+  }
+
+  startRaid(level: number, now: number = Date.now()): boolean {
+    if (!this.canStartRaid(level, now)) return false;
+    const hp = raidMonsterHp(level);
+    this.raid = {
+      level,
+      timeLeft: RAIDS.durationSeconds,
+      monsterHp: hp,
+      monsterMaxHp: hp,
+      kills: 0,
+      goldEarned: 0,
+    };
+    this.raidReadyAt = now + RAIDS.cooldownMinutes * 60_000;
+    this.emit('raid:started', level);
+    return true;
+  }
+
+  private raidStep(dt: number): void {
+    const raid = this.raid!;
+    const result: TickResult = {
+      goldEarned: 0,
+      kills: 0,
+      damageDealt: 0,
+      waveCleared: false,
+      stageCleared: false,
+      bossFailed: false,
+    };
+
+    let budget = this.heroDps * dt;
+    while (budget > 0) {
+      const dealt = Math.min(budget, raid.monsterHp);
+      raid.monsterHp -= dealt;
+      result.damageDealt += dealt;
+      budget -= dealt;
+      if (raid.monsterHp > 0) break;
+      raid.kills += 1;
+      result.kills += 1;
+      const gold = raidGoldPerKill(raid.level);
+      raid.goldEarned += gold;
+      result.goldEarned += gold;
+      raid.monsterHp = raid.monsterMaxHp;
+    }
+    if (result.goldEarned > 0) this.addGold(result.goldEarned);
+    this.totalKills += result.kills;
+    this.emit('battle:tick', result);
+
+    raid.timeLeft -= dt;
+    if (raid.timeLeft <= 0) this.endRaid();
+  }
+
+  private endRaid(): void {
+    const raid = this.raid!;
+    this.raid = null;
+    const cleared = raid.kills >= RAIDS.clearKills;
+    const gems = raidGems(raid.level, raid.kills);
+    if (gems > 0) this.addGems(gems);
+    if (cleared) this.raidHighest = Math.max(this.raidHighest, raid.level);
+    this.emit('raid:ended', {
+      level: raid.level,
+      kills: raid.kills,
+      gold: raid.goldEarned,
+      gems,
+      cleared,
+    });
   }
 
   // ---- Skins ----
@@ -286,6 +445,10 @@ export class GameState {
       ownedSkins: [...this.ownedSkins],
       activeSkin: this.activeSkin,
       unlockedCells: this.unlockedCells,
+      prestigeCount: this.prestigeCount,
+      acorns: this.acorns,
+      raidHighest: this.raidHighest,
+      raidReadyAt: this.raidReadyAt,
     };
   }
 
@@ -302,6 +465,10 @@ export class GameState {
     gs.ownedSkins = [...data.ownedSkins];
     gs.activeSkin = data.activeSkin;
     gs.unlockedCells = data.unlockedCells;
+    gs.prestigeCount = data.prestigeCount;
+    gs.acorns = data.acorns;
+    gs.raidHighest = data.raidHighest;
+    gs.raidReadyAt = data.raidReadyAt;
     return gs;
   }
 }

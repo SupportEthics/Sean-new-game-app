@@ -5,6 +5,7 @@ import { LocalStorageAdapter, SaveManager } from './core/SaveManager';
 import { BattleScene } from './scenes/BattleScene';
 import { BootScene } from './scenes/BootScene';
 import { PreloadScene } from './scenes/PreloadScene';
+import { RaidPanel } from './scenes/RaidPanel';
 import { SkinsPanel } from './scenes/SkinsPanel';
 import { UIScene } from './scenes/UIScene';
 import { WebMockIap } from './services/monetization/WebMockIap';
@@ -29,7 +30,7 @@ const game = new Phaser.Game({
     width: THEME.width,
     height: THEME.height,
   },
-  scene: [BootScene, PreloadScene, BattleScene, UIScene, SkinsPanel],
+  scene: [BootScene, PreloadScene, BattleScene, UIScene, SkinsPanel, RaidPanel],
   callbacks: {
     preBoot: (g) => {
       g.registry.set('gs', gs);
@@ -56,6 +57,8 @@ if (import.meta.env.DEV) {
     timeTravel: (hours: number) => gs.update(hours * 3600),
     save: () => saveManager.save(gs),
     openSkins: () => game.scene.getScene('UI')?.scene.launch('Skins'),
+    openRaids: () => game.scene.getScene('UI')?.scene.launch('Raids'),
+    prestige: () => gs.prestige(),
     iap,
     reset: () => {
       localStorage.clear();

@@ -41,6 +41,10 @@ export class UIScene extends Phaser.Scene {
   private autoMerge = false;
   private autoBuy = false;
   private lastHud = '';
+  private raidLock!: Phaser.GameObjects.Text;
+  private raidIcon!: Phaser.GameObjects.Image;
+  private rebirthButton!: Phaser.GameObjects.Container;
+  private confirmLayer: Phaser.GameObjects.Container | null = null;
 
   constructor() {
     super('UI');
@@ -80,7 +84,7 @@ export class UIScene extends Phaser.Scene {
       },
     });
 
-    this.createSkinsButton();
+    this.createSideButtons();
 
     if (import.meta.env.DEV) {
       (window as unknown as { __uiReady?: boolean }).__uiReady = true;
@@ -104,6 +108,10 @@ export class UIScene extends Phaser.Scene {
     const key = `${b.stage}|${b.wave}|${level}|${Math.round(frac * 60)}`;
     if (key === this.lastHud) return;
     this.lastHud = key;
+
+    this.raidLock.setVisible(!this.gs.raidsUnlocked);
+    this.raidIcon.setAlpha(this.gs.raidsUnlocked ? 1 : 0.35);
+    this.rebirthButton.setVisible(this.gs.canPrestige);
 
     this.stageText.setText(`STAGE ${b.stage}`);
     this.waveText.setText(
@@ -187,46 +195,156 @@ export class UIScene extends Phaser.Scene {
     // Stage box (right)
     const box = this.add.graphics();
     box.fillStyle(THEME.cardBg);
-    box.fillRoundedRect(THEME.width - 168, y + 5, 156, L.hudH - 10, 8);
+    box.fillRoundedRect(THEME.width - 168, y + 2, 156, L.hudH - 4, 8);
     box.lineStyle(2, THEME.cardBorder);
-    box.strokeRoundedRect(THEME.width - 168, y + 5, 156, L.hudH - 10, 8);
+    box.strokeRoundedRect(THEME.width - 168, y + 2, 156, L.hudH - 4, 8);
     this.stageText = this.add
-      .bitmapText(THEME.width - 90, y + 9, 'pix', 'STAGE 1', 16)
+      .bitmapText(THEME.width - 90, y + 6, 'pix', 'STAGE 1', 16)
       .setTint(0xb03a2e)
       .setOrigin(0.5, 0);
     this.waveText = this.add
-      .bitmapText(THEME.width - 90, y + 32, 'pix', '', 8)
+      .bitmapText(THEME.width - 90, y + 31, 'pix', '', 8)
       .setTint(0x4a3520)
-      .setOrigin(0.5, 0.5);
+      .setOrigin(0.5, 0);
   }
 
-  // ---- Skins side button (arena left edge) ----
+  // ---- Side buttons (arena left edge) ----
 
-  private createSkinsButton(): void {
+  private sideButton(
+    y: number,
+    label: string,
+    onTap: () => void,
+  ): { lock: Phaser.GameObjects.Text; icon: (img: Phaser.GameObjects.Image) => void } {
     const x = 30;
-    const y = L.arenaTop + 74;
     const g = this.add.graphics();
     g.fillStyle(THEME.headerBg, 0.9);
     g.fillRoundedRect(x - 24, y - 24, 48, 48, 8);
     g.lineStyle(2, THEME.headerTrim);
     g.strokeRoundedRect(x - 24, y - 24, 48, 48, 8);
-    this.add.image(x, y - 5, `hero-${this.gs.activeSkin}`, 0).setScale(0.5);
-    this.gs.on('skin:changed', () => {
-      /* preview refresh handled by re-adding on open; static button is fine */
-    });
     this.add
-      .bitmapText(x, y + 14, 'pix', 'SKINS', 8)
+      .bitmapText(x, y + 14, 'pix', label, 8)
       .setTint(0xffd166)
       .setOrigin(0.5, 0);
+    const lock = this.add
+      .text(x, y - 5, '🔒', { fontSize: '15px' })
+      .setOrigin(0.5)
+      .setVisible(false);
     this.add
       .rectangle(x, y, 48, 48, 0xffffff, 0.001)
       .setInteractive({ useHandCursor: true })
-      .on('pointerdown', () => {
-        if (!this.scene.isActive('Skins')) {
-          audio.buy();
-          this.scene.launch('Skins');
-        }
-      });
+      .on('pointerdown', onTap);
+    return {
+      lock,
+      icon: (img) => img.setPosition(x, y - 5),
+    };
+  }
+
+  private createSideButtons(): void {
+    const skins = this.sideButton(L.arenaTop + 74, 'SKINS', () => {
+      if (!this.scene.isActive('Skins')) {
+        audio.buy();
+        this.scene.launch('Skins');
+      }
+    });
+    skins.icon(this.add.image(0, 0, `hero-${this.gs.activeSkin}`, 0).setScale(0.5));
+
+    const raid = this.sideButton(L.arenaTop + 132, 'RAID', () => {
+      if (!this.gs.raidsUnlocked) {
+        this.toast('UNLOCKS AFTER FIRST REBIRTH');
+        return;
+      }
+      if (!this.scene.isActive('Raids') && !this.gs.raid) {
+        audio.buy();
+        this.scene.launch('Raids');
+      }
+    });
+    const raidIcon = this.add.image(0, 0, 'icons', 0).setScale(0.9);
+    raid.icon(raidIcon);
+    this.raidLock = raid.lock;
+    this.raidIcon = raidIcon;
+
+    // Rebirth appears once the run reaches the prestige stage
+    this.rebirthButton = this.add.container(0, 0).setVisible(false);
+    const x = 30;
+    const y = L.arenaTop + 190;
+    const g = this.add.graphics();
+    g.fillStyle(0x4a1e60, 0.95);
+    g.fillRoundedRect(x - 24, y - 24, 48, 48, 8);
+    g.lineStyle(2, 0x9b7ede);
+    g.strokeRoundedRect(x - 24, y - 24, 48, 48, 8);
+    const star = this.add.image(x, y - 5, 'icons', 3).setScale(0.9);
+    const lbl = this.add
+      .bitmapText(x, y + 14, 'pix', 'REBIRTH', 8)
+      .setTint(0xd8b4ff)
+      .setOrigin(0.5, 0);
+    const hit = this.add
+      .rectangle(x, y, 48, 48, 0xffffff, 0.001)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => this.confirmPrestige());
+    this.rebirthButton.add([g, star, lbl, hit]);
+  }
+
+  /** Small self-dismissing message above the toggles row. */
+  private toast(msg: string): void {
+    const t = this.add
+      .bitmapText(THEME.width / 2, L.panelTop - 24, 'pix', msg, 8)
+      .setTint(0xffd166)
+      .setDropShadow(1, 1, 0x14101c, 1)
+      .setOrigin(0.5)
+      .setDepth(50);
+    this.tweens.add({
+      targets: t,
+      y: t.y - 16,
+      alpha: 0,
+      delay: 900,
+      duration: 500,
+      onComplete: () => t.destroy(),
+    });
+  }
+
+  private confirmPrestige(): void {
+    if (!this.gs.canPrestige || this.confirmLayer) return;
+    audio.bossWarn();
+    const layer = this.add.container(0, 0).setDepth(60);
+    this.confirmLayer = layer;
+    const dim = this.add
+      .rectangle(THEME.width / 2, THEME.height / 2, THEME.width, THEME.height, 0x14101c, 0.7)
+      .setInteractive();
+    const g = this.add.graphics();
+    g.fillStyle(THEME.cardBg);
+    g.fillRoundedRect(45, 330, 300, 190, 12);
+    g.lineStyle(3, 0x9b7ede);
+    g.strokeRoundedRect(45, 330, 300, 190, 12);
+    const title = this.add
+      .bitmapText(THEME.width / 2, 348, 'pix', 'REBIRTH?', 16)
+      .setTint(0x6a2a8a)
+      .setOrigin(0.5, 0);
+    const body = this.add
+      .bitmapText(
+        THEME.width / 2,
+        378,
+        'pix',
+        `RESETS GOLD, SWORDS AND STAGE.\nKEEPS SKINS, GEMS AND BOARD.\n\nEARN ${this.gs.prestigeReward} ACORNS`,
+        8,
+      )
+      .setTint(0x4a3520)
+      .setCenterAlign()
+      .setOrigin(0.5, 0);
+    const yes = this.add.image(140, 488, 'btn-sm').setTint(0x6a2a8a).setInteractive({ useHandCursor: true });
+    const yesLbl = this.add.bitmapText(140, 488, 'pix', 'REBIRTH', 8).setOrigin(0.5);
+    const no = this.add.image(250, 488, 'btn-sm').setTint(THEME.buttonBgDisabled).setInteractive({ useHandCursor: true });
+    const noLbl = this.add.bitmapText(250, 488, 'pix', 'CANCEL', 8).setOrigin(0.5);
+    layer.add([dim, g, title, body, yes, yesLbl, no, noLbl]);
+
+    const closeConfirm = () => {
+      layer.destroy();
+      this.confirmLayer = null;
+    };
+    yes.on('pointerdown', () => {
+      if (this.gs.prestige()) audio.stageUp();
+      closeConfirm();
+    });
+    no.on('pointerdown', closeConfirm);
   }
 
   // ---- Sword card panel ----
