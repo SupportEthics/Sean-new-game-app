@@ -11,6 +11,7 @@ function simulate(minutes: number): GameState {
   const seconds = minutes * 60;
   for (let s = 0; s < seconds; s++) {
     // Player actions ~once per second
+    if (!gs.canBuy && gs.canBuyCell) gs.buyCell(); // expand when boxed in
     while (gs.canBuy) gs.buyGear();
     while (gs.autoMergeOnce() !== null) {
       /* merge until dry */

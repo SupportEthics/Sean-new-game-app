@@ -93,5 +93,8 @@ describe('SaveManager', () => {
     expect(loaded!.state.activeSkin).toBe('squire');
     expect(loaded!.state.gold).toBe(999); // untouched fields survive
     expect(loaded!.state.highestStage).toBe(7);
+    // v2 -> v3: board grew to 42 with the original 20 cells unlocked
+    expect(loaded!.state.grid).toHaveLength(42);
+    expect(loaded!.state.unlockedCells).toBe(20);
   });
 });

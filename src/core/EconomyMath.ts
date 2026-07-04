@@ -12,6 +12,13 @@ export function buyTierFor(highestTier: number): number {
   return Math.max(1, highestTier - ECONOMY.buyTierLag);
 }
 
+/** Gold cost of unlocking grid cell number `n` (1-based; n > baseCells). */
+export function cellCost(n: number): number {
+  return Math.round(
+    GEAR.cellCostBase * Math.pow(GEAR.cellCostGrowth, n - GEAR.baseCells - 1),
+  );
+}
+
 /** DPS of a single gear item at `tier`. */
 export function gearDps(tier: number): number {
   return GEAR.baseDps * Math.pow(GEAR.dpsGrowth, tier - 1);

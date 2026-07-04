@@ -17,11 +17,17 @@ export class BootScene extends Phaser.Scene {
   }
 
   private makeRects(): void {
-    // Parchment sword card
+    // Parchment sword cards (large for popups, small for the merge board)
     let g = this.add.graphics();
     g.fillStyle(THEME.cardBg);
     g.fillRoundedRect(0, 0, 86, 64, 6);
     g.generateTexture('card', 86, 64);
+    g.destroy();
+
+    g = this.add.graphics();
+    g.fillStyle(THEME.cardBg);
+    g.fillRoundedRect(0, 0, 60, 46, 5);
+    g.generateTexture('card-sm', 60, 46);
     g.destroy();
 
     // White rounded rects for tinted buttons of each size

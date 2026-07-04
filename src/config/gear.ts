@@ -1,9 +1,15 @@
 // Weapon/gear tier definitions — data only.
 
 export const GEAR = {
-  /** Merge grid dimensions */
-  gridCols: 4,
-  gridRows: 5,
+  /** Merge grid dimensions (full board; part starts locked) */
+  gridCols: 6,
+  gridRows: 7,
+
+  /** Cells unlocked from the start; the rest are bought with gold. */
+  baseCells: 20,
+  /** Cost of the Nth extra cell: base * growth^(n - baseCells - 1) */
+  cellCostBase: 2500,
+  cellCostGrowth: 1.75,
 
   /** Highest merge tier available (tiers are 1-based) */
   maxTier: 40,

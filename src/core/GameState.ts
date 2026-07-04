@@ -1,8 +1,8 @@
 import { ECONOMY } from '../config/economy';
 import { DEFAULT_SKIN, SkinDef, skinById } from '../config/skins';
 import { BattleState, newBattleState, tick, TickResult } from './BattleSim';
-import { unlockedSlots } from '../config/gear';
-import { buyTierFor, gearCost, heroDps } from './EconomyMath';
+import { GEAR, unlockedSlots } from '../config/gear';
+import { buyTierFor, cellCost, gearCost, heroDps } from './EconomyMath';
 import {
   emptyGrid,
   findBestMerge,
@@ -12,6 +12,7 @@ import {
   merge,
   move,
   spawn,
+  TOTAL_CELLS,
 } from './MergeLogic';
 
 export interface GameEvents {
@@ -25,6 +26,7 @@ export interface GameEvents {
   'gear:bought': { index: number; tier: number };
   'skin:changed': string;
   'skins:changed': string[];
+  'cells:changed': number;
 }
 
 type Handler<T> = (payload: T) => void;
@@ -41,6 +43,7 @@ export interface SerializedState {
   totalGoldEarned: number;
   ownedSkins: string[];
   activeSkin: string;
+  unlockedCells: number;
 }
 
 const TICK_SECONDS = 0.1;
@@ -60,6 +63,7 @@ export class GameState {
   totalGoldEarned = 0;
   ownedSkins: string[] = [DEFAULT_SKIN];
   activeSkin: string = DEFAULT_SKIN;
+  unlockedCells: number = GEAR.baseCells;
 
   private handlers = new Map<keyof GameEvents, Set<Handler<never>>>();
   private tickAccumulator = 0;
@@ -113,7 +117,27 @@ export class GameState {
   }
 
   get canBuy(): boolean {
-    return this.gold >= this.buyCost && !isFull(this.grid);
+    return this.gold >= this.buyCost && !isFull(this.grid, this.unlockedCells);
+  }
+
+  /** Gold price of the next grid cell, or null when the board is complete. */
+  get cellCost(): number | null {
+    return this.unlockedCells >= TOTAL_CELLS ? null : cellCost(this.unlockedCells + 1);
+  }
+
+  get canBuyCell(): boolean {
+    return this.cellCost !== null && this.gold >= this.cellCost;
+  }
+
+  /** Buy the next locked grid cell with gold. */
+  buyCell(): boolean {
+    if (!this.canBuyCell) return false;
+    this.gold -= this.cellCost as number;
+    this.unlockedCells += 1;
+    this.emit('gold:changed', this.gold);
+    this.emit('cells:changed', this.unlockedCells);
+    this.emit('grid:changed', this.grid);
+    return true;
   }
 
   // ---- Actions ----
@@ -160,7 +184,7 @@ export class GameState {
     if (!this.canBuy) return false;
     const tier = this.buyTier;
     this.gold -= this.buyCost;
-    const index = spawn(this.grid, tier);
+    const index = spawn(this.grid, tier, this.unlockedCells);
     this.emit('gold:changed', this.gold);
     this.emit('gear:bought', { index, tier });
     this.emit('grid:changed', this.grid);
@@ -169,7 +193,7 @@ export class GameState {
 
   /** Merge grid item `from` onto `to`. Returns the new tier or null. */
   mergeAt(from: number, to: number): number | null {
-    const newTier = merge(this.grid, from, to);
+    const newTier = merge(this.grid, from, to, this.unlockedCells);
     if (newTier === null) return null;
     this.highestTier = Math.max(this.highestTier, newTier);
     this.emit('gear:merged', { index: to, tier: newTier });
@@ -179,7 +203,7 @@ export class GameState {
 
   /** Move an item to an empty cell or swap two items. */
   moveAt(from: number, to: number): boolean {
-    if (!move(this.grid, from, to)) return false;
+    if (!move(this.grid, from, to, this.unlockedCells)) return false;
     this.emit('grid:changed', this.grid);
     return true;
   }
@@ -261,6 +285,7 @@ export class GameState {
       totalGoldEarned: this.totalGoldEarned,
       ownedSkins: [...this.ownedSkins],
       activeSkin: this.activeSkin,
+      unlockedCells: this.unlockedCells,
     };
   }
 
@@ -276,6 +301,7 @@ export class GameState {
     gs.totalGoldEarned = data.totalGoldEarned;
     gs.ownedSkins = [...data.ownedSkins];
     gs.activeSkin = data.activeSkin;
+    gs.unlockedCells = data.unlockedCells;
     return gs;
   }
 }

@@ -7,9 +7,9 @@ import { audio } from '../services/AudioService';
 import { THEME, tierColor } from '../ui/theme';
 
 const L = THEME.layout;
-const CARD_W = 86;
-const CARD_H = 64;
-const GAP = 4;
+const CARD_W = 60;
+const CARD_H = 46;
+const GAP = 2;
 
 /** Level curve (display only, derived from lifetime kills — no save impact). */
 function killsForLevel(level: number): number {
@@ -358,6 +358,7 @@ export class UIScene extends Phaser.Scene {
 
   private rebuildItems(): void {
     this.itemLayer.removeAll(true);
+    this.renderLockedCells();
 
     const equipped = new Set(this.gs.equippedIndices);
     this.gs.grid.forEach((tier, index) => {
@@ -366,41 +367,33 @@ export class UIScene extends Phaser.Scene {
       const item = this.add.container(x, y);
       const isEquipped = equipped.has(index);
 
-      const face = this.add.image(0, 0, 'card');
+      const face = this.add.image(0, 0, 'card-sm');
       const border = this.add
         .rectangle(0, 0, CARD_W, CARD_H)
         .setStrokeStyle(isEquipped ? 3 : 2, isEquipped ? 0xffd166 : tierColor(tier));
-      const icon = this.add.image(-22, 0, 'gear', (tier - 1) % 12);
+      const icon = this.add.image(-14, 1, 'gear', (tier - 1) % 12).setScale(0.5);
       const dmg = this.add
         .bitmapText(
-          CARD_W / 2 - 5,
-          -CARD_H / 2 + 5,
+          CARD_W / 2 - 3,
+          -CARD_H / 2 + 3,
           'pix',
-          `${formatNumber(gearDps(tier)).toUpperCase()} DMG`,
+          formatNumber(gearDps(tier)).toUpperCase(),
           8,
         )
         .setTint(0xb03a2e)
         .setOrigin(1, 0);
-      const name = this.add
-        .text(8, 2, tierName(tier).replace(/ \+\d+$/, ''), {
-          fontFamily: THEME.fontFamily,
-          fontSize: '9px',
-          color: THEME.textDark,
-          wordWrap: { width: 40 },
-        })
-        .setOrigin(0, 0.5);
       const lvl = this.add
-        .bitmapText(CARD_W / 2 - 5, CARD_H / 2 - 4, 'pix', `${tier}`, 16)
+        .bitmapText(CARD_W / 2 - 3, CARD_H / 2 - 2, 'pix', `${tier}`, 16)
         .setTint(0x2e7a1e)
         .setOrigin(1, 1);
 
       if (isEquipped) {
         const badge = this.add
-          .bitmapText(-CARD_W / 2 + 4, -CARD_H / 2 + 5, 'pix', 'EQ', 8)
+          .bitmapText(-CARD_W / 2 + 3, -CARD_H / 2 + 3, 'pix', 'EQ', 8)
           .setTint(0xc9961e);
-        item.add([face, border, icon, dmg, name, lvl, badge]);
+        item.add([face, border, icon, dmg, lvl, badge]);
       } else {
-        item.add([face, border, icon, dmg, name, lvl]);
+        item.add([face, border, icon, dmg, lvl]);
       }
       item.setSize(CARD_W, CARD_H);
       item.setData('index', index);
@@ -437,6 +430,45 @@ export class UIScene extends Phaser.Scene {
     );
   }
 
+  /** Locked board cells: the next one is purchasable, the rest show a lock. */
+  private renderLockedCells(): void {
+    const unlocked = this.gs.unlockedCells;
+    for (let index = unlocked; index < this.cellCenters.length; index++) {
+      const { x, y } = this.cellCenters[index];
+      const cover = this.add
+        .rectangle(x, y, CARD_W, CARD_H, 0x2a1c10, 0.55)
+        .setStrokeStyle(1, THEME.cardBorder, 0.6);
+      this.itemLayer.add(cover);
+
+      if (index === unlocked && this.gs.cellCost !== null) {
+        const price = this.add
+          .bitmapText(x, y - 8, 'pix', formatNumber(this.gs.cellCost).toUpperCase(), 8)
+          .setTint(0xffd166)
+          .setOrigin(0.5, 0);
+        const plus = this.add
+          .bitmapText(x, y - 20, 'pix', '+', 16)
+          .setTint(0xffd166)
+          .setOrigin(0.5, 0);
+        const coin = this.add.image(x, y + 12, 'coin').setScale(0.9);
+        cover.setInteractive({ useHandCursor: true });
+        cover.on('pointerdown', () => {
+          if (this.gs.buyCell()) {
+            audio.buy();
+          }
+        });
+        this.itemLayer.add(plus);
+        this.itemLayer.add(price);
+        this.itemLayer.add(coin);
+      } else {
+        const lock = this.add
+          .text(x, y, '🔒', { fontSize: '13px' })
+          .setOrigin(0.5)
+          .setAlpha(0.45);
+        this.itemLayer.add(lock);
+      }
+    }
+  }
+
   private handleDrop(obj: Phaser.GameObjects.Container): void {
     const from = obj.getData('index') as number;
     const target = this.nearestCell(obj.x, obj.y);
@@ -456,7 +488,7 @@ export class UIScene extends Phaser.Scene {
 
   private nearestCell(x: number, y: number): number {
     let best = -1;
-    let bestDist = 48;
+    let bestDist = 32;
     this.cellCenters.forEach((c, i) => {
       const d = Phaser.Math.Distance.Between(x, y, c.x, c.y);
       if (d < bestDist) {

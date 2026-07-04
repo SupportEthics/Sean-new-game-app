@@ -17,6 +17,14 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.activeSkin = 'squire';
     return save;
   },
+  // v2 -> v3: the merge board grows to 6x7; original 20 cells stay unlocked
+  (save) => {
+    const grid = save.state.grid ?? [];
+    while (grid.length < 42) grid.push(null);
+    save.state.grid = grid;
+    save.state.unlockedCells = 20;
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

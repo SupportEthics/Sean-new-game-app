@@ -1,30 +1,47 @@
 import { GEAR } from '../config/gear';
 
-/** A cell holds a gear tier (1-based) or null when empty. Index = row * cols + col. */
+/**
+ * A cell holds a gear tier (1-based) or null when empty. Index = row * cols
+ * + col. The array always spans the full board; only the first `unlocked`
+ * cells are usable — the locked tail stays null.
+ */
 export type Grid = (number | null)[];
 
+export const TOTAL_CELLS = GEAR.gridCols * GEAR.gridRows;
+
 export function emptyGrid(): Grid {
-  return new Array<number | null>(GEAR.gridCols * GEAR.gridRows).fill(null);
+  return new Array<number | null>(TOTAL_CELLS).fill(null);
 }
 
-export function firstEmptyIndex(grid: Grid): number {
-  return grid.findIndex((c) => c === null);
+export function firstEmptyIndex(grid: Grid, unlocked: number = TOTAL_CELLS): number {
+  const limit = Math.min(unlocked, grid.length);
+  for (let i = 0; i < limit; i++) {
+    if (grid[i] === null) return i;
+  }
+  return -1;
 }
 
-export function isFull(grid: Grid): boolean {
-  return firstEmptyIndex(grid) === -1;
+export function isFull(grid: Grid, unlocked: number = TOTAL_CELLS): boolean {
+  return firstEmptyIndex(grid, unlocked) === -1;
 }
 
-/** Place a new item of `tier` in the first empty cell. Returns the index or -1 if full. */
-export function spawn(grid: Grid, tier: number): number {
-  const idx = firstEmptyIndex(grid);
+/** Place a new item of `tier` in the first empty unlocked cell, or -1 if full. */
+export function spawn(grid: Grid, tier: number, unlocked: number = TOTAL_CELLS): number {
+  const idx = firstEmptyIndex(grid, unlocked);
   if (idx !== -1) grid[idx] = tier;
   return idx;
 }
 
-export function canMerge(grid: Grid, a: number, b: number): boolean {
+export function canMerge(
+  grid: Grid,
+  a: number,
+  b: number,
+  unlocked: number = TOTAL_CELLS,
+): boolean {
   return (
     a !== b &&
+    a < unlocked &&
+    b < unlocked &&
     grid[a] !== null &&
     grid[a] === grid[b] &&
     (grid[a] as number) < GEAR.maxTier
@@ -35,17 +52,27 @@ export function canMerge(grid: Grid, a: number, b: number): boolean {
  * Merge item at `from` onto item at `to` (both same tier): `to` becomes tier+1,
  * `from` empties. Returns the new tier, or null if the merge is invalid.
  */
-export function merge(grid: Grid, from: number, to: number): number | null {
-  if (!canMerge(grid, from, to)) return null;
+export function merge(
+  grid: Grid,
+  from: number,
+  to: number,
+  unlocked: number = TOTAL_CELLS,
+): number | null {
+  if (!canMerge(grid, from, to, unlocked)) return null;
   const newTier = (grid[to] as number) + 1;
   grid[to] = newTier;
   grid[from] = null;
   return newTier;
 }
 
-/** Move an item to an empty cell, or swap with the occupant. */
-export function move(grid: Grid, from: number, to: number): boolean {
-  if (from === to || grid[from] === null) return false;
+/** Move an item to an empty unlocked cell, or swap with the occupant. */
+export function move(
+  grid: Grid,
+  from: number,
+  to: number,
+  unlocked: number = TOTAL_CELLS,
+): boolean {
+  if (from === to || from >= unlocked || to >= unlocked || grid[from] === null) return false;
   const tmp = grid[to];
   grid[to] = grid[from];
   grid[from] = tmp;
@@ -57,7 +84,7 @@ export function gridTiers(grid: Grid): number[] {
   return grid.filter((c): c is number => c !== null);
 }
 
-/** One best available merge (highest tier pair first), for the auto-merge button. */
+/** One best available merge (highest tier pair first), for auto-merge. */
 export function findBestMerge(grid: Grid): { from: number; to: number } | null {
   const byTier = new Map<number, number[]>();
   grid.forEach((tier, idx) => {
