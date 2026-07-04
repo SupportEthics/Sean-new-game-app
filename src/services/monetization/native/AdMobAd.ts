@@ -1,4 +1,4 @@
-import { AdMob } from '@capacitor-community/admob';
+import { AdMob, AdmobConsentStatus } from '@capacitor-community/admob';
 import { Capacitor } from '@capacitor/core';
 import { ADMOB } from '../../../config/native';
 import { AdResult, AdService } from '../AdService';
@@ -19,7 +19,17 @@ export class AdMobAd implements AdService {
 
   async init(): Promise<void> {
     try {
-      // Test devices/test mode until real ad units arrive at M6
+      // Google UMP consent first — required for EEA/UK users. The form only
+      // appears when regulation applies; everyone else passes straight through.
+      try {
+        const info = await AdMob.requestConsentInfo();
+        if (info.isConsentFormAvailable && info.status === AdmobConsentStatus.REQUIRED) {
+          await AdMob.showConsentForm();
+        }
+      } catch (e) {
+        console.warn('Consent flow failed; continuing without personalized ads', e);
+      }
+      // Test devices/test mode until real ad units arrive
       await AdMob.initialize({ initializeForTesting: true });
       this.initialized = true;
     } catch (e) {
