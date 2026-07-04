@@ -53,19 +53,34 @@ export class RaidPanel extends Phaser.Scene {
       .bitmapText(THEME.width / 2, PANEL_Y + 12, 'pix', 'RAIDS', 16)
       .setTint(THEME.gold)
       .setOrigin(0.5, 0);
+    // Footer sits above the masked list so clipped rows never show through
+    const footer = this.add.graphics().setDepth(4);
+    footer.fillStyle(THEME.panelBg);
+    footer.fillRoundedRect(PANEL_X + 2, PANEL_Y + PANEL_H - 112, PANEL_W - 4, 110, {
+      tl: 0,
+      tr: 0,
+      bl: 12,
+      br: 12,
+    });
+    footer.lineStyle(2, THEME.cardBorder);
+    footer.lineBetween(PANEL_X + 10, PANEL_Y + PANEL_H - 112, PANEL_X + PANEL_W - 10, PANEL_Y + PANEL_H - 112);
+
     this.cooldownText = this.add
-      .bitmapText(THEME.width / 2, PANEL_Y + PANEL_H - 46, 'pix', '', 8)
+      .bitmapText(THEME.width / 2, PANEL_Y + PANEL_H - 92, 'pix', '', 8)
       .setTint(0x8a5a2e)
-      .setOrigin(0.5, 0);
+      .setOrigin(0.5, 0)
+      .setDepth(5);
     this.adBtn = this.add
-      .image(THEME.width / 2, PANEL_Y + PANEL_H - 22, 'btn-wide')
+      .image(THEME.width / 2, PANEL_Y + PANEL_H - 56, 'btn-wide')
       .setTint(0x2884a8)
       .setVisible(false)
+      .setDepth(5)
       .setInteractive({ useHandCursor: true });
     this.adLabel = this.add
-      .bitmapText(THEME.width / 2, PANEL_Y + PANEL_H - 22, 'pix', 'WATCH AD - RAID NOW!', 8)
+      .bitmapText(THEME.width / 2, PANEL_Y + PANEL_H - 56, 'pix', 'WATCH AD - RAID NOW!', 8)
       .setOrigin(0.5)
-      .setVisible(false);
+      .setVisible(false)
+      .setDepth(6);
     this.adBtn.on('pointerdown', () => this.watchAd());
 
     const close = this.add

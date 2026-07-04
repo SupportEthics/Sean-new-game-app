@@ -12,6 +12,9 @@ export const ECONOMY = {
   startingGold: 25,
   startingGems: 0,
 
+  /** Watching a rewarded ad enables Auto Merge / Auto Buy for this long. */
+  automationAdMinutes: 30,
+
   /** Offline earnings (used from M3, defined now so saves carry the fields) */
   offlineRateMultiplier: 0.6,
   offlineCapHours: 8,

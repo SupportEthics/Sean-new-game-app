@@ -3,7 +3,12 @@
 // replaces it inside the Capacitor shells (M5). Reward-granting logic always
 // stays in core/UI, never in the service.
 
-export type AdPlacement = 'raid_reset' | 'offline_double' | 'free_chest';
+export type AdPlacement =
+  | 'raid_reset'
+  | 'offline_double'
+  | 'free_chest'
+  | 'auto_merge'
+  | 'auto_buy';
 
 export interface AdResult {
   /** True when the ad played to completion and the reward should be granted. */

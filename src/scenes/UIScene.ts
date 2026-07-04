@@ -1,8 +1,10 @@
 import Phaser from 'phaser';
+import { ECONOMY } from '../config/economy';
 import { GEAR, tierName } from '../config/gear';
 import { formatNumber, gearDps } from '../core/EconomyMath';
 import { GameState } from '../core/GameState';
 import { SaveManager } from '../core/SaveManager';
+import { AdPlacement, AdService } from '../services/monetization/AdService';
 import { audio } from '../services/AudioService';
 import { THEME, tierColor } from '../ui/theme';
 
@@ -39,8 +41,11 @@ export class UIScene extends Phaser.Scene {
   private buyBg!: Phaser.GameObjects.Image;
   private itemLayer!: Phaser.GameObjects.Container;
   private cellCenters: { x: number; y: number }[] = [];
-  private autoMerge = false;
-  private autoBuy = false;
+  private ads!: AdService;
+  private autoMergeUntil = 0;
+  private autoBuyUntil = 0;
+  private adPending: string | null = null;
+  private autoStates: { key: 'auto_merge' | 'auto_buy'; label: Phaser.GameObjects.BitmapText }[] = [];
   private lastHud = '';
   private raidLock!: Phaser.GameObjects.Text;
   private raidIcon!: Phaser.GameObjects.Image;
@@ -54,8 +59,9 @@ export class UIScene extends Phaser.Scene {
   create(): void {
     this.gs = this.registry.get('gs') as GameState;
     this.saveManager = this.registry.get('saveManager') as SaveManager;
-    this.autoMerge = this.pref('automerge');
-    this.autoBuy = this.pref('autobuy');
+    this.ads = this.registry.get('ads') as AdService;
+    this.autoMergeUntil = this.prefTime('automerge_until');
+    this.autoBuyUntil = this.prefTime('autobuy_until');
 
     this.createHeader();
     this.createHud();
@@ -75,14 +81,22 @@ export class UIScene extends Phaser.Scene {
     this.gs.on('stage:changed', () => this.rebuildItems()); // slot unlocks re-badge cards
     this.refreshTexts();
 
-    // Auto actions tick — one buy + one merge per beat feels game-paced
+    // Auto actions tick — one buy + one merge per beat, while the rewarded-ad
+    // window is active
     this.time.addEvent({
       delay: 900,
       loop: true,
       callback: () => {
-        if (this.autoBuy && this.gs.canBuy) this.gs.buyGear();
-        if (this.autoMerge) this.gs.autoMergeOnce();
+        const now = Date.now();
+        if (now < this.autoBuyUntil && this.gs.canBuy) this.gs.buyGear();
+        if (now < this.autoMergeUntil) this.gs.autoMergeOnce();
       },
+    });
+    // Countdown labels on the automation buttons
+    this.time.addEvent({
+      delay: 1000,
+      loop: true,
+      callback: () => this.refreshAutoLabels(),
     });
 
     this.createSideButtons();
@@ -124,17 +138,17 @@ export class UIScene extends Phaser.Scene {
     this.expBar.width = 130 * frac;
   }
 
-  private pref(key: string): boolean {
+  private prefTime(key: string): number {
     try {
-      return localStorage.getItem(`pawsblades_${key}`) === '1';
+      return Number(localStorage.getItem(`pawsblades_${key}`) ?? 0) || 0;
     } catch {
-      return false;
+      return 0;
     }
   }
 
-  private setPref(key: string, v: boolean): void {
+  private setPrefTime(key: string, v: number): void {
     try {
-      localStorage.setItem(`pawsblades_${key}`, v ? '1' : '0');
+      localStorage.setItem(`pawsblades_${key}`, String(v));
     } catch {
       /* storage unavailable */
     }
@@ -380,12 +394,8 @@ export class UIScene extends Phaser.Scene {
 
   // ---- Toggle row: Auto Merge / Auto Buy / Buy sword ----
 
-  private toggleCard(
-    x: number,
-    label: string,
-    initial: boolean,
-    onFlip: (v: boolean) => void,
-  ): void {
+  /** Ad-gated automation button: an ad enables it for a limited window. */
+  private autoCard(x: number, label: string, key: 'auto_merge' | 'auto_buy'): void {
     const y = L.togglesTop + 19;
     const bg = this.add
       .image(x, y, 'btn-sm')
@@ -399,34 +409,71 @@ export class UIScene extends Phaser.Scene {
         color: THEME.textDark,
       })
       .setOrigin(0.5);
-    const state = this.add
-      .text(x, y + 7, initial ? 'ON' : 'OFF', {
-        fontFamily: THEME.fontFamily,
-        fontSize: '12px',
-        fontStyle: 'bold',
-        color: initial ? '#2e7a1e' : '#8a5a2e',
-      })
-      .setOrigin(0.5);
-    let value = initial;
+    const state = this.add.bitmapText(x, y + 7, 'pix', '', 8).setOrigin(0.5);
+    this.autoStates.push({ key, label: state });
+
     bg.on('pointerdown', () => {
-      value = !value;
-      state.setText(value ? 'ON' : 'OFF');
-      state.setColor(value ? '#2e7a1e' : '#8a5a2e');
       this.tweens.add({ targets: bg, scale: 0.94, duration: 60, yoyo: true });
-      onFlip(value);
+      this.onAutoTap(key);
     });
   }
 
+  private autoWindow(key: 'auto_merge' | 'auto_buy'): number {
+    return key === 'auto_merge' ? this.autoMergeUntil : this.autoBuyUntil;
+  }
+
+  private setAutoWindow(key: 'auto_merge' | 'auto_buy', until: number): void {
+    if (key === 'auto_merge') this.autoMergeUntil = until;
+    else this.autoBuyUntil = until;
+    this.setPrefTime(key === 'auto_merge' ? 'automerge_until' : 'autobuy_until', until);
+  }
+
+  private onAutoTap(key: 'auto_merge' | 'auto_buy'): void {
+    const now = Date.now();
+    if (now < this.autoWindow(key)) {
+      // Active → switch it off (forfeits the remaining window)
+      this.setAutoWindow(key, 0);
+      this.refreshAutoLabels();
+      return;
+    }
+    if (this.adPending || !this.ads.isReady(key as AdPlacement)) return;
+    this.adPending = key;
+    this.refreshAutoLabels();
+    void this.ads.showRewarded(key as AdPlacement).then((result) => {
+      this.adPending = null;
+      if (result.rewarded) {
+        this.setAutoWindow(key, Date.now() + ECONOMY.automationAdMinutes * 60_000);
+        audio.coin();
+        // Instant gratification on activation
+        if (key === 'auto_merge') this.gs.autoMergeOnce();
+        else if (this.gs.canBuy) this.gs.buyGear();
+      }
+      this.refreshAutoLabels();
+    });
+  }
+
+  private refreshAutoLabels(): void {
+    const now = Date.now();
+    for (const { key, label } of this.autoStates) {
+      if (this.adPending === key) {
+        label.setText('AD...').setTint(0x8a5a2e);
+        continue;
+      }
+      const left = this.autoWindow(key) - now;
+      if (left > 0) {
+        const m = Math.floor(left / 60000);
+        const sec = Math.floor((left % 60000) / 1000);
+        label.setText(`ON ${m}:${String(sec).padStart(2, '0')}`).setTint(0x2e7a1e);
+      } else {
+        label.setText('WATCH AD').setTint(0x2884a8);
+      }
+    }
+  }
+
   private createToggleRow(): void {
-    this.toggleCard(62, 'Auto Merge', this.autoMerge, (v) => {
-      this.autoMerge = v;
-      this.setPref('automerge', v);
-      if (v && this.gs.autoMergeOnce() !== null) audio.merge();
-    });
-    this.toggleCard(156, 'Auto Buy', this.autoBuy, (v) => {
-      this.autoBuy = v;
-      this.setPref('autobuy', v);
-    });
+    this.autoCard(62, 'Auto Merge', 'auto_merge');
+    this.autoCard(156, 'Auto Buy', 'auto_buy');
+    this.refreshAutoLabels();
 
     const y = L.togglesTop + 19;
     this.buyBg = this.add
