@@ -36,6 +36,23 @@ test('SKILLS and PET tabs open from touch taps', async ({ page }) => {
   await page.waitForFunction(() => window.__petsOpen === true);
 });
 
+test('a slow press on a tab keeps the panel open after release', async ({ page }) => {
+  // Real fingers press for hundreds of ms: the panel opens on the down event,
+  // and the later release lands on the new backdrop — which must NOT treat it
+  // as a tap-outside-close.
+  await page.mouse.move(97, 812);
+  await page.mouse.down();
+  await page.waitForFunction(() => window.__skillsOpen === true);
+  await page.waitForTimeout(600); // held finger, panel fully created
+  await page.mouse.up();
+  await page.waitForTimeout(400);
+  await expect(page.evaluate(() => window.__skillsOpen)).resolves.toBe(true);
+
+  // A fresh tap on the backdrop still closes it
+  await page.touchscreen.tap(195, 80);
+  await page.waitForFunction(() => window.__skillsOpen === false);
+});
+
 test('tapping outside a panel closes it', async ({ page }) => {
   await page.touchscreen.tap(97, 812);
   await page.waitForFunction(() => window.__skillsOpen === true);

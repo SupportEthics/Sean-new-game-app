@@ -16,7 +16,16 @@ export function addBackdrop(
   const blocker = scene.add
     .rectangle(width / 2, height / 2, width, height, 0x14101c, 0.72)
     .setInteractive();
+  // Only close for taps that STARTED on the backdrop. The finger press that
+  // opened the panel releases over this very backdrop a moment later — that
+  // release must not close what it just opened.
+  let armed = false;
+  blocker.on('pointerdown', () => {
+    armed = true;
+  });
   blocker.on('pointerup', (ptr: Phaser.Input.Pointer) => {
+    if (!armed) return;
+    armed = false;
     const moved = Math.hypot(ptr.upX - ptr.downX, ptr.upY - ptr.downY) > 12;
     if (!moved && !panel.contains(ptr.upX, ptr.upY)) onClose();
   });
