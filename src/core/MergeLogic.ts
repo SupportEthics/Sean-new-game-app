@@ -7,27 +7,44 @@ import { GEAR } from '../config/gear';
  */
 export type Grid = (number | null)[];
 
-export const TOTAL_CELLS = GEAR.gridCols * GEAR.gridRows;
+/** The first cells are the equip bar (one per loadout slot); the merge
+ * field follows. Equip cells beyond the unlocked loadout slots are passed
+ * around as a `locked` set — unusable until their stage milestone. */
+export const EQUIP_CELLS = GEAR.equipSlotStages.length;
+export const TOTAL_CELLS = EQUIP_CELLS + GEAR.gridCols * GEAR.gridRows;
 
 export function emptyGrid(): Grid {
   return new Array<number | null>(TOTAL_CELLS).fill(null);
 }
 
-export function firstEmptyIndex(grid: Grid, unlocked: number = TOTAL_CELLS): number {
+export function firstEmptyIndex(
+  grid: Grid,
+  unlocked: number = TOTAL_CELLS,
+  locked?: ReadonlySet<number>,
+): number {
   const limit = Math.min(unlocked, grid.length);
   for (let i = 0; i < limit; i++) {
-    if (grid[i] === null) return i;
+    if (grid[i] === null && !locked?.has(i)) return i;
   }
   return -1;
 }
 
-export function isFull(grid: Grid, unlocked: number = TOTAL_CELLS): boolean {
-  return firstEmptyIndex(grid, unlocked) === -1;
+export function isFull(
+  grid: Grid,
+  unlocked: number = TOTAL_CELLS,
+  locked?: ReadonlySet<number>,
+): boolean {
+  return firstEmptyIndex(grid, unlocked, locked) === -1;
 }
 
-/** Place a new item of `tier` in the first empty unlocked cell, or -1 if full. */
-export function spawn(grid: Grid, tier: number, unlocked: number = TOTAL_CELLS): number {
-  const idx = firstEmptyIndex(grid, unlocked);
+/** Place a new item of `tier` in the first empty usable cell, or -1 if full. */
+export function spawn(
+  grid: Grid,
+  tier: number,
+  unlocked: number = TOTAL_CELLS,
+  locked?: ReadonlySet<number>,
+): number {
+  const idx = firstEmptyIndex(grid, unlocked, locked);
   if (idx !== -1) grid[idx] = tier;
   return idx;
 }
@@ -37,11 +54,14 @@ export function canMerge(
   a: number,
   b: number,
   unlocked: number = TOTAL_CELLS,
+  locked?: ReadonlySet<number>,
 ): boolean {
   return (
     a !== b &&
     a < unlocked &&
     b < unlocked &&
+    !locked?.has(a) &&
+    !locked?.has(b) &&
     grid[a] !== null &&
     grid[a] === grid[b] &&
     (grid[a] as number) < GEAR.maxTier
@@ -57,22 +77,25 @@ export function merge(
   from: number,
   to: number,
   unlocked: number = TOTAL_CELLS,
+  locked?: ReadonlySet<number>,
 ): number | null {
-  if (!canMerge(grid, from, to, unlocked)) return null;
+  if (!canMerge(grid, from, to, unlocked, locked)) return null;
   const newTier = (grid[to] as number) + 1;
   grid[to] = newTier;
   grid[from] = null;
   return newTier;
 }
 
-/** Move an item to an empty unlocked cell, or swap with the occupant. */
+/** Move an item to an empty usable cell, or swap with the occupant. */
 export function move(
   grid: Grid,
   from: number,
   to: number,
   unlocked: number = TOTAL_CELLS,
+  locked?: ReadonlySet<number>,
 ): boolean {
   if (from === to || from >= unlocked || to >= unlocked || grid[from] === null) return false;
+  if (locked?.has(from) || locked?.has(to)) return false;
   const tmp = grid[to];
   grid[to] = grid[from];
   grid[from] = tmp;

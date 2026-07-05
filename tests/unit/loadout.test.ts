@@ -48,9 +48,9 @@ describe('auto-merge respects the loadout', () => {
   it('never auto-merges equipped swords', () => {
     const gs = new GameState(); // stage 1 = one equip slot
     gs.grid[0] = 3; // equipped (best)
-    gs.grid[1] = 3; // would pair with it
+    gs.grid[4] = 3; // would pair with it
     expect(gs.autoMergeOnce()).toBeNull(); // pair involves the equipped sword
-    gs.grid[2] = 3; // now two unequipped threes exist
+    gs.grid[5] = 3; // now two unequipped threes exist
     expect(gs.autoMergeOnce()).toBe(4);
     expect(gs.grid[0]).toBe(4); // the equip bar claims the new best sword
   });
@@ -58,18 +58,18 @@ describe('auto-merge respects the loadout', () => {
   it('never auto-merges a sword the player is dragging', () => {
     const gs = new GameState();
     gs.grid[0] = 9; // equipped
-    gs.grid[3] = 2;
-    gs.grid[4] = 2; // the only pair on the board
-    expect(gs.autoMergeOnce(4)).toBeNull(); // index 4 is mid-drag: hands off
-    expect(gs.grid[4]).toBe(2);
+    gs.grid[5] = 2;
+    gs.grid[6] = 2; // the only pair on the board
+    expect(gs.autoMergeOnce(6)).toBeNull(); // index 6 is mid-drag: hands off
+    expect(gs.grid[6]).toBe(2);
     expect(gs.autoMergeOnce()).toBe(3); // released: merges as normal
   });
 
   it('manual merges of equipped swords still work', () => {
     const gs = new GameState();
     gs.grid[0] = 3;
-    gs.grid[1] = 3;
-    expect(gs.mergeAt(1, 0)).toBe(4); // player's drag decision
+    gs.grid[4] = 3;
+    expect(gs.mergeAt(4, 0)).toBe(4); // player's drag decision
   });
 });
 

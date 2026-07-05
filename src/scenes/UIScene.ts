@@ -652,7 +652,7 @@ export class UIScene extends Phaser.Scene {
     let ay = 722; // buy: points down at the BUY button
     let up = false;
     if (step === 'merge') {
-      const c = this.cellCenters[1];
+      const c = this.cellCenters[4];
       ax = c.x;
       ay = c.y - 42;
     }
@@ -958,12 +958,33 @@ export class UIScene extends Phaser.Scene {
     g.fillStyle(THEME.headerTrim);
     g.fillRect(0, L.panelTop, THEME.width, 3);
 
+    // Equip row: exactly 4 gold sockets, centered, clearly not merge cells.
+    // The best swords auto-slot themselves here (GameState.syncLoadout).
+    const slots = GEAR.equipSlotStages.length;
+    const barW = slots * (CARD_W + GAP) - GAP;
+    const barLeft = (THEME.width - barW) / 2 + CARD_W / 2;
+    const barY = L.panelTop + 6 + CARD_H / 2;
+    const bar = this.add.graphics();
+    bar.fillStyle(0xc9961e, 0.12);
+    bar.fillRoundedRect((THEME.width - barW) / 2 - 4, L.panelTop + 2, barW + 8, CARD_H + 8, 6);
+    bar.lineStyle(2, THEME.gold, 0.8);
+    bar.strokeRoundedRect((THEME.width - barW) / 2 - 4, L.panelTop + 2, barW + 8, CARD_H + 8, 6);
+    for (let i = 0; i < slots; i++) {
+      const x = barLeft + i * (CARD_W + GAP);
+      this.add
+        .rectangle(x, barY, CARD_W, CARD_H, THEME.panelBgDark, 0.35)
+        .setStrokeStyle(1, THEME.gold, 0.5);
+      this.cellCenters.push({ x, y: barY });
+    }
+
+    // Merge field below (6x6)
     const gridW = GEAR.gridCols * (CARD_W + GAP) - GAP;
     const left = (THEME.width - gridW) / 2 + CARD_W / 2;
+    const fieldTop = L.panelTop + 6 + CARD_H + 8 + CARD_H / 2;
     for (let row = 0; row < GEAR.gridRows; row++) {
       for (let col = 0; col < GEAR.gridCols; col++) {
         const x = left + col * (CARD_W + GAP);
-        const y = L.panelTop + 8 + CARD_H / 2 + row * (CARD_H + GAP);
+        const y = fieldTop + row * (CARD_H + GAP);
         // Empty slot: recessed rectangle
         this.add
           .rectangle(x, y, CARD_W, CARD_H, THEME.panelBgDark, 0.25)
@@ -971,15 +992,6 @@ export class UIScene extends Phaser.Scene {
         this.cellCenters.push({ x, y });
       }
     }
-
-    // The first 4 cells of the top row are the equip bar: the best swords
-    // auto-slot themselves here (GameState.syncLoadout)
-    const barW = GEAR.equipSlotStages.length * (CARD_W + GAP) - GAP;
-    const bar = this.add.graphics();
-    bar.fillStyle(0xc9961e, 0.14);
-    bar.fillRoundedRect(left - CARD_W / 2 - 3, L.panelTop + 5, barW + 6, CARD_H + 6, 6);
-    bar.lineStyle(2, THEME.gold, 0.8);
-    bar.strokeRoundedRect(left - CARD_W / 2 - 3, L.panelTop + 5, barW + 6, CARD_H + 6, 6);
   }
 
   // ---- Toggle row: Auto Merge / Auto Buy / Buy sword ----
@@ -1258,6 +1270,20 @@ export class UIScene extends Phaser.Scene {
 
   /** Locked board cells: the next one is purchasable, the rest show a lock. */
   private renderLockedCells(): void {
+    // Equip sockets waiting on their stage milestone
+    for (const index of this.gs.lockedEquipCells) {
+      const { x, y } = this.cellCenters[index];
+      const cover = this.add
+        .rectangle(x, y, CARD_W, CARD_H, 0x2a1c10, 0.5)
+        .setStrokeStyle(1, THEME.gold, 0.35);
+      const label = this.add
+        .bitmapText(x, y, 'pix', `ST\n${GEAR.equipSlotStages[index]}`, 8)
+        .setTint(0x9a8d6e)
+        .setCenterAlign()
+        .setOrigin(0.5);
+      this.itemLayer.add(cover);
+      this.itemLayer.add(label);
+    }
     const unlocked = this.gs.unlockedCells;
     for (let index = unlocked; index < this.cellCenters.length; index++) {
       const { x, y } = this.cellCenters[index];

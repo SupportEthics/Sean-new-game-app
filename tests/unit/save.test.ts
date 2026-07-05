@@ -93,8 +93,8 @@ describe('SaveManager', () => {
     expect(loaded!.state.activeSkin).toBe('squire');
     expect(loaded!.state.gold).toBe(999); // untouched fields survive
     expect(loaded!.state.highestStage).toBe(7);
-    // v2 -> v3: board grew to 42 with the original 20 cells unlocked
-    expect(loaded!.state.grid).toHaveLength(42);
+    // v2 -> v3 grew the board to 42; v18 -> v19 reshaped it to 40
+    expect(loaded!.state.grid).toHaveLength(40);
     expect(loaded!.state.unlockedCells).toBe(20);
     // v5 -> v6: shop tier grandfathered from highestTier - 3
     expect(loaded!.state.buyTierLevel).toBe(1);

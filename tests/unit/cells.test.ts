@@ -5,26 +5,27 @@ import { GameState } from '../../src/core/GameState';
 import { TOTAL_CELLS } from '../../src/core/MergeLogic';
 
 describe('grid cell purchases', () => {
-  it('board is 6x7 with 20 unlocked at the start', () => {
-    expect(TOTAL_CELLS).toBe(42);
+  it('board is a 4-slot equip row + 6x6 field, 20 unlocked at the start', () => {
+    expect(TOTAL_CELLS).toBe(40); // 4 equip + 36 merge
     const gs = new GameState();
     expect(gs.unlockedCells).toBe(GEAR.baseCells);
-    expect(gs.grid).toHaveLength(42);
+    expect(gs.grid).toHaveLength(40);
   });
 
-  it('spawn never uses locked cells', () => {
-    const gs = new GameState();
+  it('spawn never uses locked cells (bought or waiting equip slots)', () => {
+    const gs = new GameState(); // stage 1: equip cells 1-3 still locked
     gs.addGold(1e12);
     let bought = 0;
     while (gs.buyGear()) bought++;
-    expect(bought).toBe(GEAR.baseCells); // stops at the boundary
+    expect(bought).toBe(GEAR.baseCells - 3); // minus the 3 locked equip slots
+    expect(gs.grid.slice(1, 4).every((c) => c === null)).toBe(true);
     expect(gs.grid.slice(GEAR.baseCells).every((c) => c === null)).toBe(true);
   });
 
   it('cell prices escalate', () => {
     expect(cellCost(21)).toBe(GEAR.cellCostBase);
     expect(cellCost(22)).toBeGreaterThan(cellCost(21));
-    expect(Number.isFinite(cellCost(42))).toBe(true);
+    expect(Number.isFinite(cellCost(40))).toBe(true);
   });
 
   it('buyCell spends gold and expands capacity', () => {
@@ -50,9 +51,10 @@ describe('grid cell purchases', () => {
   it('merge and move reject locked-cell targets', () => {
     const gs = new GameState();
     gs.grid[0] = 3;
-    gs.grid[1] = 3;
-    expect(gs.moveAt(0, GEAR.baseCells + 2)).toBe(false);
-    expect(gs.mergeAt(0, 1)).toBe(4); // normal merges still work
+    gs.grid[4] = 3;
+    expect(gs.moveAt(0, GEAR.baseCells + 2)).toBe(false); // unbought cell
+    expect(gs.moveAt(4, 2)).toBe(false); // waiting equip slot (stage 15)
+    expect(gs.mergeAt(4, 0)).toBe(4); // normal merges still work
   });
 
   it('unlockedCells survives serialize round-trip', () => {

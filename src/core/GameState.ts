@@ -57,6 +57,7 @@ import {
 } from './EconomyMath';
 import {
   emptyGrid,
+  EQUIP_CELLS,
   findBestMerge,
   Grid,
   gridTiers,
@@ -366,7 +367,15 @@ export class GameState {
     return unlockedSlots(this.highestStage);
   }
 
-  /** The loadout lives in the board's top row (Sean's design): cells
+  /** Equip-row cells whose loadout slot hasn't been unlocked yet — they
+   * hold nothing and accept nothing until their stage milestone. */
+  get lockedEquipCells(): ReadonlySet<number> {
+    const locked = new Set<number>();
+    for (let i = this.equipSlots; i < EQUIP_CELLS; i++) locked.add(i);
+    return locked;
+  }
+
+  /** The loadout lives in the board's equip row (Sean's design): cells
    * 0..equipSlots-1 are the equip bar, kept stocked with the best swords
    * by syncLoadout(). */
   get equippedIndices(): number[] {
@@ -436,7 +445,7 @@ export class GameState {
   }
 
   get canBuy(): boolean {
-    return this.gold >= this.buyCost && !isFull(this.grid, this.unlockedCells);
+    return this.gold >= this.buyCost && !isFull(this.grid, this.unlockedCells, this.lockedEquipCells);
   }
 
   /** Gold price of the next grid cell, or null when the board is complete. */
@@ -521,7 +530,7 @@ export class GameState {
     if (!this.canBuy) return false;
     const tier = this.buyTier;
     this.gold -= this.buyCost;
-    const index = spawn(this.grid, tier, this.unlockedCells);
+    const index = spawn(this.grid, tier, this.unlockedCells, this.lockedEquipCells);
     this.syncLoadout(keep);
     this.emit('gold:changed', this.gold);
     this.emit('gear:bought', { index, tier });
@@ -531,7 +540,7 @@ export class GameState {
 
   /** Merge grid item `from` onto `to`. Returns the new tier or null. */
   mergeAt(from: number, to: number, keep?: number): number | null {
-    const newTier = merge(this.grid, from, to, this.unlockedCells);
+    const newTier = merge(this.grid, from, to, this.unlockedCells, this.lockedEquipCells);
     if (newTier === null) return null;
     this.highestTier = Math.max(this.highestTier, newTier);
     this.bestTier = Math.max(this.bestTier, newTier);
@@ -546,7 +555,7 @@ export class GameState {
   /** Move an item to an empty cell or swap two items. The equip bar
    * re-asserts itself afterwards: the top row always holds the best. */
   moveAt(from: number, to: number): boolean {
-    if (!move(this.grid, from, to, this.unlockedCells)) return false;
+    if (!move(this.grid, from, to, this.unlockedCells, this.lockedEquipCells)) return false;
     this.syncLoadout();
     this.emit('grid:changed', this.grid);
     return true;
@@ -575,6 +584,7 @@ export class GameState {
    * is a deliberate manual drag) nor a cell the player is mid-dragging. */
   autoMergeOnce(excludeIndex?: number): number | null {
     const skip = new Set(this.equippedIndices);
+    for (const i of this.lockedEquipCells) skip.add(i);
     if (excludeIndex !== undefined) skip.add(excludeIndex);
     const pair = findBestMerge(this.grid, skip);
     return pair ? this.mergeAt(pair.from, pair.to, excludeIndex) : null;

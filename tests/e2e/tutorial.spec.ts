@@ -25,10 +25,10 @@ test('tutorial walks a new player through buy and merge', async ({ page }) => {
   await expect(page.evaluate(() => window.__tutorialStep)).resolves.toBe('merge');
 
   await page.mouse.click(247, 761); // BUY the second sword
-  // Drag card 0 onto card 1 (cell centers from the 6x7 grid layout)
-  await page.mouse.move(42, 424);
+  // Drag the merge-field sword (cell 4) onto the equipped one (equip slot 0)
+  await page.mouse.move(40, 477);
   await page.mouse.down();
-  await page.mouse.move(104, 424, { steps: 8 });
+  await page.mouse.move(102, 425, { steps: 8 });
   await page.mouse.up();
   await expect(page.evaluate(() => window.__tutorialStep)).resolves.toBe('equip');
 

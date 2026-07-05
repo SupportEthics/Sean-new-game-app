@@ -12,7 +12,7 @@ describe('first-run tutorial', () => {
     expect(t.currentStep).toBe('merge');
 
     gs.buyGear();
-    gs.mergeAt(0, 1);
+    gs.mergeAt(4, 0);
     expect(t.currentStep).toBe('equip');
 
     t.acknowledgeEquip();
@@ -43,10 +43,10 @@ describe('first-run tutorial', () => {
 
   it('a merge during the buy step fast-forwards past it', () => {
     const gs = new GameState();
-    gs.grid[0] = 1;
-    gs.grid[1] = 1;
+    gs.grid[4] = 1;
+    gs.grid[5] = 1;
     const t = new Tutorial(gs, false);
-    gs.mergeAt(0, 1);
+    gs.mergeAt(5, 4);
     expect(t.currentStep).toBe('equip');
   });
 });

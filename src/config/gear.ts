@@ -1,9 +1,9 @@
 // Weapon/gear tier definitions — data only.
 
 export const GEAR = {
-  /** Merge grid dimensions (full board; part starts locked) */
+  /** Merge FIELD dimensions (the 4-cell equip row sits above it) */
   gridCols: 6,
-  gridRows: 7,
+  gridRows: 6,
 
   /** Cells unlocked from the start; the rest are bought with gold. */
   baseCells: 20,

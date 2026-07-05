@@ -33,9 +33,9 @@ describe('achievements', () => {
 
   it('merges feed the lifetime counter', () => {
     const gs = new GameState();
-    gs.grid[0] = 1;
-    gs.grid[1] = 1;
-    gs.mergeAt(0, 1);
+    gs.grid[4] = 1;
+    gs.grid[5] = 1;
+    gs.mergeAt(4, 5);
     expect(gs.totalMerges).toBe(1);
   });
 

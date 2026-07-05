@@ -125,6 +125,19 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.raidBest = save.state.raidHighest ?? 0;
     return save;
   },
+  // v18 -> v19: dedicated 4-cell equip row + 6x6 merge field (40 cells,
+  // was 6x7=42). Repack the swords; loading arranges the equip bar.
+  (save) => {
+    const old = (save.state.grid ?? []) as (number | null)[];
+    const items = old.filter((t): t is number => t !== null);
+    const grid: (number | null)[] = new Array(40).fill(null);
+    items.slice(0, 40).forEach((t, i) => {
+      grid[i] = t;
+    });
+    save.state.grid = grid;
+    save.state.unlockedCells = Math.min((save.state.unlockedCells as number) ?? 20, 40);
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

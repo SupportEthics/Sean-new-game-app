@@ -71,9 +71,9 @@ describe('daily quests', () => {
   it('battle kills, merges and stage clears feed quests automatically', () => {
     const gs = new GameState();
     gs.rollDaily(DAY1);
-    gs.grid[0] = 1;
-    gs.grid[1] = 1;
-    gs.grid[2] = 1;
+    gs.grid[4] = 1;
+    gs.grid[5] = 1;
+    gs.grid[6] = 1;
     gs.autoMergeOnce();
     expect(gs.questProgress('merges')).toBe(1);
     gs.grid.fill(null);
