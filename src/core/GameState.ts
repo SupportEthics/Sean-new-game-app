@@ -41,8 +41,8 @@ import { SKILLS, skillDefById } from '../config/skills';
 import { soulUpgradeById, soulUpgradeCost } from '../config/soulsTree';
 import { buildingById, buildingCost, TOWN } from '../config/town';
 import { RAIDS, raidClearKills, raidGems, raidGoldPerKill, raidKillCap, raidMonsterHp } from '../config/raids';
-import { DEFAULT_SKIN, SkinDef, skinById } from '../config/skins';
-import { premiumSwordById, SWORD_ART } from '../config/swordSkins';
+import { DEFAULT_SKIN, SKINS, SkinDef, skinById } from '../config/skins';
+import { premiumSwordById, premiumSwordBySku, SWORD_ART } from '../config/swordSkins';
 import { BattleState, newBattleState, tick, TickResult } from './BattleSim';
 import { GEAR, unlockedSlots } from '../config/gear';
 import {
@@ -1445,6 +1445,38 @@ export class GameState {
     if (!premiumSwordById(id) || this.ownedPremiumSwords.includes(id)) return;
     this.ownedPremiumSwords.push(id);
     this.emit('swordskins:changed', this.ownedPremiumSwords);
+  }
+
+  /** Store restore: re-grant every non-consumable the store says is owned.
+   * Used on boot and by the shop's RESTORE PURCHASES button (Apple 3.1.1
+   * requires a visible way to recover purchases on a new device).
+   * Returns how many SKUs were recognised, for the confirmation toast. */
+  applyRestoredSkus(skus: string[]): number {
+    let recognised = 0;
+    for (const sku of skus) {
+      if (sku === REMOVE_ADS.sku) {
+        this.removeAds = true;
+        recognised++;
+        continue;
+      }
+      if (sku === STARTER_PACK.sku) {
+        this.starterPackOwned = true;
+        recognised++;
+        continue;
+      }
+      const skin = SKINS.find((s) => s.unlock.type === 'iap' && s.unlock.sku === sku);
+      if (skin) {
+        this.grantSkin(skin.id);
+        recognised++;
+        continue;
+      }
+      const sword = premiumSwordBySku(sku);
+      if (sword) {
+        this.grantPremiumSword(sword.id);
+        recognised++;
+      }
+    }
+    return recognised;
   }
 
   equipSkin(id: string): boolean {

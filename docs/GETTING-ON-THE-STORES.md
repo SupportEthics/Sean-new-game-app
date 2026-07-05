@@ -16,7 +16,13 @@ accounts below exist.
 3. **Google AdMob** — free — https://admob.google.com
    This is where the ad money comes from. You create the app + 2 ad units
    (rewarded, interstitial) per platform and get IDs that replace the test
-   IDs in `src/config/native.ts`.
+   IDs in **three places**:
+   - `src/config/native.ts` — the two ad-unit IDs per platform
+   - `android/app/src/main/AndroidManifest.xml` — the *app* ID in the
+     `com.google.android.gms.ads.APPLICATION_ID` meta-data entry
+   - `ios/App/App/Info.plist` — the *app* ID under `GADApplicationIdentifier`
+   All three currently hold Google's public TEST IDs, so test ads work
+   out of the box; shipping with them means no revenue.
 4. **RevenueCat** — free tier — https://www.revenuecat.com
    Handles purchases across both stores. You connect it to Apple/Google,
    create the products below, and paste its two API keys into
@@ -71,11 +77,23 @@ today. To light up REAL global rankings:
    already wired; check plugin compatibility with the project's Capacitor
    version — see the note at the top of that file).
 
-## What's still to come in M6 (store readiness)
+## Store-readiness items already done in code
 
-- App icon + splash screen in native sizes
-- Real AdMob IDs + Google UMP consent prompt (required in the EU/UK)
-- RevenueCat keys in, mock fallback verified
-- Privacy policy page + store data-safety questionnaires
-- Store listing text + screenshots
-- Age rating questionnaires (the game has ads + IAP, no user content)
+- App icon + splash screens generated into both native projects
+- Google UMP consent prompt before ads (required in the EU/UK)
+- iOS App Tracking Transparency prompt + `SKAdNetworkItems` in Info.plist
+- AdMob *app* IDs present in both native shells (Google TEST IDs for now)
+- Both apps locked to portrait
+- A visible RESTORE PURCHASES button in the shop (Apple requires this)
+- Apple privacy manifest (`ios/App/App/PrivacyInfo.xcprivacy`)
+- Privacy policy text ready to host (`docs/PRIVACY-POLICY.md`)
+- Store listing text ready to paste (`docs/STORE-LISTING.md`)
+
+## What only Sean can do
+
+- Swap the TEST AdMob IDs for real ones (three places, see above)
+- Paste RevenueCat keys into `src/config/native.ts` + create the products
+- Host the privacy policy on a public URL and link it in both stores
+- Store listing screenshots from a real device
+- Data-safety + age rating questionnaires (the game has ads + IAP, no
+  user-generated content)

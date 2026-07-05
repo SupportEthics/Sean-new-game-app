@@ -1,9 +1,6 @@
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import Phaser from 'phaser';
-import { REMOVE_ADS, STARTER_PACK } from './config/monetization';
-import { premiumSwordBySku } from './config/swordSkins';
-import { SKINS } from './config/skins';
 import { newBattleState } from './core/BattleSim';
 import { GameState } from './core/GameState';
 import { computeOffline } from './core/OfflineEarnings';
@@ -44,19 +41,9 @@ async function boot(): Promise<void> {
   const leaderboard: LeaderboardService = new WebMockLeaderboard();
   gs.on('stage:changed', () => void leaderboard.submitHighestStage(gs.highestStage));
 
-  // App Store restore flow: non-consumables reappear on reinstall
-  void iap.restore().then((skus) => {
-    for (const sku of skus) {
-      if (sku === REMOVE_ADS.sku) gs.removeAds = true;
-      if (sku === STARTER_PACK.sku) gs.starterPackOwned = true;
-      const skin = SKINS.find(
-        (s) => s.unlock.type === 'iap' && (s.unlock as { sku: string }).sku === sku,
-      );
-      if (skin) gs.grantSkin(skin.id);
-      const sword = premiumSwordBySku(sku);
-      if (sword) gs.grantPremiumSword(sword.id);
-    }
-  });
+  // App Store restore flow: non-consumables reappear on reinstall.
+  // The shop also has a manual RESTORE PURCHASES button (Apple 3.1.1).
+  void iap.restore().then((skus) => gs.applyRestoredSkus(skus));
 
   const game = new Phaser.Game({
     type: Phaser.AUTO,

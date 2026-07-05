@@ -29,6 +29,19 @@ export class AdMobAd implements AdService {
       } catch (e) {
         console.warn('Consent flow failed; continuing without personalized ads', e);
       }
+      // App Tracking Transparency (iOS 14.5+). Apple requires asking before
+      // AdMob can use the device identifier; declining just means
+      // non-personalised ads, so any failure here is safe to ignore.
+      if (Capacitor.getPlatform() === 'ios') {
+        try {
+          const { status } = await AdMob.trackingAuthorizationStatus();
+          if (status === 'notDetermined') {
+            await AdMob.requestTrackingAuthorization();
+          }
+        } catch (e) {
+          console.warn('ATT prompt failed; serving non-personalised ads', e);
+        }
+      }
       // Test devices/test mode until real ad units arrive
       await AdMob.initialize({ initializeForTesting: true });
       this.initialized = true;

@@ -43,6 +43,8 @@ export class ShopPanel extends Phaser.Scene {
   private rows!: Phaser.GameObjects.Container;
   private pendingSku: string | null = null;
   private adBusy = false;
+  private restoring = false;
+  private restoreMsg: string | null = null;
   private scrollY = 0;
   private maxScroll = 0;
   private tab: ShopTab = 'DEALS';
@@ -321,7 +323,55 @@ export class ShopPanel extends Phaser.Scene {
       y += h + 10;
     }
 
+    // Apple 3.1.1: restoring non-consumables must be reachable in the UI,
+    // not just the silent check on boot.
+    {
+      const h = 54;
+      this.card(y, h, THEME.cardBorder);
+      this.text(24, y + 12, 'RESTORE PURCHASES', 0x4a3520);
+      this.text(
+        24,
+        y + 30,
+        this.restoring
+          ? 'CHECKING WITH THE STORE...'
+          : (this.restoreMsg ?? 'BOUGHT BEFORE? GET IT BACK HERE'),
+        0x8a5a2e,
+      );
+      const btn = this.add
+        .image(PANEL_X + PANEL_W - 52, y + h / 2, 'btn-sm')
+        .setTint(this.restoring ? THEME.buttonBgDisabled : 0x2884a8);
+      const lbl = this.add
+        .bitmapText(PANEL_X + PANEL_W - 52, y + h / 2, 'pix', 'RESTORE', 8)
+        .setOrigin(0.5);
+      if (!this.restoring) {
+        btn.setInteractive({ useHandCursor: true }).on(
+          'pointerup',
+          (ptr: Phaser.Input.Pointer) => {
+            if (this.tapBlocked(ptr)) return;
+            this.restore();
+          },
+        );
+      }
+      this.rows.add([btn, lbl]);
+      y += h + 10;
+    }
+
     return y;
+  }
+
+  private restore(): void {
+    if (this.restoring) return;
+    this.restoring = true;
+    this.restoreMsg = null;
+    this.build();
+    void this.iap.restore().then((skus) => {
+      const n = this.gs.applyRestoredSkus(skus);
+      this.restoring = false;
+      this.restoreMsg =
+        n > 0 ? `RESTORED ${n} PURCHASE${n === 1 ? '' : 'S'}` : 'NO PAST PURCHASES FOUND';
+      if (n > 0) audio.coin();
+      if (this.scene.isActive()) this.build();
+    });
   }
 
   private buildBundles(): number {

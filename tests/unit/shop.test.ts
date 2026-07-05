@@ -48,6 +48,25 @@ describe('IAP fulfillment', () => {
     expect(gs.fulfillProduct(pack.sku)).toBe(true); // consumable: repeatable
   });
 
+  it('applyRestoredSkus re-grants every non-consumable and counts them', () => {
+    const gs = new GameState();
+    const n = gs.applyRestoredSkus([
+      REMOVE_ADS.sku,
+      STARTER_PACK.sku,
+      'skin_dragonlord',
+      'sword_scythe',
+      'not_a_real_sku',
+    ]);
+    expect(n).toBe(4);
+    expect(gs.removeAds).toBe(true);
+    expect(gs.starterPackOwned).toBe(true);
+    expect(gs.ownedSkins).toContain('dragonlord');
+    expect(gs.ownedPremiumSwords).toContain('scythe');
+    // Restoring again changes nothing but still reports the finds
+    expect(gs.applyRestoredSkus([REMOVE_ADS.sku])).toBe(1);
+    expect(gs.ownedSkins.filter((s) => s === 'dragonlord')).toHaveLength(1);
+  });
+
   it('bundles grant gems AND gold together', () => {
     const gs = new GameState();
     gs.grid[0] = 8;
