@@ -39,6 +39,7 @@ export class UIScene extends Phaser.Scene {
   private dpsText!: Phaser.GameObjects.BitmapText;
   private levelText!: Phaser.GameObjects.BitmapText;
   private expBar!: Phaser.GameObjects.Rectangle;
+  private expBarBg!: Phaser.GameObjects.Rectangle;
   private stageText!: Phaser.GameObjects.BitmapText;
   private waveText!: Phaser.GameObjects.BitmapText;
   private buyLabel!: Phaser.GameObjects.BitmapText;
@@ -58,7 +59,7 @@ export class UIScene extends Phaser.Scene {
   private sideMenu!: Phaser.GameObjects.Container;
   private menuOpen = false;
   private menuLabel!: Phaser.GameObjects.BitmapText;
-  private menuBadge!: Phaser.GameObjects.BitmapText;
+  private menuBadge!: Phaser.GameObjects.Container;
   private bin!: Phaser.GameObjects.Container;
   private binLabel!: Phaser.GameObjects.BitmapText;
   private refreshQuestBadge: () => void = () => {};
@@ -189,7 +190,12 @@ export class UIScene extends Phaser.Scene {
         : `WAVE ${b.wave}/10 - ${formatNumber(this.gs.heroDps).toUpperCase()}/S`,
     );
     this.levelText.setText(`LV ${level}`);
-    this.expBar.width = 96 * frac;
+    // Keep the bar to the right of the number; it shrinks if the level is huge
+    const barX = Phaser.Math.Clamp(12 + this.levelText.width + 10, 102, 170);
+    this.expBarBg.setX(barX);
+    this.expBarBg.width = 202 - barX;
+    this.expBar.setX(barX + 2);
+    this.expBar.width = (202 - barX - 4) * frac;
   }
 
   private prefTime(key: string): number {
@@ -260,9 +266,10 @@ export class UIScene extends Phaser.Scene {
     g.fillStyle(THEME.panelBgDark);
     g.fillRect(0, y, THEME.width, L.hudH);
 
-    // Lv + EXP bar (left) — bar starts clear of a 3-digit level number
+    // Lv + EXP bar (left) — the bar slides right so it NEVER covers the
+    // level number, however many digits it grows to (Sean's screenshot)
     this.levelText = this.add.bitmapText(12, y + 15, 'pix', 'LV 1', 16);
-    this.add
+    this.expBarBg = this.add
       .rectangle(102, y + 22, 100, 14, 0x2a1c10)
       .setOrigin(0, 0.5)
       .setStrokeStyle(2, THEME.headerTrim);
@@ -406,13 +413,19 @@ export class UIScene extends Phaser.Scene {
       .setTint(0xffd166)
       .setOrigin(0.5, 0)
       .setDepth(31);
-    // A little beacon when a rebirth is waiting inside
-    this.menuBadge = this.add
-      .bitmapText(bx - 18, ty - 26, 'pix', '!', 16)
-      .setTint(0xd8b4ff)
-      .setOrigin(0.5, 0)
-      .setDepth(32)
-      .setVisible(false);
+    // A little beacon when a rebirth is waiting inside: a purple disc pinned
+    // to the button's top-left corner (mirrors the red quest counter)
+    this.menuBadge = this.add.container(0, 0).setDepth(32).setVisible(false);
+    const beacon = this.add.graphics();
+    beacon.fillStyle(0x7a3ea8);
+    beacon.fillCircle(bx - 20, ty - 20, 9);
+    beacon.lineStyle(1, 0x14101c);
+    beacon.strokeCircle(bx - 20, ty - 20, 9);
+    const beaconMark = this.add
+      .bitmapText(bx - 20, ty - 20, 'pix', '!', 8)
+      .setTint(0xffffff)
+      .setOrigin(0.5);
+    this.menuBadge.add([beacon, beaconMark]);
     // TOWN: its own always-visible button under MENU
     const townBtn = this.add.container(0, 0).setDepth(31);
     const tg2 = this.add.graphics();

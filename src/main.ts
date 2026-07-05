@@ -2,6 +2,7 @@ import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import Phaser from 'phaser';
 import { REMOVE_ADS, STARTER_PACK } from './config/monetization';
+import { premiumSwordBySku } from './config/swordSkins';
 import { SKINS } from './config/skins';
 import { newBattleState } from './core/BattleSim';
 import { GameState } from './core/GameState';
@@ -52,6 +53,8 @@ async function boot(): Promise<void> {
         (s) => s.unlock.type === 'iap' && (s.unlock as { sku: string }).sku === sku,
       );
       if (skin) gs.grantSkin(skin.id);
+      const sword = premiumSwordBySku(sku);
+      if (sword) gs.grantPremiumSword(sword.id);
     }
   });
 

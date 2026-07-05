@@ -37,8 +37,9 @@ import {
 import { SKILLS, skillDefById } from '../config/skills';
 import { soulUpgradeById, soulUpgradeCost } from '../config/soulsTree';
 import { buildingById, buildingCost, TOWN } from '../config/town';
-import { RAIDS, raidGems, raidGoldPerKill, raidMonsterHp } from '../config/raids';
+import { RAIDS, raidClearKills, raidGems, raidGoldPerKill, raidMonsterHp } from '../config/raids';
 import { DEFAULT_SKIN, SkinDef, skinById } from '../config/skins';
+import { premiumSwordById } from '../config/swordSkins';
 import { BattleState, newBattleState, tick, TickResult } from './BattleSim';
 import { GEAR, unlockedSlots } from '../config/gear';
 import {
@@ -72,6 +73,8 @@ export interface GameEvents {
   'gear:merged': { index: number; tier: number };
   'gear:bought': { index: number; tier: number };
   'skin:changed': string;
+  'swordskin:changed': string;
+  'swordskins:changed': string[];
   'skins:changed': string[];
   'cells:changed': number;
   'prestige:done': number;
@@ -157,6 +160,9 @@ export interface SerializedState {
   totalGoldEarned: number;
   ownedSkins: string[];
   activeSkin: string;
+  swordSkin: string;
+  ownedPremiumSwords: string[];
+  bestTier: number;
   unlockedCells: number;
   buyTierLevel: number;
   soulUpgrades: Record<string, number>;
@@ -203,6 +209,12 @@ export class GameState {
   totalGoldEarned = 0;
   ownedSkins: string[] = [DEFAULT_SKIN];
   activeSkin: string = DEFAULT_SKIN;
+  /** Blade cosmetic: 'auto' (each sword wears its tier art), 'tier-<n>' or
+   * 'premium-<id>'. Purely visual — never affects DPS. */
+  swordSkin = 'auto';
+  ownedPremiumSwords: string[] = [];
+  /** Best merge tier ever reached, across rebirths — unlocks blade art. */
+  bestTier = 1;
   unlockedCells: number = GEAR.baseCells;
   /** The tier the shop sells at; raised with gold via upgradeBuyTier(). */
   buyTierLevel = 1;
@@ -476,6 +488,7 @@ export class GameState {
     const newTier = merge(this.grid, from, to, this.unlockedCells);
     if (newTier === null) return null;
     this.highestTier = Math.max(this.highestTier, newTier);
+    this.bestTier = Math.max(this.bestTier, newTier);
     this.totalMerges += 1;
     this.trackQuest('merges');
     this.emit('gear:merged', { index: to, tier: newTier });
@@ -632,7 +645,7 @@ export class GameState {
   private endRaid(): void {
     const raid = this.raid!;
     this.raid = null;
-    const cleared = raid.kills >= RAIDS.clearKills;
+    const cleared = raid.kills >= raidClearKills(raid.level);
     const gems =
       raidGems(raid.level, raid.kills) + (raid.kills > 0 ? this.soulLevel('raider') : 0);
     if (gems > 0) this.addGems(gems);
@@ -1221,6 +1234,34 @@ export class GameState {
     this.emit('skins:changed', this.ownedSkins);
   }
 
+  // ---- Sword skins (cosmetic blade art) ----
+
+  /** May this blade art be worn? Tier art unlocks at that lifetime tier;
+   * premium weapons must be owned. */
+  canUseSwordSkin(key: string): boolean {
+    if (key === 'auto') return true;
+    if (key.startsWith('tier-')) {
+      const n = Number(key.slice(5));
+      return Number.isInteger(n) && n >= 1 && n <= GEAR.weaponArtCount && this.bestTier >= n;
+    }
+    if (key.startsWith('premium-')) return this.ownedPremiumSwords.includes(key.slice(8));
+    return false;
+  }
+
+  setSwordSkin(key: string): boolean {
+    if (this.swordSkin === key || !this.canUseSwordSkin(key)) return false;
+    this.swordSkin = key;
+    this.emit('swordskin:changed', key);
+    return true;
+  }
+
+  /** IAP fulfilment (and store restore) for a premium weapon. */
+  grantPremiumSword(id: string): void {
+    if (!premiumSwordById(id) || this.ownedPremiumSwords.includes(id)) return;
+    this.ownedPremiumSwords.push(id);
+    this.emit('swordskins:changed', this.ownedPremiumSwords);
+  }
+
   equipSkin(id: string): boolean {
     if (!this.ownedSkins.includes(id) || this.activeSkin === id) return false;
     this.activeSkin = id;
@@ -1242,6 +1283,9 @@ export class GameState {
       totalGoldEarned: this.totalGoldEarned,
       ownedSkins: [...this.ownedSkins],
       activeSkin: this.activeSkin,
+      swordSkin: this.swordSkin,
+      ownedPremiumSwords: [...this.ownedPremiumSwords],
+      bestTier: this.bestTier,
       unlockedCells: this.unlockedCells,
       buyTierLevel: this.buyTierLevel,
       soulUpgrades: { ...this.soulUpgrades },
@@ -1297,6 +1341,9 @@ export class GameState {
     gs.totalKills = data.totalKills;
     gs.totalGoldEarned = data.totalGoldEarned;
     gs.ownedSkins = [...data.ownedSkins];
+    gs.swordSkin = data.swordSkin;
+    gs.ownedPremiumSwords = [...data.ownedPremiumSwords];
+    gs.bestTier = data.bestTier;
     gs.activeSkin = data.activeSkin;
     gs.unlockedCells = data.unlockedCells;
     gs.buyTierLevel = data.buyTierLevel;

@@ -1,6 +1,12 @@
 import Phaser from 'phaser';
 import { addBackdrop, addCloseButton, addDragScroll } from '../ui/panelInput';
+import { GEAR, TIER_NAMES, weaponFrame } from '../config/gear';
 import { RARITY_COLORS, SKINS, SkinDef } from '../config/skins';
+import {
+  PREMIUM_SWORDS,
+  premiumSkinKey,
+  tierSkinKey,
+} from '../config/swordSkins';
 import { formatNumber } from '../core/EconomyMath';
 import { GameState } from '../core/GameState';
 import { IapService } from '../services/monetization/MonetizationService';
@@ -16,10 +22,27 @@ const CARD_W = 112;
 const CARD_H = 128;
 const PITCH_X = 118;
 const PITCH_Y = 134;
+const TAB_H = 26;
+const LIST_TOP = PANEL_Y + 50 + TAB_H;
+const LIST_H = PANEL_H - 56 - TAB_H;
+
+/** A card on the SWORDS tab: 'auto', a tier's art, or a premium weapon. */
+interface SwordEntry {
+  key: string;
+  name: string;
+  frame: number;
+  state: 'equipped' | 'unlocked' | 'locked' | 'iap';
+  stateText: string;
+  stateTint: number;
+  sku?: string;
+  premiumId?: string;
+  desc?: string;
+}
 
 /**
- * Modal skin collection: 25 cards in a drag-scrollable grid.
- * Buy with gold/gems, unlock by stage, or purchase the legendary five.
+ * Modal skin collection with two tabs: KNIGHT (the 25 hero skins) and
+ * SWORDS (blade art — any tier design you've reached, plus the premium
+ * real-money weapons). Drag-scrollable card grid.
  */
 export class SkinsPanel extends Phaser.Scene {
   private gs!: GameState;
@@ -28,6 +51,9 @@ export class SkinsPanel extends Phaser.Scene {
   private scrollY = 0;
   private maxScroll = 0;
   private pendingSku: string | null = null;
+  private tab: 'KNIGHT' | 'SWORDS' = 'KNIGHT';
+  private tabLabels: Phaser.GameObjects.BitmapText[] = [];
+  private tabBgs: Phaser.GameObjects.Rectangle[] = [];
 
   constructor() {
     super('Skins');
@@ -55,14 +81,16 @@ export class SkinsPanel extends Phaser.Scene {
     g.fillRoundedRect(PANEL_X, PANEL_Y, PANEL_W, 40, { tl: 12, tr: 12, bl: 0, br: 0 });
 
     this.add
-      .bitmapText(THEME.width / 2, PANEL_Y + 12, 'pix', 'HERO SKINS', 16)
+      .bitmapText(THEME.width / 2, PANEL_Y + 12, 'pix', 'SKINS', 16)
       .setTint(THEME.gold)
       .setOrigin(0.5, 0);
 
-    // Scrollable card grid, masked to the panel body
+    this.buildTabs();
+
+    // Scrollable card grid, masked to the panel body below the tabs
     this.cards = this.add.container(0, 0);
     const maskShape = this.make.graphics();
-    maskShape.fillRect(PANEL_X + 2, PANEL_Y + 44, PANEL_W - 4, PANEL_H - 50);
+    maskShape.fillRect(PANEL_X + 2, LIST_TOP, PANEL_W - 4, LIST_H);
     this.cards.setMask(maskShape.createGeometryMask());
 
     this.buildCards();
@@ -71,14 +99,11 @@ export class SkinsPanel extends Phaser.Scene {
     // can never sit on top of the close target
     addCloseButton(this, PANEL_X + PANEL_W - 22, PANEL_Y + 12, () => this.scene.stop());
 
-    const rows = Math.ceil(SKINS.length / COLS);
-    this.maxScroll = Math.max(0, rows * PITCH_Y + 20 - (PANEL_H - 50));
-
     // Drag scrolling anywhere over the card grid (works on touch even when
     // the finger lands on a card), plus wheel for desktop
     addDragScroll(
       this,
-      new Phaser.Geom.Rectangle(PANEL_X, PANEL_Y + 44, PANEL_W, PANEL_H - 50),
+      new Phaser.Geom.Rectangle(PANEL_X, LIST_TOP, PANEL_W, LIST_H),
       (delta) => this.setScroll(this.scrollY + delta),
     );
     this.input.on(
@@ -88,6 +113,8 @@ export class SkinsPanel extends Phaser.Scene {
 
     this.gs.on('skins:changed', () => this.buildCards());
     this.gs.on('skin:changed', () => this.buildCards());
+    this.gs.on('swordskin:changed', () => this.buildCards());
+    this.gs.on('swordskins:changed', () => this.buildCards());
 
     if (import.meta.env.DEV) {
       (window as unknown as { __skinsOpen?: boolean }).__skinsOpen = true;
@@ -95,6 +122,44 @@ export class SkinsPanel extends Phaser.Scene {
         (window as unknown as { __skinsOpen?: boolean }).__skinsOpen = false;
       });
     }
+  }
+
+  private buildTabs(): void {
+    const tabs: ('KNIGHT' | 'SWORDS')[] = ['KNIGHT', 'SWORDS'];
+    const w = (PANEL_W - 20 - 6) / 2;
+    tabs.forEach((name, i) => {
+      const x = PANEL_X + 10 + i * (w + 6) + w / 2;
+      const y = PANEL_Y + 48 + TAB_H / 2;
+      const bg = this.add
+        .rectangle(x, y, w, TAB_H, THEME.cardBg)
+        .setStrokeStyle(2, THEME.cardBorder)
+        .setInteractive({ useHandCursor: true });
+      const label = this.add
+        .bitmapText(x, y, 'pix', name, 8)
+        .setOrigin(0.5)
+        .setTint(0x8a5a2e);
+      bg.on('pointerup', (ptr: Phaser.Input.Pointer) => {
+        if (Math.abs(ptr.downY - ptr.upY) > 10) return;
+        if (this.tab === name) return;
+        this.tab = name;
+        this.scrollY = 0;
+        audio.buy();
+        this.refreshTabs();
+        this.buildCards();
+      });
+      this.tabBgs.push(bg);
+      this.tabLabels.push(label);
+    });
+    this.refreshTabs();
+  }
+
+  private refreshTabs(): void {
+    (['KNIGHT', 'SWORDS'] as const).forEach((name, i) => {
+      const active = this.tab === name;
+      this.tabBgs[i].setFillStyle(active ? 0xf5e3b8 : THEME.cardBg);
+      this.tabBgs[i].setStrokeStyle(2, active ? THEME.gold : THEME.cardBorder);
+      this.tabLabels[i].setTint(active ? 0xc9961e : 0x8a5a2e);
+    });
   }
 
   private setScroll(v: number): void {
@@ -119,8 +184,16 @@ export class SkinsPanel extends Phaser.Scene {
 
   private buildCards(): void {
     this.cards.removeAll(true);
+    if (this.tab === 'KNIGHT') this.buildHeroCards();
+    else this.buildSwordCards();
+    this.cards.setY(-this.scrollY);
+  }
+
+  private buildHeroCards(): void {
     const left = PANEL_X + 8 + CARD_W / 2;
-    const top = PANEL_Y + 52 + CARD_H / 2;
+    const top = LIST_TOP + 8 + CARD_H / 2;
+    const rows = Math.ceil(SKINS.length / COLS);
+    this.maxScroll = Math.max(0, rows * PITCH_Y + 20 - LIST_H);
 
     SKINS.forEach((def, i) => {
       const col = i % COLS;
@@ -175,15 +248,118 @@ export class SkinsPanel extends Phaser.Scene {
       card.setInteractive({ useHandCursor: true });
       card.on('pointerup', (ptr: Phaser.Input.Pointer) => {
         if (Math.abs(ptr.downY - ptr.upY) > 10) return; // was a scroll drag
-        if (ptr.upY < PANEL_Y + 44) return; // masked out under the header
-        this.onCardTap(def, owned);
+        if (ptr.upY < LIST_TOP) return; // masked out under the header
+        this.onHeroCardTap(def, owned);
       });
       this.cards.add(card);
     });
-    this.cards.setY(-this.scrollY);
   }
 
-  private onCardTap(def: SkinDef, owned: boolean): void {
+  // ---- SWORDS tab ----
+
+  private swordEntries(): SwordEntry[] {
+    const cur = this.gs.swordSkin;
+    const entries: SwordEntry[] = [];
+
+    entries.push({
+      key: 'auto',
+      name: 'TIER ART',
+      frame: weaponFrame(this.gs.bestTier),
+      state: cur === 'auto' ? 'equipped' : 'unlocked',
+      stateText: cur === 'auto' ? 'EQUIPPED' : 'TAP TO EQUIP',
+      stateTint: cur === 'auto' ? 0x2e7a1e : 0x8a5a2e,
+      desc: 'EACH SWORD ITS OWN',
+    });
+
+    for (const sword of PREMIUM_SWORDS) {
+      const key = premiumSkinKey(sword.id);
+      const owned = this.gs.ownedPremiumSwords.includes(sword.id);
+      const equipped = cur === key;
+      entries.push({
+        key,
+        name: sword.name.toUpperCase(),
+        frame: sword.frame,
+        state: equipped ? 'equipped' : owned ? 'unlocked' : 'iap',
+        stateText: equipped
+          ? 'EQUIPPED'
+          : owned
+            ? 'TAP TO EQUIP'
+            : this.pendingSku === sword.sku
+              ? '...'
+              : this.iap.getPriceLabel(sword.sku),
+        stateTint: equipped ? 0x2e7a1e : owned ? 0x8a5a2e : 0x2e7a1e,
+        sku: sword.sku,
+        premiumId: sword.id,
+        desc: sword.desc,
+      });
+    }
+
+    for (let n = 1; n <= GEAR.weaponArtCount; n++) {
+      const key = tierSkinKey(n);
+      const unlocked = this.gs.bestTier >= n;
+      const equipped = cur === key;
+      entries.push({
+        key,
+        name: TIER_NAMES[n - 1].toUpperCase(),
+        frame: n - 1,
+        state: equipped ? 'equipped' : unlocked ? 'unlocked' : 'locked',
+        stateText: equipped ? 'EQUIPPED' : unlocked ? 'TAP TO EQUIP' : `REACH TIER ${n}`,
+        stateTint: equipped ? 0x2e7a1e : unlocked ? 0x8a5a2e : 0x8a7d60,
+      });
+    }
+    return entries;
+  }
+
+  private buildSwordCards(): void {
+    const entries = this.swordEntries();
+    const left = PANEL_X + 8 + CARD_W / 2;
+    const top = LIST_TOP + 8 + CARD_H / 2;
+    const rows = Math.ceil(entries.length / COLS);
+    this.maxScroll = Math.max(0, rows * PITCH_Y + 20 - LIST_H);
+
+    entries.forEach((e, i) => {
+      const col = i % COLS;
+      const row = Math.floor(i / COLS);
+      const x = left + col * PITCH_X;
+      const y = top + row * PITCH_Y;
+      const premium = e.premiumId !== undefined;
+
+      const card = this.add.container(x, y);
+      const bg = this.add
+        .rectangle(0, 0, CARD_W, CARD_H, premium ? 0xf5e6bc : THEME.cardBg)
+        .setStrokeStyle(
+          e.state === 'equipped' ? 3 : 2,
+          e.state === 'equipped' ? 0x2e7a1e : premium ? 0xffd166 : THEME.cardBorder,
+        );
+      const preview = this.add.image(0, -28, 'gear', e.frame);
+      if (e.state === 'locked') preview.setTint(0x8a8a8a);
+
+      const name = this.add
+        .bitmapText(0, 26, 'pix', e.name, 8)
+        .setTint(0x4a3520)
+        .setOrigin(0.5, 0)
+        .setMaxWidth(CARD_W - 8);
+      const state = this.add
+        .bitmapText(0, 50, 'pix', e.stateText, 8)
+        .setTint(e.stateTint)
+        .setOrigin(0.5, 0);
+      const tag = this.add
+        .bitmapText(-CARD_W / 2 + 5, -CARD_H / 2 + 5, 'pix', premium ? 'IAP' : '', 8)
+        .setTint(0xb03a2e);
+
+      card.add([bg, preview, name, state, tag]);
+      card.setSize(CARD_W, CARD_H);
+      card.setInteractive({ useHandCursor: true });
+      card.on('pointerup', (ptr: Phaser.Input.Pointer) => {
+        if (Math.abs(ptr.downY - ptr.upY) > 10) return;
+        if (ptr.upY < LIST_TOP) return;
+        this.onSwordCardTap(e);
+      });
+      this.cards.add(card);
+    });
+  }
+
+  private onHeroCardTap(def: SkinDef, owned: boolean): void {
     if (owned) {
       if (this.gs.equipSkin(def.id)) audio.buy();
       return;
@@ -208,5 +384,26 @@ export class SkinsPanel extends Phaser.Scene {
       this.gs.equipSkin(def.id);
       audio.merge();
     }
+  }
+
+  private onSwordCardTap(e: SwordEntry): void {
+    if (e.state === 'equipped' || e.state === 'locked') return;
+    if (e.state === 'unlocked') {
+      if (this.gs.setSwordSkin(e.key)) audio.buy();
+      return;
+    }
+    // Premium purchase, mirroring the legendary hero skin flow
+    if (this.pendingSku || !e.sku || !e.premiumId) return;
+    this.pendingSku = e.sku;
+    this.buildCards();
+    void this.iap.purchase(e.sku).then((result) => {
+      this.pendingSku = null;
+      if (result.success) {
+        this.gs.grantPremiumSword(e.premiumId!);
+        this.gs.setSwordSkin(e.key);
+        audio.stageUp();
+      }
+      if (this.scene.isActive()) this.buildCards();
+    });
   }
 }

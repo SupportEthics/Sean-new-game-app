@@ -36,9 +36,14 @@ expansion (25 distinct sword sprites — tiers past 25 keep the final art via
 gear.ts weaponFrame(), never cycle; 12 monster species; 8 themed locations
 in config/locations.ts, one per 10-stage set — Dungeon/Forest/Castle/Crypt/
 Frozen Keep/Ember Forge/Dragons Lair/Void Citadel — each with arena tints +
-its own monster pool + entrance banner). Playable core loop in
+its own monster pool + entrance banner), raids progressively harder
+(config/raids.ts raidClearKills: kill quota grows per level on top of
+4x/level HP), sword skins (SkinsPanel KNIGHT/SWORDS tabs: wear any tier
+art once that tier is reached lifetime — bestTier survives rebirth — or
+3 premium IAP weapons scythe/katana/cleaver in config/swordSkins.ts,
+gear.png frames 25-27, cosmetic only). Playable core loop in
 browser, hi-detail pixel art, 25 hero skins incl. 5 premium IAP behind a
-web-mock IapService, save v15. M5 Capacitor wrap done: android/ + ios/
+web-mock IapService, save v17. M5 Capacitor wrap done: android/ + ios/
 native projects (appId uk.co.supportethics.soulforgeknight), service
 factory picks AdMobAd/RevenueCatIap on native (Google test ad units;
 RevenueCat dormant until real keys land in src/config/native.ts) vs web

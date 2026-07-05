@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { RAIDS, raidGems, raidGoldPerKill } from '../config/raids';
+import { RAIDS, raidClearKills, raidGems, raidGoldPerKill } from '../config/raids';
 import { addBackdrop, addCloseButton, addDragScroll } from '../ui/panelInput';
 import { formatNumber } from '../core/EconomyMath';
 import { GameState } from '../core/GameState';
@@ -181,13 +181,18 @@ export class RaidPanel extends Phaser.Scene {
         .setStrokeStyle(2, cleared ? 0x6fae4e : isNext ? THEME.gold : THEME.cardBorder);
       if (locked) bg.setFillStyle(0xb8ab8e, 0.6);
 
+      const kills = raidClearKills(level);
       const title = this.add
-        .bitmapText(left + 6, y - 18, 'pix', `RAID LV ${level}`, 16)
+        .bitmapText(left + 6, y - 20, 'pix', `RAID LV ${level}`, 16)
         .setTint(locked ? 0x8a7d60 : 0x4a3520);
       const gold = formatNumber(raidGoldPerKill(level)).toUpperCase();
-      const gems = raidGems(level, RAIDS.durationSeconds); // optimistic cap preview
+      const gems = raidGems(level, kills);
+      // Two short info lines that end well before the FIGHT button
+      const goal = this.add
+        .bitmapText(left + 6, y + 0, 'pix', `KILL ${kills} IN ${RAIDS.durationSeconds}S`, 8)
+        .setTint(locked ? 0x8a7d60 : 0xb03a2e);
       const reward = this.add
-        .bitmapText(left + 6, y + 6, 'pix', `${gold} GOLD/KILL - UP TO ${gems} GEMS`, 8)
+        .bitmapText(left + 6, y + 13, 'pix', `${gold} GOLD/KILL - UP TO ${gems} GEMS`, 8)
         .setTint(locked ? 0x8a7d60 : 0x8a5a2e);
 
       let stateText = 'LOCKED';
@@ -199,15 +204,16 @@ export class RaidPanel extends Phaser.Scene {
         stateText = canFight ? 'FIGHT!' : 'WAIT';
         stateTint = canFight ? 0xffffff : 0x8a5a2e;
       }
+      // The label sits centred ON the button, never over the row text
       const state = this.add
-        .bitmapText(PANEL_X + PANEL_W - 24, y, 'pix', stateText, canFight ? 16 : 8)
-        .setOrigin(1, 0.5)
+        .bitmapText(PANEL_X + PANEL_W - 60, y, 'pix', stateText, 8)
+        .setOrigin(0.5)
         .setTint(stateTint);
       if (canFight) {
         const btn = this.add
-          .image(PANEL_X + PANEL_W - 52, y, 'btn-sm')
+          .image(PANEL_X + PANEL_W - 60, y, 'btn-sm')
           .setTint(THEME.buttonBg);
-        state.setDepth(1).setX(PANEL_X + PANEL_W - 24);
+        state.setDepth(1);
         // pointerup + gates: a scroll-drag must not fight, nor taps on rows
         // that are masked away under the header or footer
         btn.setInteractive({ useHandCursor: true }).on('pointerup', (ptr: Phaser.Input.Pointer) => {
@@ -218,9 +224,9 @@ export class RaidPanel extends Phaser.Scene {
             this.scene.stop();
           }
         });
-        row.add([bg, title, reward, btn, state]);
+        row.add([bg, title, goal, reward, btn, state]);
       } else {
-        row.add([bg, title, reward, state]);
+        row.add([bg, title, goal, reward, state]);
       }
       this.rows.add(row);
     }

@@ -73,6 +73,30 @@ test('skins panel', async ({ page }) => {
   await page.screenshot({ path: 'screenshots/05-skins.png' });
 });
 
+test('sword skins tab with premium weapons', async ({ page }) => {
+  await page.evaluate(() => {
+    const g = window.__game as unknown as {
+      gs: {
+        bestTier: number;
+        grantPremiumSword(id: string): void;
+        setSwordSkin(key: string): boolean;
+      };
+      openSkins(): void;
+    };
+    g.gs.bestTier = 14;
+    g.gs.grantPremiumSword('scythe');
+    g.gs.setSwordSkin('premium-scythe');
+    g.openSkins();
+  });
+  await page.waitForFunction(
+    () => (window as unknown as { __skinsOpen?: boolean }).__skinsOpen === true,
+  );
+  await page.waitForTimeout(400);
+  await page.mouse.click(283, 157); // SWORDS tab
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: 'screenshots/29-sword-skins.png' });
+});
+
 test('raids panel after prestige', async ({ page }) => {
   await page.evaluate(() => {
     const g = window.__game as unknown as {

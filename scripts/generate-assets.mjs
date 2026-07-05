@@ -767,6 +767,81 @@ function weapon(spec) {
   return out;
 }
 
+// Premium IAP weapons (gear frames 25-27): shapes the spec-driven sword
+// renderer can't make — a scythe, a katana, a dragon cleaver.
+
+function scythe() {
+  const p = new Pix(24, 28);
+  // Dark wooden snath, leaning slightly
+  p.line(15, 4, 12, 26, '#5c3a1c');
+  p.line(16, 4, 13, 26, '#3a2a1e');
+  // Grip wraps
+  p.rect(13, 20, 3, 1, '#8a5a2e');
+  p.rect(14, 14, 3, 1, '#8a5a2e');
+  // Crescent blade sweeping left from the collar
+  p.tri(16, 4, 1, 7, 13, 11, '#e8ecf4');
+  p.tri(1, 7, 8, 10, 13, 11, '#c9ced4');
+  p.line(2, 8, 14, 5, '#ffffff'); // honed edge shine
+  p.set(1, 8, '#9aa0a6');
+  p.set(2, 9, '#9aa0a6');
+  // Collar binding blade to shaft + soul gem
+  p.rect(14, 3, 4, 3, '#6f7378');
+  p.set(15, 4, '#8aff8a');
+  const out = pad(p, 2);
+  out.outline();
+  out.halo('#8aff8a90');
+  return out;
+}
+
+function voidKatana() {
+  const p = new Pix(24, 28);
+  // Slim curved blade: layered diagonal strokes, pink edge on void steel
+  p.line(18, 1, 11, 17, '#2a1a3e');
+  p.line(17, 1, 10, 17, '#5c3a8a');
+  p.line(16, 1, 9, 17, '#e86aff');
+  p.set(17, 0, '#ffffff'); // tip gleam
+  p.set(15, 4, '#ffffff');
+  // Round tsuba guard
+  p.circle(10, 19, 2.5, '#c99a2e');
+  p.set(10, 19, '#8a5a2e');
+  // Wrapped grip with diamond studs
+  p.line(11, 21, 13, 26, '#2a2a3a');
+  p.line(12, 21, 14, 26, '#3a3a4e');
+  p.set(12, 22, '#e86aff');
+  p.set(13, 24, '#e86aff');
+  const out = pad(p, 2);
+  out.outline();
+  out.halo('#e86aff90');
+  return out;
+}
+
+function dragonCleaver() {
+  const p = new Pix(24, 28);
+  // Massive bone blade, wedge with a slanted tip
+  p.cylRect(7, 4, 8, 13, ['#f4ecd8', '#e8dcc0', '#c0b090']);
+  p.tri(7, 4, 15, 4, 11, 0, '#e8dcc0');
+  p.line(7, 4, 7, 16, '#fff6e0'); // cutting edge
+  // Dragon-teeth serrations jutting off the spine
+  for (let i = 0; i < 4; i++) {
+    p.tri(15, 4 + i * 3, 20, 6 + i * 3, 15, 8 + i * 3, '#e8dcc0');
+    p.line(15, 8 + i * 3, 19, 6 + i * 3, '#8a7a58');
+  }
+  // Ember veins in the bone
+  p.set(11, 7, '#ff9a3c');
+  p.set(13, 10, '#ff9a3c');
+  p.set(10, 13, '#ff6a2e');
+  // Scaled guard, wrapped grip, fanged pommel
+  p.rect(7, 17, 10, 2, '#8a2e1c');
+  p.rect(7, 17, 10, 1, '#c2482e');
+  p.rect(11, 17, 2, 2, '#ff4a4a'); // dragon-eye gem
+  for (let y = 0; y < 5; y++) p.rect(11, 19 + y, 2, 1, y % 2 ? '#3a2a1e' : '#5c3a1c');
+  p.rect(10, 24, 4, 2, '#8a2e1c');
+  const out = pad(p, 2);
+  out.outline();
+  out.halo('#ff9a3c90');
+  return out;
+}
+
 // ---------- Tiles (32x32 logical; floor/wall grayscale for biome tint) ----------
 
 function floorTile(variant) {
@@ -1120,7 +1195,8 @@ writeSheet(`${OUT}/pet-pebble.png`, [petPebble(0), petPebble(1)], 1);
 writeSheet(`${OUT}/pet-drake.png`, [petDrake(0), petDrake(1)], 1);
 writeSheet(`${OUT}/fairy.png`, [fairy(0), fairy(1)], 1);
 writeSheet(`${OUT}/gift.png`, [gift(0), gift(1)], 1);
-writeSheet(`${OUT}/gear.png`, WEAPONS.map(weapon), 2);
+// 25 tier blades + the 3 premium IAP weapons (frames 25-27)
+writeSheet(`${OUT}/gear.png`, [...WEAPONS.map(weapon), scythe(), voidKatana(), dragonCleaver()], 2);
 writeSheet(
   `${OUT}/deco.png`,
   [deadTree(), skullProp(), rockProp(), stuckSword(), boneProp(), bushProp(), crateProp()],

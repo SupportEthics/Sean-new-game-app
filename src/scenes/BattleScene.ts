@@ -2,8 +2,9 @@ import Phaser from 'phaser';
 import { GEAR, weaponFrame } from '../config/gear';
 import { GIFTS, rollGift } from '../config/gifts';
 import { isLocationEntrance, locationForStage, locationIndex, speciesForWave } from '../config/locations';
-import { RAIDS } from '../config/raids';
+import { RAIDS, raidClearKills } from '../config/raids';
 import { skinById } from '../config/skins';
+import { swordSkinFrame } from '../config/swordSkins';
 import { ENEMY_SPECIES, STAGES } from '../config/stages';
 import { isBossWave } from '../core/BattleSim';
 import { formatNumber } from '../core/EconomyMath';
@@ -55,14 +56,15 @@ export class BattleScene extends Phaser.Scene {
   private readonly heroY = 252;
   private readonly enemyX = 268;
   private readonly enemyY = 252;
-  /** Staging spots for the pet squad — clear of the MENU button (top-left),
-   * hero + blade orbit, and the boost buttons on the right edge. */
+  /** Staging spots for the pet squad, all along the bottom of the field —
+   * fully clear of the MENU/TOWN buttons (left edge, y < 240), the hero's
+   * blade orbit, and the boost buttons on the right edge. */
   static readonly PET_SLOTS = [
     { x: 62, y: 296 },
     { x: 108, y: 318 },
-    { x: 56, y: 224 },
-    { x: 154, y: 308 },
-    { x: 22, y: 258 },
+    { x: 154, y: 300 },
+    { x: 28, y: 314 },
+    { x: 192, y: 322 },
   ];
 
   constructor() {
@@ -114,6 +116,7 @@ export class BattleScene extends Phaser.Scene {
       }
     });
     this.gs.on('grid:changed', () => this.syncWeapon());
+    this.gs.on('swordskin:changed', () => this.syncWeapon());
     this.gs.on('raid:started', (level) => this.onRaidStarted(level));
     this.gs.on('raid:ended', (r) => this.onRaidEnded(r));
     this.gs.on('pets:changed', () => this.syncPets());
@@ -444,7 +447,7 @@ export class BattleScene extends Phaser.Scene {
 
     this.blades.forEach((blade, i) => {
       const tier = equipped[i] ?? 1;
-      blade.img.setFrame(weaponFrame(tier));
+      blade.img.setFrame(swordSkinFrame(this.gs.swordSkin, tier));
       const band = Math.min((tier - 1) / GEAR.weaponArtCount, 1);
       blade.glow.setAlpha(0.18 + band * 0.35);
     });
@@ -533,7 +536,7 @@ export class BattleScene extends Phaser.Scene {
     this.lastWaveKey = ''; // force resync after the raid
   }
 
-  private onRaidEnded(r: { kills: number; gold: number; gems: number; cleared: boolean }): void {
+  private onRaidEnded(r: { level: number; kills: number; gold: number; gems: number; cleared: boolean }): void {
     this.enemy.clearTint();
     this.bossBar.setFillStyle(THEME.bossTimer);
     this.enemyName.setVisible(false);
@@ -542,7 +545,7 @@ export class BattleScene extends Phaser.Scene {
     audio.stageUp();
     const msg = r.cleared
       ? `RAID CLEARED! +${formatNumber(r.gold).toUpperCase()} GOLD +${r.gems} GEMS`
-      : `RAID OVER - ${r.kills}/${RAIDS.clearKills} KILLS +${r.gems} GEMS`;
+      : `RAID OVER - ${r.kills}/${raidClearKills(r.level)} KILLS +${r.gems} GEMS`;
     const banner = this.add
       .bitmapText(THEME.width / 2, L.arenaTop + 150, 'pix', msg, 8)
       .setTint(r.cleared ? THEME.gold : 0xffb4b4)

@@ -34,6 +34,7 @@ accounts below exist.
 | `gems_chest`      | consumable      | $9.99  | 1,200 gems        |
 | `gems_hoard`      | consumable      | $19.99 | 2,800 gems        |
 | `skin_dragon` etc.| non-consumable  | $4.99  | 5 legendary skins (IDs in src/config/skins.json) |
+| `sword_scythe` etc.| non-consumable | $4.99  | 3 premium sword skins (IDs in src/config/swordSkins.ts) |
 
 ## How a build is made (for whoever runs it)
 

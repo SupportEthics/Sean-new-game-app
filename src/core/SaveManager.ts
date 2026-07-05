@@ -113,6 +113,13 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.jewelerCollectedAt = 0;
     return save;
   },
+  // v16 -> v17: sword skins (cosmetic blade art + premium IAP weapons)
+  (save) => {
+    save.state.swordSkin = 'auto';
+    save.state.ownedPremiumSwords = [];
+    save.state.bestTier = save.state.highestTier ?? 1;
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

@@ -2,6 +2,7 @@
 // App Store Connect / Play Console (and RevenueCat) at the store-readiness
 // milestone. The web mock reads prices from here.
 import { SKINS } from './skins';
+import { SWORD_PRODUCTS } from './swordSkins';
 
 export interface IapProduct {
   sku: string;
@@ -87,6 +88,7 @@ export const INTERSTITIAL = {
 /** All products, for lookup by the IAP service. */
 export const ALL_PRODUCTS: IapProduct[] = [
   ...SKIN_PRODUCTS,
+  ...SWORD_PRODUCTS,
   ...GEM_PACKS,
   STARTER_PACK,
   REMOVE_ADS,

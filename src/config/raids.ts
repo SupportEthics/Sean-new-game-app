@@ -9,8 +9,11 @@ export const RAIDS = {
   durationSeconds: 25,
   /** Cooldown between raids, in minutes (rewarded-ad reset arrives at M4). */
   cooldownMinutes: 10,
-  /** Kills required within the duration to clear the level. */
-  clearKills: 10,
+  /** Kills required within the duration to clear level 1; every level after
+   * asks for more (Sean: raids must get progressively harder), on top of the
+   * 4x/level monster HP. */
+  clearKillsBase: 10,
+  clearKillsPerLevel: 2,
 
   monsterHpBase: 200,
   monsterHpGrowth: 4,
@@ -20,6 +23,10 @@ export const RAIDS = {
   gemKillDivisor: 5,
   gemCapPerLevel: 3, // cap = level * this + 5
 } as const;
+
+export function raidClearKills(level: number): number {
+  return RAIDS.clearKillsBase + RAIDS.clearKillsPerLevel * (level - 1);
+}
 
 export function raidMonsterHp(level: number): number {
   return RAIDS.monsterHpBase * Math.pow(RAIDS.monsterHpGrowth, level - 1);

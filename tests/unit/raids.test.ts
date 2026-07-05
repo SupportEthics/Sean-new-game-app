@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PRESTIGE, soulsFor } from '../../src/config/prestige';
-import { RAIDS, raidGems, raidGoldPerKill, raidMonsterHp } from '../../src/config/raids';
+import { RAIDS, raidClearKills, raidGems, raidGoldPerKill, raidMonsterHp } from '../../src/config/raids';
 import { newBattleState } from '../../src/core/BattleSim';
 import { GameState } from '../../src/core/GameState';
 
@@ -94,9 +94,16 @@ describe('raids', () => {
     expect(gs.raid).toBeNull();
     expect(gs.raidHighest).toBe(1);
     expect(gs.gold - goldBefore).toBeGreaterThanOrEqual(
-      RAIDS.clearKills * raidGoldPerKill(1),
+      raidClearKills(1) * raidGoldPerKill(1),
     );
     expect(gs.gems).toBeGreaterThan(gemsBefore);
+  });
+
+  it('every raid level demands more kills than the last', () => {
+    expect(raidClearKills(1)).toBe(10);
+    for (let l = 2; l <= RAIDS.maxLevel; l++) {
+      expect(raidClearKills(l)).toBeGreaterThan(raidClearKills(l - 1));
+    }
   });
 
   it('failing the quota gives gems but no unlock', () => {
