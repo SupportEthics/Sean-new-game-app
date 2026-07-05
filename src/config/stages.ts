@@ -14,9 +14,14 @@ export const STAGES = {
   /** Seconds the hero has to kill the boss before auto-retreating */
   bossTimeLimit: 30,
 
-  /** Gold per normal kill: base * goldGrowth^(stage-1) */
+  /** Gold per normal kill: base * goldGrowth^(stage-1). Past lateGoldStage
+   * the growth steepens (Sean: high stages must stay achievable) — still
+   * below enemyHpGrowth 1.27, so climbing keeps getting harder, just not
+   * hopelessly so. */
   goldDropBase: 2,
   goldDropGrowth: 1.15,
+  lateGoldStage: 40,
+  goldDropGrowthLate: 1.22,
 
   /** Enemies alive per wave (visual + pacing) */
   enemiesPerWave: 3,

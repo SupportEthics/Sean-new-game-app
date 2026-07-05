@@ -51,7 +51,14 @@ export function enemyHp(stage: number, wave: number): number {
 }
 
 export function goldDrop(stage: number, wave: number): number {
-  const base = STAGES.goldDropBase * Math.pow(STAGES.goldDropGrowth, stage - 1);
+  // Early game exactly as tuned; past the first prestige wall the payout
+  // curve steepens so late stages stay worth fighting
+  const early = Math.min(stage, STAGES.lateGoldStage);
+  const late = Math.max(0, stage - STAGES.lateGoldStage);
+  const base =
+    STAGES.goldDropBase *
+    Math.pow(STAGES.goldDropGrowth, early - 1) *
+    Math.pow(STAGES.goldDropGrowthLate, late);
   return wave === STAGES.wavesPerStage ? base * STAGES.bossGoldMultiplier : base;
 }
 

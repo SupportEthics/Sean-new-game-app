@@ -116,3 +116,25 @@ describe('hero level (lifetime kills)', () => {
     // totalKills is lifetime: prestige doesn't reset it, so nor does the bonus
   });
 });
+
+describe('late-game gold curve (Sean: stage 143 must stay achievable)', () => {
+  it('is unchanged through the tuned early game', () => {
+    for (const stage of [1, 10, 25, 40]) {
+      expect(goldDrop(stage, 1)).toBeCloseTo(2 * Math.pow(1.15, stage - 1));
+    }
+  });
+
+  it('steepens past stage 40 with no jump at the seam', () => {
+    const ratio41 = goldDrop(41, 1) / goldDrop(40, 1);
+    expect(ratio41).toBeCloseTo(1.22); // late growth kicks in smoothly
+    // At stage 143 the new curve pays hundreds of times the old one
+    const old143 = 2 * Math.pow(1.15, 142);
+    expect(goldDrop(143, 1) / old143).toBeGreaterThan(100);
+  });
+
+  it('difficulty still outruns income: gold per HP keeps falling', () => {
+    const ratio = (s: number) => goldDrop(s, 1) / enemyHp(s, 1);
+    expect(ratio(100)).toBeLessThan(ratio(60)); // harder the further you go
+    expect(ratio(60)).toBeLessThan(ratio(41));
+  });
+});
