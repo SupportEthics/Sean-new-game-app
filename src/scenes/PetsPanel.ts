@@ -232,9 +232,6 @@ export class PetsPanel extends Phaser.Scene {
         if (status.reason === 'maxed') {
           evoText = 'FINAL FORM';
           evoTint = 0x9a8d6e;
-        } else if (status.reason === 'level') {
-          evoText = `EVOLVE AT LV ${status.levelGate}`;
-          evoTint = 0x9a8d6e;
         } else if (status.reason === 'gems') {
           evoText = `EVOLVE: ${status.gems} GEMS`;
           evoTint = 0x8a5a2e;

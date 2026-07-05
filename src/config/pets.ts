@@ -31,12 +31,10 @@ export const PETS: PetDef[] = [
 
 export const PET_MAX_LEVEL = 10;
 
-/** Evolution: two ascensions per pet. Reaching the level gate and paying
- * gems multiplies the pet's whole DPS contribution — and it grows visibly
- * bigger in the arena. */
+/** Evolution: two ascensions per pet, initiated purely with gems (Sean's
+ * call — no level requirement). Each multiplies the pet's whole DPS
+ * contribution and it grows visibly bigger in the arena. */
 export const EVOLUTION = {
-  /** Pet level required to reach stage 1 / stage 2. */
-  levelGates: [5, 10],
   /** Gem price of each ascension. */
   gemCosts: [75, 250],
   /** The pet's DPS contribution is multiplied by this at each stage. */

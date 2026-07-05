@@ -128,10 +128,9 @@ describe('pet bonuses', () => {
 });
 
 describe('pet evolution (Sean: pup -> dire wolf -> alpha)', () => {
-  it('gates on level and gems, then multiplies the pet bonus', () => {
+  it('gems are the only gate: any hatched pet can ascend', () => {
     const gs = new GameState();
-    gs.pets = { pup: 4 };
-    expect(gs.evolveStatus('pup').reason).toBe('level'); // needs LV 5
+    expect(gs.evolveStatus('pup').reason).toBe('unhatched');
     gs.pets = { pup: 5 };
     expect(gs.evolveStatus('pup').reason).toBe('gems'); // needs 75 gems
     gs.addGems(EVOLUTION.gemCosts[0]);
@@ -144,7 +143,15 @@ describe('pet evolution (Sean: pup -> dire wolf -> alpha)', () => {
     expect((gs.petDpsMultiplier - 1) / (before - 1)).toBeCloseTo(2);
   });
 
-  it('second ascension needs max level and ends at the final form', () => {
+  it('even a level-1 pet can ascend when the gems are there', () => {
+    const gs = new GameState();
+    gs.pets = { drake: 1 };
+    gs.addGems(EVOLUTION.gemCosts[0]);
+    expect(gs.evolvePet('drake')).toBe(true);
+    expect(gs.petStage('drake')).toBe(1);
+  });
+
+  it('second ascension costs more and ends at the final form', () => {
     const gs = new GameState();
     gs.pets = { pup: 10 };
     gs.petStages = { pup: 1 };

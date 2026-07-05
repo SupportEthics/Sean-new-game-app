@@ -792,20 +792,18 @@ export class GameState {
   }
 
   /** Why a pet can/can't ascend right now (drives the EVOLVE button). */
-  evolveStatus(id: string): { ok: boolean; reason: 'ready' | 'maxed' | 'level' | 'gems' | 'unhatched'; gems: number; levelGate: number } {
+  evolveStatus(id: string): { ok: boolean; reason: 'ready' | 'maxed' | 'gems' | 'unhatched'; gems: number } {
     const stage = this.petStage(id);
-    if (stage >= EVOLUTION.levelGates.length) {
-      return { ok: false, reason: 'maxed', gems: 0, levelGate: 0 };
+    if (stage >= EVOLUTION.gemCosts.length) {
+      return { ok: false, reason: 'maxed', gems: 0 };
     }
     const gems = EVOLUTION.gemCosts[stage];
-    const levelGate = EVOLUTION.levelGates[stage];
-    if (this.petLevel(id) === 0) return { ok: false, reason: 'unhatched', gems, levelGate };
-    if (this.petLevel(id) < levelGate) return { ok: false, reason: 'level', gems, levelGate };
-    if (this.gems < gems) return { ok: false, reason: 'gems', gems, levelGate };
-    return { ok: true, reason: 'ready', gems, levelGate };
+    if (this.petLevel(id) === 0) return { ok: false, reason: 'unhatched', gems };
+    if (this.gems < gems) return { ok: false, reason: 'gems', gems };
+    return { ok: true, reason: 'ready', gems };
   }
 
-  /** Ascend a pet to its next stage: level gate + gems -> 2x/4x pet power. */
+  /** Ascend a pet to its next stage: pure gem spend -> 2x/4x pet power. */
   evolvePet(id: string): boolean {
     const status = this.evolveStatus(id);
     if (!status.ok || !petById(id)) return false;

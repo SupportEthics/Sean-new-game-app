@@ -18,7 +18,7 @@ current status: **M0–M4 done, all six tab-bar tabs live** — skins, 4-sword
 loadout, 6x7 board with purchasable cells, prestige (rebirth at stage 40,
 Souls banked), raids (post-prestige, 20 levels, ad cooldown reset), offline
 earnings (2x-ad popup), Soul Relics tree, daily + weekly + monthly quests
-(daily streak), pets (5 companions from gold/gem/free-ad eggs, dup = level-up, evolution: 2 ascensions per pet at LV 5/10 for gems, x2/x4 pet bonus + bigger arena sprite, stage names in config/pets.ts EVOLUTION, save v20 petStages), shop (sub-tabs DEALS/GEMS/COINS/BUNDLES/SKINS — skins tab sells the 5 legendary heroes + 3 premium swords and links to the full wardrobe (SKINS removed from the side MENU — RAID/QUESTS row + REBIRTH); 6 gem packs, 4 coin packs
+(daily streak), pets (5 companions from gold/gem/free-ad eggs, dup = level-up, evolution: 2 ascensions per pet, gem-only (75/250, no level gate), x2/x4 pet bonus + bigger arena sprite, stage names in config/pets.ts EVOLUTION, save v20 petStages), shop (sub-tabs DEALS/GEMS/COINS/BUNDLES/SKINS — skins tab sells the 5 legendary heroes + 3 premium swords and links to the full wardrobe (SKINS removed from the side MENU — RAID/QUESTS row + REBIRTH); 6 gem packs, 4 coin packs
 granting hours of current gold income, 4 gems+coins bundles — each line
 with 49.99/99.99 whale tiers — $0.99 starter pack, $4.99 remove-ads,
 piggy bank cracked via IAP, free ad chest), interstitial
