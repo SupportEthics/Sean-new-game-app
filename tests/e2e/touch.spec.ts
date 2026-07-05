@@ -30,7 +30,7 @@ test.beforeEach(async ({ page }) => {
 test('side MENU expands and opens the quests panel', async ({ page }) => {
   await page.touchscreen.tap(30, 144); // MENU toggle (TOWN sits below it)
   await page.waitForTimeout(300);
-  await page.touchscreen.tap(88, 260); // QUESTS inside the fanned-out row
+  await page.touchscreen.tap(30, 316); // QUESTS, stacked below RAID
   await page.waitForFunction(
     () => (window as unknown as { __questsOpen?: boolean }).__questsOpen === true,
   );
@@ -172,10 +172,10 @@ test('dragging a sword survives auto-merge firing mid-drag', async ({ page }) =>
     g.addGold(1e9);
     g.gs.grid[0] = 9; // equipped, stays on the bar
     g.gs.grid[6] = 5; // the sword under the finger (not equipped)
-    g.gs.grid[2] = 2;
-    g.gs.grid[3] = 2; // fodder pairs for auto-merge to chew on
-    g.gs.grid[4] = 3;
-    g.gs.grid[5] = 3;
+    g.gs.grid[7] = 2;
+    g.gs.grid[8] = 2; // fodder pairs for auto-merge to chew on
+    g.gs.grid[9] = 3;
+    g.gs.grid[10] = 3;
   });
   await page.mouse.click(247, 761); // BUY fires grid:changed -> render
   await page.waitForTimeout(300);

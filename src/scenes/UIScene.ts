@@ -314,9 +314,9 @@ export class UIScene extends Phaser.Scene {
     g.lineStyle(2, THEME.headerTrim);
     g.strokeRoundedRect(x - 24, y - 24, 48, 48, 8);
     const lbl = this.add
-      .bitmapText(x, y + 14, 'pix', label, 8)
+      .bitmapText(x, y + 20, 'pix', label, 8)
       .setTint(0xffd166)
-      .setOrigin(0.5, 0);
+      .setOrigin(0.5, 1);
     const lock = this.add
       .text(x, y - 5, '🔒', { fontSize: '15px' })
       .setOrigin(0.5)
@@ -344,9 +344,10 @@ export class UIScene extends Phaser.Scene {
     const ty = L.arenaTop + 48;
     this.sideMenu = this.add.container(0, 0).setVisible(false).setDepth(30);
 
-    // Expanded menu below the TOWN button (skins moved into the SHOP)
+    // Expanded menu: one clean column under TOWN — RAID, QUESTS, REBIRTH
     const rowA = ty + 116;
-    const rowB = ty + 174;
+    const rowB = ty + 172;
+    const rowC = ty + 228;
     const raid = this.sideButton(this.sideMenu, bx, rowA, 'RAID', () => {
       if (!this.gs.raidsUnlocked) {
         this.toast('UNLOCKS AFTER FIRST REBIRTH');
@@ -363,7 +364,7 @@ export class UIScene extends Phaser.Scene {
     this.raidLock = raid.lock;
     this.raidIcon = raidIcon;
 
-    const quests = this.sideButton(this.sideMenu, 88, rowA, 'QUESTS', () => {
+    const quests = this.sideButton(this.sideMenu, bx, rowB, 'QUESTS', () => {
       this.toggleMenu(false);
       if (!this.scene.isActive('Quests')) {
         audio.buy();
@@ -372,10 +373,10 @@ export class UIScene extends Phaser.Scene {
     });
     quests.icon(this.add.image(0, 0, 'icons', 1).setScale(0.9));
 
-    // Rebirth appears on its own row once the run reaches the prestige stage
+    // Rebirth appears at the column's foot once the run reaches stage 40
     this.rebirthButton = this.add.container(0, 0).setVisible(false);
     const x = bx;
-    const y = rowB;
+    const y = rowC;
     const g = this.add.graphics();
     g.fillStyle(0x4a1e60, 0.95);
     g.fillRoundedRect(x - 24, y - 24, 48, 48, 8);
@@ -383,9 +384,9 @@ export class UIScene extends Phaser.Scene {
     g.strokeRoundedRect(x - 24, y - 24, 48, 48, 8);
     const star = this.add.image(x, y - 5, 'icons', 3).setScale(0.9);
     const lbl = this.add
-      .bitmapText(x, y + 14, 'pix', 'REBIRTH', 8)
+      .bitmapText(x, y + 20, 'pix', 'REBIRTH', 8)
       .setTint(0xd8b4ff)
-      .setOrigin(0.5, 0);
+      .setOrigin(0.5, 1);
     const hit = this.add
       .rectangle(x, y, 48, 48, 0xffffff, 0.001)
       .setInteractive({ useHandCursor: true })
@@ -406,9 +407,9 @@ export class UIScene extends Phaser.Scene {
     bars.fillStyle(0xffd166);
     for (let i = 0; i < 3; i++) bars.fillRect(bx - 10, ty - 14 + i * 7, 20, 3);
     this.menuLabel = this.add
-      .bitmapText(bx, ty + 14, 'pix', 'MENU', 8)
+      .bitmapText(bx, ty + 20, 'pix', 'MENU', 8)
       .setTint(0xffd166)
-      .setOrigin(0.5, 0)
+      .setOrigin(0.5, 1)
       .setDepth(31);
     // A little beacon when a rebirth is waiting inside: a purple disc pinned
     // to the button's top-left corner (mirrors the red quest counter)
@@ -437,9 +438,9 @@ export class UIScene extends Phaser.Scene {
     house.fillStyle(0xb03a2e);
     house.fillTriangle(bx - 11, ty + 52, bx + 11, ty + 52, bx, ty + 43);
     const townLbl = this.add
-      .bitmapText(bx, ty + 58 + 14, 'pix', 'TOWN', 8)
+      .bitmapText(bx, ty + 58 + 20, 'pix', 'TOWN', 8)
       .setTint(0xd8e4c4)
-      .setOrigin(0.5, 0);
+      .setOrigin(0.5, 1);
     this.townLock = this.add
       .text(bx + 14, ty + 46, '🔒', { fontSize: '13px' })
       .setOrigin(0.5);
@@ -462,7 +463,7 @@ export class UIScene extends Phaser.Scene {
     // MENU toggle, and a twin on the QUESTS button so an open menu shows
     // exactly where the notification lives
     const toggleBadge = this.makeCountBadge(bx + 20, ty - 20, 32);
-    const questsBadge = this.makeCountBadge(88 + 20, rowA - 20, 32);
+    const questsBadge = this.makeCountBadge(bx + 20, rowB - 20, 32);
     this.sideMenu.add(questsBadge.container);
     this.refreshQuestBadge = (): void => {
       const n = this.gs.claimableQuests;
@@ -513,7 +514,7 @@ export class UIScene extends Phaser.Scene {
     const x = THEME.width - 30;
     this.boostButton(x, L.arenaTop + 74, 'X2 DMG', 0, 0xb03a2e, 'boost_dmg',
       () => this.gs.activateDmgBoost(), () => this.gs.dmgBoostUntil);
-    this.boostButton(x, L.arenaTop + 132, 'X2 SPEED', 3, 0x2884a8, 'boost_speed',
+    this.boostButton(x, L.arenaTop + 132, 'X2 SPD', 3, 0x2884a8, 'boost_speed',
       () => this.gs.activateSpeedBoost(), () => this.gs.speedBoostUntil);
 
     // RANKS: the Hall of Legends
@@ -526,16 +527,16 @@ export class UIScene extends Phaser.Scene {
     // Little trophy mark
     const cup = this.add.graphics();
     cup.fillStyle(0xffd166);
-    cup.fillRect(x - 8, ry - 16, 16, 10);
-    cup.fillRect(x - 3, ry - 6, 6, 5);
-    cup.fillRect(x - 7, ry - 1, 14, 3);
+    cup.fillRect(x - 8, ry - 20, 16, 10);
+    cup.fillRect(x - 3, ry - 10, 6, 5);
+    cup.fillRect(x - 7, ry - 5, 14, 3);
     cup.fillStyle(0xc99a2e);
-    cup.fillRect(x - 12, ry - 15, 4, 6);
-    cup.fillRect(x + 8, ry - 15, 4, 6);
+    cup.fillRect(x - 12, ry - 19, 4, 6);
+    cup.fillRect(x + 8, ry - 19, 4, 6);
     this.add
-      .bitmapText(x, ry + 14, 'pix', 'RANKS', 8)
+      .bitmapText(x, ry + 20, 'pix', 'RANKS', 8)
       .setTint(0xffd166)
-      .setOrigin(0.5, 0);
+      .setOrigin(0.5, 1);
     this.add
       .rectangle(x, ry, 48, 48, 0xffffff, 0.001)
       .setInteractive({ useHandCursor: true })
@@ -562,15 +563,21 @@ export class UIScene extends Phaser.Scene {
     g.fillRoundedRect(x - 24, y - 24, 48, 48, 8);
     g.lineStyle(2, tint);
     g.strokeRoundedRect(x - 24, y - 24, 48, 48, 8);
-    this.add.image(x, y - 8, 'icons', iconFrame).setScale(0.8).setTint(tint);
+    this.add.image(x, y - 6, 'icons', iconFrame).setScale(0.8).setTint(tint);
+    // Green AD chip pinned to the corner (the standard watch-an-ad cue)
+    const chip = this.add.graphics();
+    chip.fillStyle(0x2e7a1e);
+    chip.fillRoundedRect(x + 6, y - 28, 22, 13, 4);
+    chip.lineStyle(1, 0x14101c);
+    chip.strokeRoundedRect(x + 6, y - 28, 22, 13, 4);
     this.add
-      .bitmapText(x + 18, y + 2, 'pix', 'AD', 8)
-      .setTint(0x6fae4e)
-      .setOrigin(1, 0);
-    const label = this.add
-      .bitmapText(x, y + 14, 'pix', name, 8)
-      .setTint(0xffd166)
+      .bitmapText(x + 17, y - 25, 'pix', 'AD', 8)
+      .setTint(0xffffff)
       .setOrigin(0.5, 0);
+    const label = this.add
+      .bitmapText(x, y + 20, 'pix', name, 8)
+      .setTint(0xffd166)
+      .setOrigin(0.5, 1);
     this.boostLabels.push({ label, until, idle: name });
     let busy = false;
     this.add
