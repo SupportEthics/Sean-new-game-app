@@ -228,7 +228,7 @@ export class PetsPanel extends Phaser.Scene {
       // the evolve and its cost unmissable)
       if (owned) {
         const status = this.gs.evolveStatus(pet.id);
-        const bx = PANEL_X + PANEL_W - 72;
+        const bx = PANEL_X + PANEL_W - 79;
         const by = y + 14;
         if (status.reason === 'maxed') {
           row.add(
@@ -240,7 +240,7 @@ export class PetsPanel extends Phaser.Scene {
         } else {
           const btn = this.add
             .image(bx, by, 'btn-sm')
-            .setDisplaySize(108, 24)
+            .setDisplaySize(126, 24)
             .setTint(status.ok ? 0x7a3ea8 : THEME.buttonBgDisabled);
           const lbl = this.add
             .bitmapText(bx, by, 'pix', `EVOLVE: ${status.gems} GEMS`, 8)
