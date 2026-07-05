@@ -27,10 +27,33 @@ test.beforeEach(async ({ page }) => {
   await page.waitForFunction(() => window.__uiReady === true);
 });
 
-test('side MENU expands and opens the skins panel', async ({ page }) => {
+test('side MENU expands and opens the quests panel', async ({ page }) => {
   await page.touchscreen.tap(30, 144); // MENU toggle (TOWN sits below it)
   await page.waitForTimeout(300);
-  await page.touchscreen.tap(30, 260); // SKINS inside the fanned-out grid
+  await page.touchscreen.tap(88, 260); // QUESTS inside the fanned-out row
+  await page.waitForFunction(
+    () => (window as unknown as { __questsOpen?: boolean }).__questsOpen === true,
+  );
+});
+
+test('skins wardrobe opens from the shop SKINS tab', async ({ page }) => {
+  await page.touchscreen.tap(357, 812); // SHOP tab
+  await page.waitForFunction(
+    () => (window as unknown as { __shopOpen?: boolean }).__shopOpen === true,
+  );
+  await page.waitForTimeout(300);
+  await page.touchscreen.tap(335, 165); // SKINS sub-tab
+  await page.waitForTimeout(400);
+  // Scroll to the bottom where the wardrobe row lives
+  await page.mouse.move(195, 600);
+  await page.mouse.down();
+  for (let y = 600; y >= 260; y -= 40) {
+    await page.mouse.move(195, y);
+    await page.waitForTimeout(30);
+  }
+  await page.mouse.up();
+  await page.waitForTimeout(300);
+  await page.touchscreen.tap(326, 704); // OPEN on the wardrobe row
   await page.waitForFunction(
     () => (window as unknown as { __skinsOpen?: boolean }).__skinsOpen === true,
   );

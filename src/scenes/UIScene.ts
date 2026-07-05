@@ -345,19 +345,10 @@ export class UIScene extends Phaser.Scene {
     const ty = L.arenaTop + 48;
     this.sideMenu = this.add.container(0, 0).setVisible(false).setDepth(30);
 
-    // Expanded menu: a 2x2 grid below the TOWN button
+    // Expanded menu below the TOWN button (skins moved into the SHOP)
     const rowA = ty + 116;
     const rowB = ty + 174;
-    const skins = this.sideButton(this.sideMenu, bx, rowA, 'SKINS', () => {
-      this.toggleMenu(false);
-      if (!this.scene.isActive('Skins')) {
-        audio.buy();
-        this.scene.launch('Skins');
-      }
-    });
-    skins.icon(this.add.image(0, 0, `hero-${this.gs.activeSkin}`, 0).setScale(0.5));
-
-    const raid = this.sideButton(this.sideMenu, 88, rowA, 'RAID', () => {
+    const raid = this.sideButton(this.sideMenu, bx, rowA, 'RAID', () => {
       if (!this.gs.raidsUnlocked) {
         this.toast('UNLOCKS AFTER FIRST REBIRTH');
         return;
@@ -373,7 +364,7 @@ export class UIScene extends Phaser.Scene {
     this.raidLock = raid.lock;
     this.raidIcon = raidIcon;
 
-    const quests = this.sideButton(this.sideMenu, bx, rowB, 'QUESTS', () => {
+    const quests = this.sideButton(this.sideMenu, 88, rowA, 'QUESTS', () => {
       this.toggleMenu(false);
       if (!this.scene.isActive('Quests')) {
         audio.buy();
@@ -382,9 +373,9 @@ export class UIScene extends Phaser.Scene {
     });
     quests.icon(this.add.image(0, 0, 'icons', 1).setScale(0.9));
 
-    // Rebirth completes the grid once the run reaches the prestige stage
+    // Rebirth appears on its own row once the run reaches the prestige stage
     this.rebirthButton = this.add.container(0, 0).setVisible(false);
-    const x = 88;
+    const x = bx;
     const y = rowB;
     const g = this.add.graphics();
     g.fillStyle(0x4a1e60, 0.95);
@@ -472,7 +463,7 @@ export class UIScene extends Phaser.Scene {
     // MENU toggle, and a twin on the QUESTS button so an open menu shows
     // exactly where the notification lives
     const toggleBadge = this.makeCountBadge(bx + 20, ty - 20, 32);
-    const questsBadge = this.makeCountBadge(bx + 20, rowB - 20, 32);
+    const questsBadge = this.makeCountBadge(88 + 20, rowA - 20, 32);
     this.sideMenu.add(questsBadge.container);
     this.refreshQuestBadge = (): void => {
       const n = this.gs.claimableQuests;
