@@ -563,87 +563,190 @@ function lich(frame) {
 
 // ---------- Pets (28x28 logical, 2 frames each) ----------
 
-function petPup(frame) {
+function petPup(frame, stage = 0) {
   const p = new Pix(28, 28);
-  const FUR = ['#8a92a2', '#6a707e', '#484c58'];
+  const FUR = stage === 2
+    ? ['#6a707e', '#4a4e5a', '#30343e'] // the alpha wears night-dark fur
+    : ['#8a92a2', '#6a707e', '#484c58'];
+  const DK = stage === 2 ? '#30343e' : '#484c58';
   const hop = frame === 1 ? 1 : 0;
-  p.tri(2, 12 - hop, 7, 15 - hop, 5, 19 - hop, '#484c58'); // tail
+  p.tri(2, 12 - hop, 7, 15 - hop, 5, 19 - hop, DK); // tail
   p.domeEllipse(13, 17 - hop, 7, 5, FUR); // body
   p.cylRect(8, 21 - hop, 2, 6 + hop, FUR);
   p.cylRect(16, 21 - hop, 2, 6 + hop, FUR);
   p.domeEllipse(20, 10 - hop, 5, 4.5, FUR); // head
-  p.tri(17, 4 - hop, 19, 8 - hop, 16, 8 - hop, '#484c58'); // ears
-  p.tri(21, 3 - hop, 23, 7 - hop, 19, 7 - hop, '#6a707e');
-  p.rect(24, 9 - hop, 3, 2, '#484c58'); // muzzle
-  p.set(21, 8 - hop, '#ffb347'); // eye
+  p.tri(17, 4 - hop, 19, 8 - hop, 16, 8 - hop, DK); // ears
+  p.tri(21, 3 - hop, 23, 7 - hop, 19, 7 - hop, FUR[1]);
+  p.rect(24, 9 - hop, 3, 2, DK); // muzzle
   p.set(25, 11 - hop, '#14101c'); // nose
-  return finish(p);
+  if (stage === 0) {
+    p.set(21, 8 - hop, '#ffb347'); // puppy eye
+  } else {
+    // Snarling: red eye, bared fangs, hackles up along the spine
+    p.set(21, 8 - hop, '#ff4a4a');
+    p.set(20, 7 - hop, '#8a1e1e'); // lowered brow
+    p.set(24, 11 - hop, '#ffffff');
+    p.set(26, 11 - hop, '#ffffff'); // fangs
+    for (let i = 0; i < (stage === 2 ? 4 : 2); i++) {
+      const x = 9 + i * 3;
+      p.tri(x, 13 - hop, x + 2, 13 - hop, x + 1, 9 - hop, DK); // hackles
+    }
+  }
+  if (stage === 2) {
+    p.line(11, 16 - hop, 14, 19 - hop, '#8a1e1e'); // battle scar
+    for (const x of [8, 16]) p.set(x, 27, '#ffffff'); // claws
+  }
+  const q = finish(p);
+  if (stage === 2) q.halo('#ff4a4a45'); // alpha menace
+  return q;
 }
 
-function petEmberbat(frame) {
+function petEmberbat(frame, stage = 0) {
   const p = new Pix(28, 28);
-  const C = '#c2482e';
+  const C = stage === 2 ? '#e05a2e' : '#c2482e';
+  const DKW = stage === 2 ? '#6a1808' : '#8a2e1c';
   const up = frame === 0;
   const wy = up ? 5 : 12;
-  p.tri(1, wy, 9, 13, 8, 18, '#8a2e1c');
-  p.tri(27, wy, 19, 13, 20, 18, '#8a2e1c');
+  p.tri(1, wy, 9, 13, 8, 18, DKW);
+  p.tri(27, wy, 19, 13, 20, 18, DKW);
   p.line(1, wy, 8, 16, '#5c1f12');
   p.line(27, wy, 20, 16, '#5c1f12');
-  p.domeEllipse(14, 13, 5, 5, ['#e0705c', C, '#8a2e1c']);
+  if (stage >= 1) {
+    // Burning wingtips
+    p.set(1, wy, '#ff9a3c');
+    p.set(27, wy, '#ff9a3c');
+    p.set(2, wy + 1, '#ffe86b');
+    p.set(26, wy + 1, '#ffe86b');
+  }
+  p.domeEllipse(14, 13, 5, 5, ['#e0705c', C, DKW]);
   p.tri(11, 6, 13, 10, 10, 10, C);
   p.tri(17, 6, 15, 10, 18, 10, C);
-  p.rect(11, 12, 2, 1, '#ffe86b');
-  p.rect(16, 12, 2, 1, '#ffe86b');
+  if (stage === 2) {
+    // Curved demon horns above the ears
+    p.line(10, 5, 8, 2, '#f4f0e4');
+    p.line(18, 5, 20, 2, '#f4f0e4');
+  }
+  const eye = stage === 2 ? '#ffffff' : stage === 1 ? '#ff9a3c' : '#ffe86b';
+  p.rect(11, 12, 2, 1, eye);
+  p.rect(16, 12, 2, 1, eye);
   p.set(13, 15, '#ffffff');
   p.set(15, 15, '#ffffff');
-  return finish(p);
+  if (stage >= 1) {
+    p.set(12, 16, '#ffffff'); // longer fangs
+    p.set(16, 16, '#ffffff');
+  }
+  const q = finish(p);
+  if (stage === 2) q.halo('#ff6a2e50'); // wreathed in fire
+  return q;
 }
 
-function petWisp(frame) {
+function petWisp(frame, stage = 0) {
   const p = new Pix(28, 28);
-  const C = '#8ee8ff';
+  const C = stage === 2 ? '#b4f0ff' : '#8ee8ff';
   const off = frame === 1 ? 1 : 0;
   p.domeEllipse(14, 12 - off, 6, 7, ['#d4f6ff', C, '#4fb4d0']);
   for (let x = 9; x <= 19; x += 3) {
     const drop = (x / 3 + frame) % 2 === 0 ? 4 : 2;
-    p.rect(x, 17 - off, 2, drop, C);
+    p.rect(x, 17 - off, 2, drop + (stage === 2 ? 2 : 0), C);
   }
   p.set(14, 3 - off, C); // flame tip
   p.set(13, 4 - off, '#d4f6ff');
+  if (stage === 2) {
+    // A crown of grave-fire
+    for (const x of [9, 14, 19]) {
+      p.set(x, 2 - off, C);
+      p.set(x, 1 - off, '#ffffff');
+    }
+  }
+  // Eyes harden with each stage: hollow -> burning -> blazing under a scowl
   p.rect(11, 11 - off, 2, 2, '#14101c');
   p.rect(16, 11 - off, 2, 2, '#14101c');
-  return finish(p);
+  if (stage >= 1) {
+    p.set(11, 11 - off, '#ffffff');
+    p.set(17, 11 - off, '#ffffff');
+    p.line(10, 9 - off, 12, 10 - off, '#14101c'); // angry brows
+    p.line(18, 9 - off, 16, 10 - off, '#14101c');
+  }
+  if (stage >= 1) {
+    p.tri(12, 14 - off, 16, 14 - off, 14, 16 - off, '#14101c'); // open howl
+  }
+  const q = finish(p);
+  if (stage === 2) q.halo('#8ee8ff55');
+  return q;
 }
 
-function petPebble(frame) {
+function petPebble(frame, stage = 0) {
   const p = new Pix(28, 28);
-  const ROCK = ['#9a92a8', '#7a7284', '#565060'];
+  const ROCK = stage === 2
+    ? ['#7a7284', '#5c5666', '#3e3a48'] // scorched mountain stone
+    : ['#9a92a8', '#7a7284', '#565060'];
+  const DK = stage === 2 ? '#3e3a48' : '#565060';
   const bob = frame === 1 ? 1 : 0;
   p.domeEllipse(14, 15 + bob, 8, 7, ROCK);
-  p.rect(8, 22 + bob, 4, 4 - bob, '#565060');
-  p.rect(16, 22 + bob, 4, 4 - bob, '#565060');
-  p.rect(10, 12 + bob, 2, 2, '#ffb347');
-  p.rect(16, 12 + bob, 2, 2, '#ffb347');
-  p.line(9, 18 + bob, 12, 19 + bob, '#565060');
-  p.noise(8, 10, 12, 10, '#5a7a4a', 8);
-  return finish(p);
+  p.rect(8, 22 + bob, 4, 4 - bob, DK);
+  p.rect(16, 22 + bob, 4, 4 - bob, DK);
+  if (stage >= 1) {
+    // Jagged rock spikes shoulder the crown
+    p.tri(8, 11 + bob, 11, 10 + bob, 9, 6 + bob, ROCK[1]);
+    p.tri(17, 10 + bob, 20, 11 + bob, 19, 6 + bob, ROCK[1]);
+    if (stage === 2) p.tri(12, 9 + bob, 16, 9 + bob, 14, 4 + bob, ROCK[0]);
+  }
+  const eye = stage === 2 ? '#ff4a4a' : stage === 1 ? '#ff9a3c' : '#ffb347';
+  p.rect(10, 12 + bob, 2, 2, eye);
+  p.rect(16, 12 + bob, 2, 2, eye);
+  p.line(9, 18 + bob, 12, 19 + bob, DK);
+  if (stage >= 1) {
+    // Molten veins glow through the cracks
+    p.line(9, 16 + bob, 13, 20 + bob, '#ff9a3c');
+    if (stage === 2) {
+      p.line(16, 17 + bob, 19, 20 + bob, '#ff6a2e');
+      p.set(14, 21 + bob, '#ffe86b');
+    }
+  } else {
+    p.noise(8, 10, 12, 10, '#5a7a4a', 8);
+  }
+  const q = finish(p);
+  if (stage === 2) q.halo('#ff9a3c40');
+  return q;
 }
 
-function petDrake(frame) {
+function petDrake(frame, stage = 0) {
   const p = new Pix(28, 28);
-  const C = ['#8ab894', '#4e8a5e', '#2e5c3c'];
+  const C = stage === 2
+    ? ['#6aa876', '#3a7a4a', '#1e4a2c'] // deep dragon green
+    : ['#8ab894', '#4e8a5e', '#2e5c3c'];
+  const DK = stage === 2 ? '#1e4a2c' : '#2e5c3c';
   const flap = frame === 0 ? 0 : 2;
-  p.tri(2, 20, 8, 18, 7, 23, '#2e5c3c'); // tail
-  p.tri(9, 8 - flap, 15, 14, 8, 15, '#2e5c3c'); // wing
+  p.tri(2, 20, 8, 18, 7, 23, DK); // tail
+  const wingSpread = stage >= 1 ? 2 : 0; // grown wings
+  p.tri(9 - wingSpread, 8 - flap - wingSpread, 15, 14, 8, 15, DK); // wing
   p.domeEllipse(15, 17, 7, 5.5, C); // body
+  if (stage >= 1) {
+    // Spines march down the back
+    for (let i = 0; i < (stage === 2 ? 4 : 2); i++) {
+      const x = 10 + i * 3;
+      p.tri(x, 13, x + 2, 13, x + 1, 10, DK);
+    }
+  }
   p.cylRect(11, 22, 2, 4, C);
   p.cylRect(18, 22, 2, 4, C);
   p.domeEllipse(21, 9, 4.5, 4, C); // head
-  p.rect(25, 9, 2, 2, '#2e5c3c'); // snout
-  p.set(22, 7, '#ffe86b'); // eye
-  p.tri(19, 4, 21, 8, 17, 8, '#2e5c3c'); // horn
-  p.set(26, 12, '#ff9a3c'); // flame puff
-  return finish(p);
+  p.rect(25, 9, 2, 2, DK); // snout
+  p.set(22, 7, stage === 2 ? '#ff4a4a' : stage === 1 ? '#ff9a3c' : '#ffe86b'); // eye
+  p.tri(19, 4, 21, 8, 17, 8, DK); // horn
+  if (stage >= 1) p.tri(22, 3, 24, 7, 20, 7, DK); // second horn
+  if (stage === 2) {
+    // Breathing fire, not puffing it
+    p.line(27, 10, 25, 11, '#ff6a2e');
+    p.set(27, 9, '#ffe86b');
+    p.set(26, 12, '#ff9a3c');
+    p.set(27, 13, '#ff9a3c');
+  } else {
+    p.set(26, 12, '#ff9a3c'); // flame puff
+  }
+  const q = finish(p);
+  if (stage === 2) q.halo('#ff9a3c4a');
+  return q;
 }
 
 // ---------- Fairy (24x24 logical, glowing helper sprite) ----------
@@ -1188,11 +1291,17 @@ writeSheet(`${OUT}/enemy-cultist.png`, [cultist(0), cultist(1)], 1);
 writeSheet(`${OUT}/enemy-ghoul.png`, [ghoul(0), ghoul(1)], 1);
 writeSheet(`${OUT}/enemy-gargoyle.png`, [gargoyle(0), gargoyle(1)], 1);
 writeSheet(`${OUT}/enemy-lich.png`, [lich(0), lich(1)], 1);
-writeSheet(`${OUT}/pet-pup.png`, [petPup(0), petPup(1)], 1);
-writeSheet(`${OUT}/pet-emberbat.png`, [petEmberbat(0), petEmberbat(1)], 1);
-writeSheet(`${OUT}/pet-wisp.png`, [petWisp(0), petWisp(1)], 1);
-writeSheet(`${OUT}/pet-pebble.png`, [petPebble(0), petPebble(1)], 1);
-writeSheet(`${OUT}/pet-drake.png`, [petDrake(0), petDrake(1)], 1);
+for (const [id, fn] of [
+  ['pup', petPup],
+  ['emberbat', petEmberbat],
+  ['wisp', petWisp],
+  ['pebble', petPebble],
+  ['drake', petDrake],
+]) {
+  writeSheet(`${OUT}/pet-${id}.png`, [fn(0, 0), fn(1, 0)], 1);
+  writeSheet(`${OUT}/pet-${id}-s1.png`, [fn(0, 1), fn(1, 1)], 1);
+  writeSheet(`${OUT}/pet-${id}-s2.png`, [fn(0, 2), fn(1, 2)], 1);
+}
 writeSheet(`${OUT}/fairy.png`, [fairy(0), fairy(1)], 1);
 writeSheet(`${OUT}/gift.png`, [gift(0), gift(1)], 1);
 // 25 tier blades + the 3 premium IAP weapons (frames 25-27)

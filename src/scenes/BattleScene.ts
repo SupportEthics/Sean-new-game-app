@@ -267,16 +267,18 @@ export class BattleScene extends Phaser.Scene {
     this.gs.activePets.forEach((id, i) => {
       const slot = BattleScene.PET_SLOTS[i];
       if (!slot) return;
-      // Evolved pets stand visibly larger
-      const scale = EVOLUTION.scales[this.gs.petStage(id)];
+      // Evolved pets wear their fiercer form and stand visibly larger
+      const stage = this.gs.petStage(id);
+      const scale = EVOLUTION.scales[stage];
+      const tex = `pet-${id}${stage > 0 ? `-s${stage}` : ''}`;
       this.petShadows.push(
         this.add.image(slot.x, slot.y + 12, 'shadow').setScale(0.6 * scale).setDepth(4),
       );
       this.petSprites.push(
         this.add
-          .sprite(slot.x, slot.y, `pet-${id}`)
+          .sprite(slot.x, slot.y, tex)
           .setScale(scale)
-          .play(`pet-${id}-idle`)
+          .play(`${tex}-idle`)
           .setDepth(slot.y > this.heroY ? 12 : 6),
       );
     });

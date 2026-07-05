@@ -50,11 +50,14 @@ export class PreloadScene extends Phaser.Scene {
         frameHeight: 48,
       }),
     );
+    // Each pet ships three sheets: hatchling, evolved, final form
     PETS.forEach((p) =>
-      this.load.spritesheet(`pet-${p.id}`, assetUrl(`assets/pet-${p.id}.png`), {
-        frameWidth: 32,
-        frameHeight: 32,
-      }),
+      ['', '-s1', '-s2'].forEach((suffix) =>
+        this.load.spritesheet(`pet-${p.id}${suffix}`, assetUrl(`assets/pet-${p.id}${suffix}.png`), {
+          frameWidth: 32,
+          frameHeight: 32,
+        }),
+      ),
     );
     this.load.spritesheet('fairy', assetUrl('assets/fairy.png'), {
       frameWidth: 28,
@@ -83,7 +86,7 @@ export class PreloadScene extends Phaser.Scene {
       'pixfont',
       ...SKINS.map((s) => `hero-${s.id}`),
       ...ENEMY_SPECIES.map((s) => `enemy-${s.key}`),
-      ...PETS.map((p) => `pet-${p.id}`),
+      ...PETS.flatMap((p) => [`pet-${p.id}`, `pet-${p.id}-s1`, `pet-${p.id}-s2`]),
       'fairy',
       'gift',
     ];
@@ -130,12 +133,14 @@ export class PreloadScene extends Phaser.Scene {
       }),
     );
     PETS.forEach((p) =>
-      this.anims.create({
-        key: `pet-${p.id}-idle`,
-        frames: this.anims.generateFrameNumbers(`pet-${p.id}`, { frames: [0, 1] }),
-        frameRate: 3,
-        repeat: -1,
-      }),
+      ['', '-s1', '-s2'].forEach((suffix) =>
+        this.anims.create({
+          key: `pet-${p.id}${suffix}-idle`,
+          frames: this.anims.generateFrameNumbers(`pet-${p.id}${suffix}`, { frames: [0, 1] }),
+          frameRate: 3,
+          repeat: -1,
+        }),
+      ),
     );
     this.anims.create({
       key: 'fairy-idle',

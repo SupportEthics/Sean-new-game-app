@@ -184,7 +184,7 @@ export class PetsPanel extends Phaser.Scene {
         .rectangle(THEME.width / 2, y, PANEL_W - 20, ROW_H, THEME.cardBg)
         .setStrokeStyle(2, active ? THEME.gold : owned ? RARITY_TINT[pet.rarity] : THEME.cardBorder);
       const sprite = this.add
-        .sprite(PANEL_X + 34, y, `pet-${pet.id}`, 0)
+        .sprite(PANEL_X + 34, y, `pet-${pet.id}${stage > 0 ? `-s${stage}` : ''}`, 0)
         .setScale(1.25 + stage * 0.2); // evolved pets loom larger in the den too
       if (!owned) sprite.setTintFill(0x3a3048);
       const name = this.add
@@ -224,36 +224,40 @@ export class PetsPanel extends Phaser.Scene {
         );
       }
 
-      // Evolution: the pet's next form, gated by level + gems
+      // Evolution: a proper button with the gem price on it (Sean: make
+      // the evolve and its cost unmissable)
       if (owned) {
         const status = this.gs.evolveStatus(pet.id);
-        let evoText: string;
-        let evoTint: number;
+        const bx = PANEL_X + PANEL_W - 72;
+        const by = y + 14;
         if (status.reason === 'maxed') {
-          evoText = 'FINAL FORM';
-          evoTint = 0x9a8d6e;
-        } else if (status.reason === 'gems') {
-          evoText = `EVOLVE: ${status.gems} GEMS`;
-          evoTint = 0x8a5a2e;
+          row.add(
+            this.add
+              .bitmapText(PANEL_X + PANEL_W - 16, by, 'pix', 'FINAL FORM', 8)
+              .setOrigin(1, 0.5)
+              .setTint(0x9a8d6e),
+          );
         } else {
-          evoText = `EVOLVE: ${status.gems} GEMS`;
-          evoTint = 0x2884a8;
+          const btn = this.add
+            .image(bx, by, 'btn-sm')
+            .setDisplaySize(108, 24)
+            .setTint(status.ok ? 0x7a3ea8 : THEME.buttonBgDisabled);
+          const lbl = this.add
+            .bitmapText(bx, by, 'pix', `EVOLVE: ${status.gems} GEMS`, 8)
+            .setOrigin(0.5)
+            .setTint(0xffffff);
+          if (status.ok) {
+            btn.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
+              if (this.gs.evolvePet(pet.id)) {
+                audio.stageUp();
+                this.reveal
+                  .setText(`${stageName(pet, this.gs.petStage(pet.id))} ASCENDS!`)
+                  .setTint(RARITY_TINT[pet.rarity]);
+              }
+            });
+          }
+          row.add([btn, lbl]);
         }
-        const evo = this.add
-          .bitmapText(PANEL_X + PANEL_W - 16, y + 12, 'pix', evoText, 8)
-          .setOrigin(1, 0.5)
-          .setTint(evoTint);
-        if (status.ok) {
-          evo.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
-            if (this.gs.evolvePet(pet.id)) {
-              audio.stageUp();
-              this.reveal
-                .setText(`${stageName(pet, this.gs.petStage(pet.id))} ASCENDS!`)
-                .setTint(RARITY_TINT[pet.rarity]);
-            }
-          });
-        }
-        row.add(evo);
       }
       this.rows.add(row);
     });

@@ -92,7 +92,8 @@ export class RaidPanel extends Phaser.Scene {
 
     // After the rows so masked-but-interactive rows never cover the X
     addCloseButton(this, PANEL_X + PANEL_W - 22, PANEL_Y + 12, () => this.scene.stop());
-    this.maxScroll = Math.max(0, RAIDS.maxLevel * ROW_PITCH + 16 - (PANEL_H - 104));
+    // The list must scroll far enough that the LAST row clears the footer
+    this.maxScroll = Math.max(0, RAIDS.maxLevel * ROW_PITCH + 16 - (PANEL_H - 44 - 112));
 
     addDragScroll(
       this,
