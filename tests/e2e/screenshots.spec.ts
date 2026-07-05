@@ -169,7 +169,7 @@ test('shop panel', async ({ page }) => {
   await page.screenshot({ path: 'screenshots/10-shop.png' });
 });
 
-test('shop scrolled to coins and bundles', async ({ page }) => {
+test('shop GEMS tab', async ({ page }) => {
   await page.evaluate(() =>
     (window.__game as unknown as { openShop(): void }).openShop(),
   );
@@ -177,16 +177,35 @@ test('shop scrolled to coins and bundles', async ({ page }) => {
     () => (window as unknown as { __shopOpen?: boolean }).__shopOpen === true,
   );
   await page.waitForTimeout(400);
-  // Drag the list up to reveal the COINS + BUNDLES sections
-  await page.mouse.move(195, 600);
-  await page.mouse.down();
-  for (let y = 600; y >= 200; y -= 40) {
-    await page.mouse.move(195, y);
-    await page.waitForTimeout(30);
-  }
-  await page.mouse.up();
+  await page.mouse.click(125, 165); // GEMS tab
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: 'screenshots/31-shop-gems.png' });
+});
+
+test('shop BUNDLES tab', async ({ page }) => {
+  await page.evaluate(() =>
+    (window.__game as unknown as { openShop(): void }).openShop(),
+  );
+  await page.waitForFunction(
+    () => (window as unknown as { __shopOpen?: boolean }).__shopOpen === true,
+  );
+  await page.waitForTimeout(400);
+  await page.mouse.click(265, 165); // BUNDLES tab
   await page.waitForTimeout(400);
   await page.screenshot({ path: 'screenshots/30-shop-bundles.png' });
+});
+
+test('shop SKINS tab with premium weapons and heroes', async ({ page }) => {
+  await page.evaluate(() =>
+    (window.__game as unknown as { openShop(): void }).openShop(),
+  );
+  await page.waitForFunction(
+    () => (window as unknown as { __shopOpen?: boolean }).__shopOpen === true,
+  );
+  await page.waitForTimeout(400);
+  await page.mouse.click(335, 165); // SKINS tab
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: 'screenshots/32-shop-skins.png' });
 });
 
 test('skills panel with one buff active', async ({ page }) => {
