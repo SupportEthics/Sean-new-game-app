@@ -122,7 +122,9 @@ export class UIScene extends Phaser.Scene {
       loop: true,
       callback: () => {
         const now = Date.now();
-        if (now < this.autoBuyUntil && this.gs.canBuy) this.gs.buyGear();
+        if (now < this.autoBuyUntil && this.gs.canBuy) {
+          this.gs.buyGear(this.draggingItem?.getData('index') as number | undefined);
+        }
         if (now < this.autoMergeUntil) {
           this.gs.autoMergeOnce(this.draggingItem?.getData('index') as number | undefined);
         }
@@ -969,6 +971,15 @@ export class UIScene extends Phaser.Scene {
         this.cellCenters.push({ x, y });
       }
     }
+
+    // The first 4 cells of the top row are the equip bar: the best swords
+    // auto-slot themselves here (GameState.syncLoadout)
+    const barW = GEAR.equipSlotStages.length * (CARD_W + GAP) - GAP;
+    const bar = this.add.graphics();
+    bar.fillStyle(0xc9961e, 0.14);
+    bar.fillRoundedRect(left - CARD_W / 2 - 3, L.panelTop + 5, barW + 6, CARD_H + 6, 6);
+    bar.lineStyle(2, THEME.gold, 0.8);
+    bar.strokeRoundedRect(left - CARD_W / 2 - 3, L.panelTop + 5, barW + 6, CARD_H + 6, 6);
   }
 
   // ---- Toggle row: Auto Merge / Auto Buy / Buy sword ----

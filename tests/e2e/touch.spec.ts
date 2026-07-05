@@ -170,7 +170,8 @@ test('dragging a sword survives auto-merge firing mid-drag', async ({ page }) =>
       addGold(n: number): void;
     };
     g.addGold(1e9);
-    g.gs.grid[0] = 5; // the sword under the finger
+    g.gs.grid[0] = 9; // equipped, stays on the bar
+    g.gs.grid[6] = 5; // the sword under the finger (not equipped)
     g.gs.grid[2] = 2;
     g.gs.grid[3] = 2; // fodder pairs for auto-merge to chew on
     g.gs.grid[4] = 3;
@@ -191,7 +192,7 @@ test('dragging a sword survives auto-merge firing mid-drag', async ({ page }) =>
     const ui = game.scene.getScene('UI') as unknown as {
       cellCenters: { x: number; y: number }[];
     };
-    return { from: ui.cellCenters[0], to: ui.cellCenters[17] };
+    return { from: ui.cellCenters[6], to: ui.cellCenters[17] };
   });
 
   // Slow drag lasting ~2.7s: at least two auto-merge beats land mid-drag
@@ -224,7 +225,7 @@ test('dragging a sword survives auto-merge firing mid-drag', async ({ page }) =>
   // The drop landed: the tier-5 sword now lives in the target cell
   const landed = await page.evaluate(() => {
     const gs = (window.__game as unknown as { gs: { grid: (number | null)[] } }).gs;
-    return { from: gs.grid[0], to: gs.grid[17] };
+    return { from: gs.grid[6], to: gs.grid[17] };
   });
   expect(landed.to).toBe(5);
   expect(landed.from).toBeNull();

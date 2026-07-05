@@ -52,7 +52,7 @@ describe('auto-merge respects the loadout', () => {
     expect(gs.autoMergeOnce()).toBeNull(); // pair involves the equipped sword
     gs.grid[2] = 3; // now two unequipped threes exist
     expect(gs.autoMergeOnce()).toBe(4);
-    expect(gs.grid[0]).toBe(3); // equipped sword untouched
+    expect(gs.grid[0]).toBe(4); // the equip bar claims the new best sword
   });
 
   it('never auto-merges a sword the player is dragging', () => {
@@ -118,15 +118,17 @@ describe('GameState loadout', () => {
     expect(gs.equipSlots).toBe(4);
   });
 
-  it('equippedIndices picks top tiers, ties broken by grid order', () => {
+  it('the equip bar (top row) auto-stocks the best swords, strongest first', () => {
     const gs = new GameState();
     gs.highestStage = 25; // all 4 slots
-    gs.grid[3] = 5;
+    gs.grid[9] = 5;
     gs.grid[7] = 9;
-    gs.grid[1] = 5;
+    gs.grid[13] = 5;
     gs.grid[10] = 2;
     gs.grid[12] = 1;
-    expect(gs.equippedIndices).toEqual([7, 1, 3, 10]);
+    gs.moveAt(12, 14); // any board action re-asserts the bar
+    expect(gs.grid.slice(0, 4)).toEqual([9, 5, 5, 2]);
+    expect(gs.equippedIndices).toEqual([0, 1, 2, 3]);
   });
 
   it('equipped count never exceeds unlocked slots', () => {
@@ -135,5 +137,27 @@ describe('GameState loadout', () => {
     expect(gs.equippedIndices).toHaveLength(1);
     gs.highestStage = 15;
     expect(gs.equippedIndices).toHaveLength(3);
+  });
+
+  it('dragging an equipped sword off the bar snaps it straight back', () => {
+    const gs = new GameState(); // one slot: cell 0
+    gs.grid[0] = 8;
+    gs.grid[5] = 2;
+    expect(gs.moveAt(0, 9)).toBe(true); // the move itself is legal...
+    expect(gs.grid[0]).toBe(8); // ...but the bar reclaims the best sword
+    expect(gs.grid[9]).toBeNull();
+  });
+
+  it('selling a mid sword promotes the next best into the bar', () => {
+    const gs = new GameState();
+    gs.grid[0] = 6;
+    gs.grid[8] = 4;
+    gs.grid[9] = 3;
+    expect(gs.sellAt(0)).toBeNull(); // bar swords can't be binned
+    expect(gs.sellAt(8)).not.toBeNull();
+    expect(gs.grid[0]).toBe(6); // unchanged: 6 still the best
+    gs.grid[0] = 1;
+    gs.sellAt(9); // sync runs: the 3 was just sold; the 1 is now cell 0's...
+    expect(gs.grid[0]).toBe(1); // nothing better left on the board
   });
 });

@@ -86,10 +86,11 @@ test('merge button combines two same-tier items', async ({ page }) => {
   await page.mouse.click(MERGE_BUTTON.x, MERGE_BUTTON.y);
   await page.waitForFunction(() => window.__game.gs.highestTier >= 2);
 
-  // The equipped sword (slot 0) is untouched; the other two merged
+  // The other two merged into a tier 2, which the equip bar claims (top
+  // row always holds the best sword); one tier 1 remains on the board
   const grid = await page.evaluate(() => window.__game.gs.grid);
-  expect(grid[0]).toBe(1);
-  expect(grid.filter((c) => c === 2)).toHaveLength(1);
+  expect(grid[0]).toBe(2);
+  expect(grid.filter((c) => c === 1)).toHaveLength(1);
 });
 
 test('skins: buy with gold, equip, and mock-purchase a premium skin', async ({ page }) => {

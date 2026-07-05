@@ -366,14 +366,40 @@ export class GameState {
     return unlockedSlots(this.highestStage);
   }
 
-  /** Grid indices of the auto-equipped loadout: top-N tiers, ties by index. */
+  /** The loadout lives in the board's top row (Sean's design): cells
+   * 0..equipSlots-1 are the equip bar, kept stocked with the best swords
+   * by syncLoadout(). */
   get equippedIndices(): number[] {
-    return this.grid
-      .map((tier, index) => ({ tier, index }))
-      .filter((c): c is { tier: number; index: number } => c.tier !== null)
-      .sort((a, b) => b.tier - a.tier || a.index - b.index)
-      .slice(0, this.equipSlots)
-      .map((c) => c.index);
+    const out: number[] = [];
+    for (let i = 0; i < this.equipSlots; i++) {
+      if (this.grid[i] !== null) out.push(i);
+    }
+    return out;
+  }
+
+  /** Pull the best swords on the board into the equip bar (top row,
+   * slot 0 = strongest). Stable: equal tiers never swap, and `keep`
+   * (a cell mid-drag) is never touched as slot or source. */
+  private syncLoadout(keep?: number): void {
+    const slots = this.equipSlots;
+    for (let s = 0; s < slots; s++) {
+      if (s === keep) continue;
+      let bestIdx = -1;
+      let bestTier = this.grid[s] ?? 0;
+      for (let i = s + 1; i < this.unlockedCells; i++) {
+        if (i === keep) continue;
+        const t = this.grid[i];
+        if (t !== null && t > bestTier) {
+          bestTier = t;
+          bestIdx = i;
+        }
+      }
+      if (bestIdx >= 0) {
+        const tmp = this.grid[s];
+        this.grid[s] = this.grid[bestIdx];
+        this.grid[bestIdx] = tmp;
+      }
+    }
   }
 
   /** Every owned skin grants its bonus permanently (collection incentive). */
@@ -461,8 +487,13 @@ export class GameState {
     if (result.kills > 0) this.trackQuest('kills', result.kills);
 
     if (result.stageCleared) {
+      const slotsBefore = this.equipSlots;
       this.highestStage = Math.max(this.highestStage, this.battle.stage);
       this.trackQuest('stages');
+      if (this.equipSlots > slotsBefore) {
+        this.syncLoadout();
+        this.emit('grid:changed', this.grid);
+      }
       // The piggy bank fattens every time a boss falls
       if (this.piggyGems < PIGGY.cap) {
         this.piggyGems = Math.min(PIGGY.cap, this.piggyGems + PIGGY.gemsPerStage);
@@ -486,11 +517,12 @@ export class GameState {
   }
 
   /** Buy one gear item at the current buy tier into the first empty cell. */
-  buyGear(): boolean {
+  buyGear(keep?: number): boolean {
     if (!this.canBuy) return false;
     const tier = this.buyTier;
     this.gold -= this.buyCost;
     const index = spawn(this.grid, tier, this.unlockedCells);
+    this.syncLoadout(keep);
     this.emit('gold:changed', this.gold);
     this.emit('gear:bought', { index, tier });
     this.emit('grid:changed', this.grid);
@@ -498,21 +530,24 @@ export class GameState {
   }
 
   /** Merge grid item `from` onto `to`. Returns the new tier or null. */
-  mergeAt(from: number, to: number): number | null {
+  mergeAt(from: number, to: number, keep?: number): number | null {
     const newTier = merge(this.grid, from, to, this.unlockedCells);
     if (newTier === null) return null;
     this.highestTier = Math.max(this.highestTier, newTier);
     this.bestTier = Math.max(this.bestTier, newTier);
     this.totalMerges += 1;
     this.trackQuest('merges');
+    this.syncLoadout(keep);
     this.emit('gear:merged', { index: to, tier: newTier });
     this.emit('grid:changed', this.grid);
     return newTier;
   }
 
-  /** Move an item to an empty cell or swap two items. */
+  /** Move an item to an empty cell or swap two items. The equip bar
+   * re-asserts itself afterwards: the top row always holds the best. */
   moveAt(from: number, to: number): boolean {
     if (!move(this.grid, from, to, this.unlockedCells)) return false;
+    this.syncLoadout();
     this.emit('grid:changed', this.grid);
     return true;
   }
@@ -531,6 +566,7 @@ export class GameState {
     const gold = sellValue(tier);
     this.grid[index] = null;
     this.addGold(gold);
+    this.syncLoadout(); // a lower sword may get promoted into the bar
     this.emit('grid:changed', this.grid);
     return gold;
   }
@@ -541,7 +577,7 @@ export class GameState {
     const skip = new Set(this.equippedIndices);
     if (excludeIndex !== undefined) skip.add(excludeIndex);
     const pair = findBestMerge(this.grid, skip);
-    return pair ? this.mergeAt(pair.from, pair.to) : null;
+    return pair ? this.mergeAt(pair.from, pair.to, excludeIndex) : null;
   }
 
   // ---- Prestige ----
@@ -1426,6 +1462,7 @@ export class GameState {
     };
     gs.prestigeCount = data.prestigeCount;
     gs.souls = data.souls;
+    gs.syncLoadout(); // pre-equip-bar saves: pull the loadout into the top row
     gs.raidHighest = data.raidHighest;
     gs.raidBest = data.raidBest;
     gs.raidReadyAt = data.raidReadyAt;

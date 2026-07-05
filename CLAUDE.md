@@ -46,7 +46,7 @@ art once that tier is reached lifetime — bestTier survives rebirth — or
 gear.png frames 25-27, cosmetic only), raid ladder resets on rebirth
 (raidBest keeps lifetime progress for awards), hero level pays +1% DPS per 10 levels (config/economy.ts HERO_LEVEL, level math in core/EconomyMath, +N% DMG shown under LV), raid kills capped at 3x the quota with early end (config/raids.ts raidKillCap), drag-safe grid (UIScene
 defers rebuilds while a sword is dragged; autoMergeOnce(excludeIndex)
-skips the dragged cell), two-line BUY button. Playable core loop in
+skips the dragged cell), two-line BUY button, equip bar = board top row (GameState.syncLoadout keeps cells 0..equipSlots-1 stocked with the best swords, slot 0 strongest; moving one off the bar snaps it back; gold frame in UIScene.createPanel). Playable core loop in
 browser, hi-detail pixel art, 25 hero skins incl. 5 premium IAP behind a
 web-mock IapService, save v18. M5 Capacitor wrap done: android/ + ios/
 native projects (appId uk.co.supportethics.soulforgeknight), service
