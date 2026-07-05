@@ -514,8 +514,7 @@ export class UIScene extends Phaser.Scene {
     const x = THEME.width - 30;
     this.boostButton(x, L.arenaTop + 74, 'X2 DMG', 0, 0xb03a2e, 'boost_dmg',
       () => this.gs.activateDmgBoost(), () => this.gs.dmgBoostUntil);
-    this.boostButton(x, L.arenaTop + 132, 'X2 SPD', 3, 0x2884a8, 'boost_speed',
-      () => this.gs.activateSpeedBoost(), () => this.gs.speedBoostUntil);
+    this.lootButton(x, L.arenaTop + 132);
 
     // RANKS: the Hall of Legends
     const ry = L.arenaTop + 190;
@@ -546,6 +545,113 @@ export class UIScene extends Phaser.Scene {
           this.scene.launch('Ranks');
         }
       });
+  }
+
+  /** Treasure ad: coins + gems for an ad. Tapping opens a preview modal
+   * spelling out exactly what the ad pays before it plays (Sean's spec). */
+  private lootButton(x: number, y: number): void {
+    const g = this.add.graphics();
+    g.fillStyle(THEME.headerBg, 0.9);
+    g.fillRoundedRect(x - 24, y - 24, 48, 48, 8);
+    g.lineStyle(2, 0xc9961e);
+    g.strokeRoundedRect(x - 24, y - 24, 48, 48, 8);
+    // A little treasure pile: coin + gem
+    this.add.image(x - 7, y - 6, 'coin').setScale(1.4);
+    const gemMark = this.add.graphics();
+    gemMark.fillStyle(0x4ec3e8);
+    gemMark.fillTriangle(x + 4, y - 12, x + 16, y - 12, x + 10, y - 1);
+    gemMark.lineStyle(1, 0x14101c);
+    gemMark.strokeTriangle(x + 4, y - 12, x + 16, y - 12, x + 10, y - 1);
+    const chip = this.add.graphics();
+    chip.fillStyle(0x2e7a1e);
+    chip.fillRoundedRect(x + 6, y - 28, 22, 13, 4);
+    chip.lineStyle(1, 0x14101c);
+    chip.strokeRoundedRect(x + 6, y - 28, 22, 13, 4);
+    this.add
+      .bitmapText(x + 17, y - 25, 'pix', 'AD', 8)
+      .setTint(0xffffff)
+      .setOrigin(0.5, 0);
+    const label = this.add
+      .bitmapText(x, y + 20, 'pix', 'LOOT', 8)
+      .setTint(0xffd166)
+      .setOrigin(0.5, 1);
+    this.boostLabels.push({ label, until: () => this.gs.adLootReadyAt, idle: 'LOOT' });
+    this.add
+      .rectangle(x, y, 48, 48, 0xffffff, 0.001)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => {
+        if (!this.gs.adLootReady(Date.now())) {
+          this.toast('TREASURE RECHARGING');
+          return;
+        }
+        this.confirmLoot();
+      });
+  }
+
+  /** The promised-loot modal: what this exact ad pays, then WATCH or pass. */
+  private confirmLoot(): void {
+    if (this.confirmLayer) return;
+    audio.buy();
+    const layer = this.add.container(0, 0).setDepth(60);
+    this.confirmLayer = layer;
+    const dim = this.add
+      .rectangle(THEME.width / 2, THEME.height / 2, THEME.width, THEME.height, 0x14101c, 0.7)
+      .setInteractive();
+    const g = this.add.graphics();
+    g.fillStyle(THEME.cardBg);
+    g.fillRoundedRect(45, 330, 300, 190, 12);
+    g.lineStyle(3, 0xc9961e);
+    g.strokeRoundedRect(45, 330, 300, 190, 12);
+    const title = this.add
+      .bitmapText(THEME.width / 2, 348, 'pix', 'TREASURE AD', 16)
+      .setTint(0xc9961e)
+      .setOrigin(0.5, 0);
+    const body = this.add
+      .bitmapText(THEME.width / 2, 378, 'pix', 'WATCH ONE AD AND CLAIM:', 8)
+      .setTint(0x4a3520)
+      .setOrigin(0.5, 0);
+    const goldLine = this.add
+      .bitmapText(THEME.width / 2, 402, 'pix', `+${formatNumber(this.gs.adLootGold).toUpperCase()} GOLD`, 16)
+      .setTint(0xc9961e)
+      .setOrigin(0.5, 0);
+    const gemLine = this.add
+      .bitmapText(THEME.width / 2, 430, 'pix', `+${this.gs.adLootGems} GEMS`, 16)
+      .setTint(0x2884a8)
+      .setOrigin(0.5, 0);
+    const yes = this.add
+      .image(140, 488, 'btn-sm')
+      .setTint(0x2884a8)
+      .setInteractive({ useHandCursor: true });
+    const yesLbl = this.add.bitmapText(140, 488, 'pix', 'WATCH AD', 8).setOrigin(0.5);
+    const no = this.add
+      .image(250, 488, 'btn-sm')
+      .setTint(THEME.buttonBgDisabled)
+      .setInteractive({ useHandCursor: true });
+    const noLbl = this.add.bitmapText(250, 488, 'pix', 'NO THANKS', 8).setOrigin(0.5);
+    layer.add([dim, g, title, body, goldLine, gemLine, yes, yesLbl, no, noLbl]);
+
+    const closeConfirm = (): void => {
+      layer.destroy();
+      this.confirmLayer = null;
+    };
+    let busy = false;
+    yes.on('pointerdown', () => {
+      if (busy) return;
+      busy = true;
+      yesLbl.setText('AD...');
+      void this.ads.showRewarded('loot').then((result) => {
+        if (result.rewarded) {
+          const paid = this.gs.grantAdLoot(Date.now());
+          if (paid) {
+            this.gs.trackQuest('ads');
+            audio.coin();
+            this.toast(`+${formatNumber(paid.gold).toUpperCase()} GOLD +${paid.gems} GEMS`);
+          }
+        }
+        closeConfirm();
+      });
+    });
+    no.on('pointerdown', closeConfirm);
   }
 
   private boostButton(

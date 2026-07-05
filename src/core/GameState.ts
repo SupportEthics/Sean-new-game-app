@@ -1,5 +1,5 @@
 import { AchievementDef, ACHIEVEMENTS, achievementById } from '../config/achievements';
-import { BOOSTS, ECONOMY } from '../config/economy';
+import { AD_LOOT, BOOSTS, ECONOMY } from '../config/economy';
 import { FAIRY, fairyLevelCost } from '../config/fairy';
 import { GiftDef } from '../config/gifts';
 import { LOGIN_REWARDS, LoginReward } from '../config/loginRewards';
@@ -184,6 +184,7 @@ export interface SerializedState {
   fairyLevel: number;
   dmgBoostUntil: number;
   speedBoostUntil: number;
+  adLootReadyAt: number;
   loginStreakDay: number;
   lastLoginClaimDay: string;
   totalMerges: number;
@@ -254,6 +255,8 @@ export class GameState {
   /** Rewarded-ad boosts: epoch ms the x2 damage / x2 speed windows end. */
   dmgBoostUntil = 0;
   speedBoostUntil = 0;
+  /** Epoch ms when the treasure ad can next be watched. */
+  adLootReadyAt = 0;
   /** Login calendar: how many days of the 7-day cycle are claimed (0-7,
    * wraps), and the UTC day of the last claim (one per day). */
   loginStreakDay = 0;
@@ -1011,6 +1014,32 @@ export class GameState {
    * this method doesn't handle (skins fulfill via grantSkin) or repeats of
    * one-time products.
    */
+  // ---- Treasure ad (coins + gems for a rewarded ad) ----
+
+  /** What the treasure ad would pay right now — shown in the preview modal. */
+  get adLootGold(): number {
+    return this.goldForHours(AD_LOOT.goldHours);
+  }
+
+  get adLootGems(): number {
+    return AD_LOOT.gemsBase + Math.floor(this.battle.stage / AD_LOOT.gemsPerStages);
+  }
+
+  adLootReady(now: number): boolean {
+    return now >= this.adLootReadyAt;
+  }
+
+  /** Pay the previewed loot and start the cooldown (after the ad rewards). */
+  grantAdLoot(now: number = Date.now()): { gold: number; gems: number } | null {
+    if (!this.adLootReady(now)) return null;
+    const gold = this.adLootGold;
+    const gems = this.adLootGems;
+    this.addGold(gold);
+    this.addGems(gems);
+    this.adLootReadyAt = now + AD_LOOT.cooldownMinutes * 60_000;
+    return { gold, gems };
+  }
+
   /** A pack's gold grant: N hours of the buyer's current income. */
   goldForHours(hours: number): number {
     return Math.max(1, Math.floor(this.goldPerSecondEstimate * hours * 3600));
@@ -1459,6 +1488,7 @@ export class GameState {
       fairyLevel: this.fairyLevel,
       dmgBoostUntil: this.dmgBoostUntil,
       speedBoostUntil: this.speedBoostUntil,
+      adLootReadyAt: this.adLootReadyAt,
       loginStreakDay: this.loginStreakDay,
       lastLoginClaimDay: this.lastLoginClaimDay,
       totalMerges: this.totalMerges,
@@ -1520,6 +1550,7 @@ export class GameState {
     gs.fairyLevel = data.fairyLevel;
     gs.dmgBoostUntil = data.dmgBoostUntil;
     gs.speedBoostUntil = data.speedBoostUntil;
+    gs.adLootReadyAt = data.adLootReadyAt;
     gs.loginStreakDay = data.loginStreakDay;
     gs.lastLoginClaimDay = data.lastLoginClaimDay;
     gs.totalMerges = data.totalMerges;

@@ -12,6 +12,7 @@ export type AdPlacement =
   | 'pet_egg'
   | 'boost_dmg'
   | 'boost_speed'
+  | 'loot'
   | 'skill_cast'
   | 'gift';
 

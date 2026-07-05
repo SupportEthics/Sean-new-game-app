@@ -41,5 +41,16 @@ export const BOOSTS = {
   speedMult: 2,
 } as const;
 
+/** Treasure ad (replaces the x2 speed button, Sean's call): watching an
+ * ad pays gold scaled to current income plus gems scaled to the stage,
+ * on a cooldown so it's a habit, not a faucet. */
+export const AD_LOOT = {
+  goldHours: 0.5,
+  gemsBase: 5,
+  /** +1 gem per this many stages reached. */
+  gemsPerStages: 20,
+  cooldownMinutes: 15,
+} as const;
+
 /** Suffixes for big-number formatting: 1.2K, 3.4M ... then aa, ab ... */
 export const NUMBER_SUFFIXES = ['', 'K', 'M', 'B', 'T'] as const;

@@ -30,7 +30,7 @@ pre-set pawsblades_tutorial_done), 7-day login rewards (popup, cycle
 pauses on missed days), floating ad-gift parcels (config/gifts.ts),
 achievements (AWARDS tab in QuestsPanel, lifetime counters incl.
 totalMerges), procedural chiptune music loop (AudioService.startMusic on
-first gesture), x2 dmg/speed ad boosts, sword sell bin (30% refund, never
+first gesture), x2 dmg ad boost + treasure ad (LOOT button: stage-scaled gold+gems behind a preview modal, config/economy.ts AD_LOOT, 15-min cooldown, save v21; speed boosts remain via gifts), sword sell bin (30% refund, never
 equipped), all 5 pets fight in the arena, skills on long cooldowns with
 AD CAST, town (post-2nd-rebirth: farm/blacksmith/mine/jeweler in config/town.ts, jeweler gem vault), Hall of Legends leaderboard (RANKS button, seeded rivals in config/leaderboard.ts; platform boards dormant in services/LeaderboardService.ts), rebirths add +10% enemy HP each (config/prestige.ts enemyHpScale), content
 expansion (25 distinct sword sprites — tiers past 25 keep the final art via

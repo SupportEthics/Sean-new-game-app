@@ -143,6 +143,11 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.petStages = {};
     return save;
   },
+  // v20 -> v21: the treasure ad cooldown
+  (save) => {
+    save.state.adLootReadyAt = 0;
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

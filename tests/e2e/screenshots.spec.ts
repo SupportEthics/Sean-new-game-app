@@ -410,3 +410,14 @@ test('late-game sword art past tier 12', async ({ page }) => {
   await page.waitForTimeout(1500);
   await page.screenshot({ path: 'screenshots/28-late-swords.png' });
 });
+
+test('treasure ad preview modal', async ({ page }) => {
+  await page.evaluate(() => {
+    (window.__game as unknown as { setStage(s: number): void }).setStage(143);
+    window.__game.gs.grid[0] = 20; // real income so the promised gold is real
+  });
+  await page.waitForTimeout(400);
+  await page.mouse.click(360, 228); // LOOT button on the right edge
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: 'screenshots/34-treasure-ad.png' });
+});
