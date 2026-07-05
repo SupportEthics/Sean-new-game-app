@@ -16,7 +16,16 @@ export interface PremiumSword {
   frame: number;
   /** Blade glow tint in the arena. */
   aura: number;
+  /** Paid weapons pay twice while worn: damage AND gold. */
+  dpsBonus: number;
+  goldBonus: number;
 }
+
+/** Wearing tier art pays +0.5% DPS per art tier (max +12.5% at tier 25);
+ * 'auto' follows the art on the strongest equipped blade. */
+export const SWORD_ART = {
+  dpsPerTier: 0.005,
+} as const;
 
 export const PREMIUM_SWORDS: readonly PremiumSword[] = [
   {
@@ -27,6 +36,8 @@ export const PREMIUM_SWORDS: readonly PremiumSword[] = [
     priceUsd: 4.99,
     frame: GEAR.weaponArtCount,
     aura: 0x8aff8a,
+    dpsBonus: 0.15,
+    goldBonus: 0.15,
   },
   {
     id: 'voidkatana',
@@ -36,6 +47,8 @@ export const PREMIUM_SWORDS: readonly PremiumSword[] = [
     priceUsd: 4.99,
     frame: GEAR.weaponArtCount + 1,
     aura: 0xe86aff,
+    dpsBonus: 0.15,
+    goldBonus: 0.15,
   },
   {
     id: 'dragoncleaver',
@@ -45,6 +58,8 @@ export const PREMIUM_SWORDS: readonly PremiumSword[] = [
     priceUsd: 4.99,
     frame: GEAR.weaponArtCount + 2,
     aura: 0xff9a3c,
+    dpsBonus: 0.15,
+    goldBonus: 0.15,
   },
 ] as const;
 

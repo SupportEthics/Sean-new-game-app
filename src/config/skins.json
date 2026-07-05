@@ -4,401 +4,827 @@
       "id": "squire",
       "name": "Squire",
       "rarity": "common",
-      "unlock": { "type": "free" },
+      "unlock": {
+        "type": "free"
+      },
       "dpsBonus": 0,
       "art": {
-        "armor": ["#cdd6e0", "#96a2b4", "#5f6b7c"],
-        "trim": ["#ffd166", "#a87c12"],
-        "cape": ["#a83232", "#7c2424"],
+        "armor": [
+          "#cdd6e0",
+          "#96a2b4",
+          "#5f6b7c"
+        ],
+        "trim": [
+          "#ffd166",
+          "#a87c12"
+        ],
+        "cape": [
+          "#a83232",
+          "#7c2424"
+        ],
         "plume": "plume",
-        "plumeColor": ["#c94040", "#8a2828"],
+        "plumeColor": [
+          "#c94040",
+          "#8a2828"
+        ],
         "visor": "#14101c",
         "aura": null
-      }
+      },
+      "goldBonus": 0
     },
     {
       "id": "crimson",
       "name": "Crimson Guard",
       "rarity": "common",
-      "unlock": { "type": "gold", "amount": 5000 },
+      "unlock": {
+        "type": "gold",
+        "amount": 5000
+      },
       "dpsBonus": 0.02,
       "art": {
-        "armor": ["#e08a84", "#b8524a", "#7c2e28"],
-        "trim": ["#ffd166", "#a87c12"],
-        "cape": ["#4a3826", "#32251a"],
+        "armor": [
+          "#e08a84",
+          "#b8524a",
+          "#7c2e28"
+        ],
+        "trim": [
+          "#ffd166",
+          "#a87c12"
+        ],
+        "cape": [
+          "#4a3826",
+          "#32251a"
+        ],
         "plume": "plume",
-        "plumeColor": ["#ffd166", "#c9761e"],
+        "plumeColor": [
+          "#ffd166",
+          "#c9761e"
+        ],
         "visor": "#14101c",
         "aura": null
-      }
+      },
+      "goldBonus": 0
     },
     {
       "id": "forest",
       "name": "Forest Warden",
       "rarity": "common",
-      "unlock": { "type": "gold", "amount": 25000 },
+      "unlock": {
+        "type": "gold",
+        "amount": 25000
+      },
       "dpsBonus": 0.02,
       "art": {
-        "armor": ["#a8c48e", "#6f9a52", "#48683a"],
-        "trim": ["#d8c9a0", "#8a7448"],
-        "cape": ["#4a5a30", "#36421f"],
+        "armor": [
+          "#a8c48e",
+          "#6f9a52",
+          "#48683a"
+        ],
+        "trim": [
+          "#d8c9a0",
+          "#8a7448"
+        ],
+        "cape": [
+          "#4a5a30",
+          "#36421f"
+        ],
         "plume": "plume",
-        "plumeColor": ["#8fbf6f", "#5c8a42"],
+        "plumeColor": [
+          "#8fbf6f",
+          "#5c8a42"
+        ],
         "visor": "#14101c",
         "aura": null
-      }
+      },
+      "goldBonus": 0
     },
     {
       "id": "azure",
       "name": "Azure Sentinel",
       "rarity": "common",
-      "unlock": { "type": "gold", "amount": 100000 },
+      "unlock": {
+        "type": "gold",
+        "amount": 100000
+      },
       "dpsBonus": 0.02,
       "art": {
-        "armor": ["#8ab8e0", "#5484b8", "#33587c"],
-        "trim": ["#cdd6e0", "#8a96a8"],
-        "cape": ["#2e4468", "#1f2f4a"],
+        "armor": [
+          "#8ab8e0",
+          "#5484b8",
+          "#33587c"
+        ],
+        "trim": [
+          "#cdd6e0",
+          "#8a96a8"
+        ],
+        "cape": [
+          "#2e4468",
+          "#1f2f4a"
+        ],
         "plume": "plume",
-        "plumeColor": ["#6be3ff", "#4fb4d0"],
+        "plumeColor": [
+          "#6be3ff",
+          "#4fb4d0"
+        ],
         "visor": "#14101c",
         "aura": null
-      }
+      },
+      "goldBonus": 0
     },
     {
       "id": "bronze",
       "name": "Bronze Vanguard",
       "rarity": "common",
-      "unlock": { "type": "gold", "amount": 500000 },
+      "unlock": {
+        "type": "gold",
+        "amount": 500000
+      },
       "dpsBonus": 0.02,
       "art": {
-        "armor": ["#e0aa74", "#b87c3e", "#7c5228"],
-        "trim": ["#8a4a2e", "#5c3220"],
-        "cape": ["#5c3220", "#42241a"],
+        "armor": [
+          "#e0aa74",
+          "#b87c3e",
+          "#7c5228"
+        ],
+        "trim": [
+          "#8a4a2e",
+          "#5c3220"
+        ],
+        "cape": [
+          "#5c3220",
+          "#42241a"
+        ],
         "plume": "mohawk",
-        "plumeColor": ["#8a4a2e", "#5c3220"],
+        "plumeColor": [
+          "#8a4a2e",
+          "#5c3220"
+        ],
         "visor": "#14101c",
         "aura": null
-      }
+      },
+      "goldBonus": 0
     },
     {
       "id": "rose",
       "name": "Rose Chevalier",
       "rarity": "common",
-      "unlock": { "type": "gold", "amount": 2000000 },
+      "unlock": {
+        "type": "gold",
+        "amount": 2000000
+      },
       "dpsBonus": 0.02,
       "art": {
-        "armor": ["#e8b8cc", "#c47898", "#8a4a64"],
-        "trim": ["#ffd166", "#a87c12"],
-        "cape": ["#8a2848", "#601a32"],
+        "armor": [
+          "#e8b8cc",
+          "#c47898",
+          "#8a4a64"
+        ],
+        "trim": [
+          "#ffd166",
+          "#a87c12"
+        ],
+        "cape": [
+          "#8a2848",
+          "#601a32"
+        ],
         "plume": "plume",
-        "plumeColor": ["#e86a92", "#b03a5c"],
+        "plumeColor": [
+          "#e86a92",
+          "#b03a5c"
+        ],
         "visor": "#14101c",
         "aura": null
-      }
+      },
+      "goldBonus": 0
     },
     {
       "id": "slate",
       "name": "Slate Warden",
       "rarity": "common",
-      "unlock": { "type": "gold", "amount": 10000000 },
+      "unlock": {
+        "type": "gold",
+        "amount": 10000000
+      },
       "dpsBonus": 0.02,
       "art": {
-        "armor": ["#9aa0a6", "#6a7076", "#42464c"],
-        "trim": ["#c9ced4", "#8a8f96"],
+        "armor": [
+          "#9aa0a6",
+          "#6a7076",
+          "#42464c"
+        ],
+        "trim": [
+          "#c9ced4",
+          "#8a8f96"
+        ],
         "cape": null,
         "plume": "none",
-        "plumeColor": ["#6a7076", "#42464c"],
+        "plumeColor": [
+          "#6a7076",
+          "#42464c"
+        ],
         "visor": "#14101c",
         "aura": null
-      }
+      },
+      "goldBonus": 0
     },
     {
       "id": "amber",
       "name": "Amber Knight",
       "rarity": "common",
-      "unlock": { "type": "gold", "amount": 50000000 },
+      "unlock": {
+        "type": "gold",
+        "amount": 50000000
+      },
       "dpsBonus": 0.02,
       "art": {
-        "armor": ["#ffd166", "#e8a53c", "#a8701e"],
-        "trim": ["#8a4a2e", "#5c3220"],
-        "cape": ["#7c5228", "#5c3a1c"],
+        "armor": [
+          "#ffd166",
+          "#e8a53c",
+          "#a8701e"
+        ],
+        "trim": [
+          "#8a4a2e",
+          "#5c3220"
+        ],
+        "cape": [
+          "#7c5228",
+          "#5c3a1c"
+        ],
         "plume": "plume",
-        "plumeColor": ["#ff9a3c", "#c9761e"],
+        "plumeColor": [
+          "#ff9a3c",
+          "#c9761e"
+        ],
         "visor": "#14101c",
         "aura": null
-      }
+      },
+      "goldBonus": 0
     },
     {
       "id": "silver",
       "name": "Silverplate",
       "rarity": "rare",
-      "unlock": { "type": "gems", "amount": 100 },
-      "dpsBonus": 0.02,
+      "unlock": {
+        "type": "gems",
+        "amount": 100
+      },
+      "dpsBonus": 0,
       "art": {
-        "armor": ["#f0f4f8", "#c9ced4", "#8a96a8"],
-        "trim": ["#6be3ff", "#4fb4d0"],
-        "cape": ["#4a5468", "#343c4c"],
+        "armor": [
+          "#f0f4f8",
+          "#c9ced4",
+          "#8a96a8"
+        ],
+        "trim": [
+          "#6be3ff",
+          "#4fb4d0"
+        ],
+        "cape": [
+          "#4a5468",
+          "#343c4c"
+        ],
         "plume": "plume",
-        "plumeColor": ["#f0f4f8", "#aab4c0"],
+        "plumeColor": [
+          "#f0f4f8",
+          "#aab4c0"
+        ],
         "visor": "#14101c",
         "aura": null
-      }
+      },
+      "goldBonus": 0.03
     },
     {
       "id": "gilded",
       "name": "Gilded Champion",
       "rarity": "rare",
-      "unlock": { "type": "gems", "amount": 150 },
-      "dpsBonus": 0.02,
+      "unlock": {
+        "type": "gems",
+        "amount": 150
+      },
+      "dpsBonus": 0,
       "art": {
-        "armor": ["#ffe8a0", "#ffd166", "#c9961e"],
-        "trim": ["#ffffff", "#c9ced4"],
-        "cape": ["#a83232", "#7c2424"],
+        "armor": [
+          "#ffe8a0",
+          "#ffd166",
+          "#c9961e"
+        ],
+        "trim": [
+          "#ffffff",
+          "#c9ced4"
+        ],
+        "cape": [
+          "#a83232",
+          "#7c2424"
+        ],
         "plume": "plume",
-        "plumeColor": ["#ffffff", "#c9ced4"],
+        "plumeColor": [
+          "#ffffff",
+          "#c9ced4"
+        ],
         "visor": "#14101c",
         "aura": null
-      }
+      },
+      "goldBonus": 0.03
     },
     {
       "id": "obsidian",
       "name": "Obsidian Shell",
       "rarity": "rare",
-      "unlock": { "type": "gems", "amount": 200 },
-      "dpsBonus": 0.02,
+      "unlock": {
+        "type": "gems",
+        "amount": 200
+      },
+      "dpsBonus": 0,
       "art": {
-        "armor": ["#5c5468", "#3a3444", "#221e2c"],
-        "trim": ["#e8544a", "#a83232"],
-        "cape": ["#2a2430", "#1c1824"],
+        "armor": [
+          "#5c5468",
+          "#3a3444",
+          "#221e2c"
+        ],
+        "trim": [
+          "#e8544a",
+          "#a83232"
+        ],
+        "cape": [
+          "#2a2430",
+          "#1c1824"
+        ],
         "plume": "mohawk",
-        "plumeColor": ["#e8544a", "#a83232"],
+        "plumeColor": [
+          "#e8544a",
+          "#a83232"
+        ],
         "visor": "#e8544a",
         "aura": null
-      }
+      },
+      "goldBonus": 0.03
     },
     {
       "id": "frost",
       "name": "Frostbound",
       "rarity": "rare",
-      "unlock": { "type": "gems", "amount": 250 },
-      "dpsBonus": 0.02,
+      "unlock": {
+        "type": "gems",
+        "amount": 250
+      },
+      "dpsBonus": 0,
       "art": {
-        "armor": ["#e8f6ff", "#a8d8ee", "#6ba4c8"],
-        "trim": ["#ffffff", "#a8d8ee"],
-        "cape": ["#4a7a9a", "#33566e"],
+        "armor": [
+          "#e8f6ff",
+          "#a8d8ee",
+          "#6ba4c8"
+        ],
+        "trim": [
+          "#ffffff",
+          "#a8d8ee"
+        ],
+        "cape": [
+          "#4a7a9a",
+          "#33566e"
+        ],
         "plume": "plume",
-        "plumeColor": ["#c4ecff", "#8ac4e0"],
+        "plumeColor": [
+          "#c4ecff",
+          "#8ac4e0"
+        ],
         "visor": "#6be3ff",
         "aura": null
-      }
+      },
+      "goldBonus": 0.03
     },
     {
       "id": "ember",
       "name": "Emberforged",
       "rarity": "rare",
-      "unlock": { "type": "gems", "amount": 300 },
-      "dpsBonus": 0.02,
+      "unlock": {
+        "type": "gems",
+        "amount": 300
+      },
+      "dpsBonus": 0,
       "art": {
-        "armor": ["#ffb347", "#e8763c", "#a84a24"],
-        "trim": ["#ffe86b", "#e8a53c"],
-        "cape": ["#7c2e18", "#571f10"],
+        "armor": [
+          "#ffb347",
+          "#e8763c",
+          "#a84a24"
+        ],
+        "trim": [
+          "#ffe86b",
+          "#e8a53c"
+        ],
+        "cape": [
+          "#7c2e18",
+          "#571f10"
+        ],
         "plume": "mohawk",
-        "plumeColor": ["#ffe86b", "#ff9a3c"],
+        "plumeColor": [
+          "#ffe86b",
+          "#ff9a3c"
+        ],
         "visor": "#ffe86b",
         "aura": null
-      }
+      },
+      "goldBonus": 0.03
     },
     {
       "id": "shadow",
       "name": "Shadowmail",
       "rarity": "rare",
-      "unlock": { "type": "gems", "amount": 400 },
-      "dpsBonus": 0.02,
+      "unlock": {
+        "type": "gems",
+        "amount": 400
+      },
+      "dpsBonus": 0,
       "art": {
-        "armor": ["#6a6484", "#46425c", "#2c2a3c"],
-        "trim": ["#9b7ede", "#6b4fd0"],
-        "cape": ["#332e48", "#242032"],
+        "armor": [
+          "#6a6484",
+          "#46425c",
+          "#2c2a3c"
+        ],
+        "trim": [
+          "#9b7ede",
+          "#6b4fd0"
+        ],
+        "cape": [
+          "#332e48",
+          "#242032"
+        ],
         "plume": "hood",
-        "plumeColor": ["#46425c", "#2c2a3c"],
+        "plumeColor": [
+          "#46425c",
+          "#2c2a3c"
+        ],
         "visor": "#9b7ede",
         "aura": null
-      }
+      },
+      "goldBonus": 0.03
     },
     {
       "id": "jade",
       "name": "Jade Dynasty",
       "rarity": "rare",
-      "unlock": { "type": "gems", "amount": 500 },
-      "dpsBonus": 0.02,
+      "unlock": {
+        "type": "gems",
+        "amount": 500
+      },
+      "dpsBonus": 0,
       "art": {
-        "armor": ["#a0e8c4", "#50c48a", "#2e8a5c"],
-        "trim": ["#ffd166", "#c9961e"],
-        "cape": ["#1e5c40", "#14422c"],
+        "armor": [
+          "#a0e8c4",
+          "#50c48a",
+          "#2e8a5c"
+        ],
+        "trim": [
+          "#ffd166",
+          "#c9961e"
+        ],
+        "cape": [
+          "#1e5c40",
+          "#14422c"
+        ],
         "plume": "crown",
-        "plumeColor": ["#50c48a", "#2e8a5c"],
+        "plumeColor": [
+          "#50c48a",
+          "#2e8a5c"
+        ],
         "visor": "#14101c",
         "aura": null
-      }
+      },
+      "goldBonus": 0.03
     },
     {
       "id": "champion",
       "name": "Arena Champion",
       "rarity": "epic",
-      "unlock": { "type": "stage", "stage": 10 },
+      "unlock": {
+        "type": "stage",
+        "stage": 10
+      },
       "dpsBonus": 0.03,
       "art": {
-        "armor": ["#e0c48a", "#b8944e", "#7c6032"],
-        "trim": ["#a83232", "#7c2424"],
-        "cape": ["#a83232", "#7c2424"],
+        "armor": [
+          "#e0c48a",
+          "#b8944e",
+          "#7c6032"
+        ],
+        "trim": [
+          "#a83232",
+          "#7c2424"
+        ],
+        "cape": [
+          "#a83232",
+          "#7c2424"
+        ],
         "plume": "plume",
-        "plumeColor": ["#a83232", "#7c2424"],
+        "plumeColor": [
+          "#a83232",
+          "#7c2424"
+        ],
         "visor": "#14101c",
         "aura": null
-      }
+      },
+      "goldBonus": 0
     },
     {
       "id": "warlord",
       "name": "Warlord",
       "rarity": "epic",
-      "unlock": { "type": "stage", "stage": 25 },
+      "unlock": {
+        "type": "stage",
+        "stage": 25
+      },
       "dpsBonus": 0.03,
       "art": {
-        "armor": ["#b88a8a", "#8a5252", "#5c3434"],
-        "trim": ["#e8e4d8", "#b8b2a0"],
-        "cape": ["#42241a", "#2e1812"],
+        "armor": [
+          "#b88a8a",
+          "#8a5252",
+          "#5c3434"
+        ],
+        "trim": [
+          "#e8e4d8",
+          "#b8b2a0"
+        ],
+        "cape": [
+          "#42241a",
+          "#2e1812"
+        ],
         "plume": "mohawk",
-        "plumeColor": ["#e8e4d8", "#b8b2a0"],
+        "plumeColor": [
+          "#e8e4d8",
+          "#b8b2a0"
+        ],
         "visor": "#ff4a4a",
         "aura": null
-      }
+      },
+      "goldBonus": 0
     },
     {
       "id": "dragonslayer",
       "name": "Dragonslayer",
       "rarity": "epic",
-      "unlock": { "type": "stage", "stage": 40 },
+      "unlock": {
+        "type": "stage",
+        "stage": 40
+      },
       "dpsBonus": 0.03,
       "art": {
-        "armor": ["#8ab894", "#4e8a5e", "#2e5c3c"],
-        "trim": ["#ffd166", "#c9961e"],
-        "cape": ["#2e5c3c", "#1e422a"],
+        "armor": [
+          "#8ab894",
+          "#4e8a5e",
+          "#2e5c3c"
+        ],
+        "trim": [
+          "#ffd166",
+          "#c9961e"
+        ],
+        "cape": [
+          "#2e5c3c",
+          "#1e422a"
+        ],
         "plume": "mohawk",
-        "plumeColor": ["#ffd166", "#e8a53c"],
+        "plumeColor": [
+          "#ffd166",
+          "#e8a53c"
+        ],
         "visor": "#ffe86b",
         "aura": null
-      }
+      },
+      "goldBonus": 0
     },
     {
       "id": "voidknight",
       "name": "Void Knight",
       "rarity": "epic",
-      "unlock": { "type": "stage", "stage": 60 },
+      "unlock": {
+        "type": "stage",
+        "stage": 60
+      },
       "dpsBonus": 0.03,
       "art": {
-        "armor": ["#4a4468", "#2e2a48", "#1c1830"],
-        "trim": ["#6be3ff", "#4fb4d0"],
-        "cape": ["#1c1830", "#120f20"],
+        "armor": [
+          "#4a4468",
+          "#2e2a48",
+          "#1c1830"
+        ],
+        "trim": [
+          "#6be3ff",
+          "#4fb4d0"
+        ],
+        "cape": [
+          "#1c1830",
+          "#120f20"
+        ],
         "plume": "none",
-        "plumeColor": ["#2e2a48", "#1c1830"],
+        "plumeColor": [
+          "#2e2a48",
+          "#1c1830"
+        ],
         "visor": "#6be3ff",
         "aura": null
-      }
+      },
+      "goldBonus": 0
     },
     {
       "id": "grandmaster",
       "name": "Grandmaster",
       "rarity": "epic",
-      "unlock": { "type": "stage", "stage": 80 },
+      "unlock": {
+        "type": "stage",
+        "stage": 80
+      },
       "dpsBonus": 0.03,
       "art": {
-        "armor": ["#ffffff", "#e0e4ec", "#a8b0c0"],
-        "trim": ["#ffd166", "#c9961e"],
-        "cape": ["#4a3a8a", "#342a60"],
+        "armor": [
+          "#ffffff",
+          "#e0e4ec",
+          "#a8b0c0"
+        ],
+        "trim": [
+          "#ffd166",
+          "#c9961e"
+        ],
+        "cape": [
+          "#4a3a8a",
+          "#342a60"
+        ],
         "plume": "crown",
-        "plumeColor": ["#6be3ff", "#4fb4d0"],
+        "plumeColor": [
+          "#6be3ff",
+          "#4fb4d0"
+        ],
         "visor": "#14101c",
         "aura": null
-      }
+      },
+      "goldBonus": 0
     },
     {
       "id": "dragonlord",
       "name": "Dragon Lord",
       "rarity": "legendary",
-      "unlock": { "type": "iap", "sku": "skin_dragonlord", "priceUsd": 4.99 },
+      "unlock": {
+        "type": "iap",
+        "sku": "skin_dragonlord",
+        "priceUsd": 4.99
+      },
       "dpsBonus": 0.05,
       "art": {
-        "armor": ["#e8544a", "#b03a2e", "#701f18"],
-        "trim": ["#ffd166", "#c9761e"],
-        "cape": ["#3a2a1e", "#241a12"],
+        "armor": [
+          "#e8544a",
+          "#b03a2e",
+          "#701f18"
+        ],
+        "trim": [
+          "#ffd166",
+          "#c9761e"
+        ],
+        "cape": [
+          "#3a2a1e",
+          "#241a12"
+        ],
         "plume": "mohawk",
-        "plumeColor": ["#ff9a3c", "#e8544a"],
+        "plumeColor": [
+          "#ff9a3c",
+          "#e8544a"
+        ],
         "visor": "#ffe86b",
         "aura": "#ff6b3c60"
-      }
+      },
+      "goldBonus": 0.05
     },
     {
       "id": "celestial",
       "name": "Celestial Aegis",
       "rarity": "legendary",
-      "unlock": { "type": "iap", "sku": "skin_celestial", "priceUsd": 4.99 },
+      "unlock": {
+        "type": "iap",
+        "sku": "skin_celestial",
+        "priceUsd": 4.99
+      },
       "dpsBonus": 0.05,
       "art": {
-        "armor": ["#ffffff", "#e8ecf8", "#b0bcd8"],
-        "trim": ["#ffe86b", "#e8a53c"],
-        "cape": ["#8ab8e0", "#5484b8"],
+        "armor": [
+          "#ffffff",
+          "#e8ecf8",
+          "#b0bcd8"
+        ],
+        "trim": [
+          "#ffe86b",
+          "#e8a53c"
+        ],
+        "cape": [
+          "#8ab8e0",
+          "#5484b8"
+        ],
         "plume": "plume",
-        "plumeColor": ["#ffe86b", "#ffd166"],
+        "plumeColor": [
+          "#ffe86b",
+          "#ffd166"
+        ],
         "visor": "#ffe86b",
         "aura": "#ffe86b58"
-      }
+      },
+      "goldBonus": 0.05
     },
     {
       "id": "voidreaper",
       "name": "Void Reaper",
       "rarity": "legendary",
-      "unlock": { "type": "iap", "sku": "skin_voidreaper", "priceUsd": 4.99 },
+      "unlock": {
+        "type": "iap",
+        "sku": "skin_voidreaper",
+        "priceUsd": 4.99
+      },
       "dpsBonus": 0.05,
       "art": {
-        "armor": ["#5c5474", "#3a3450", "#221e34"],
-        "trim": ["#9b7ede", "#6b4fd0"],
-        "cape": ["#221e34", "#161226"],
+        "armor": [
+          "#5c5474",
+          "#3a3450",
+          "#221e34"
+        ],
+        "trim": [
+          "#9b7ede",
+          "#6b4fd0"
+        ],
+        "cape": [
+          "#221e34",
+          "#161226"
+        ],
         "plume": "hood",
-        "plumeColor": ["#2c2842", "#1c1830"],
+        "plumeColor": [
+          "#2c2842",
+          "#1c1830"
+        ],
         "visor": "#b39dff",
         "aura": "#9b7ede58"
-      }
+      },
+      "goldBonus": 0.05
     },
     {
       "id": "sovereign",
       "name": "Royal Sovereign",
       "rarity": "legendary",
-      "unlock": { "type": "iap", "sku": "skin_sovereign", "priceUsd": 4.99 },
+      "unlock": {
+        "type": "iap",
+        "sku": "skin_sovereign",
+        "priceUsd": 4.99
+      },
       "dpsBonus": 0.05,
       "art": {
-        "armor": ["#ffe8a0", "#ffd166", "#c9961e"],
-        "trim": ["#ffffff", "#e0e4ec"],
-        "cape": ["#6a2a8a", "#4a1e60"],
+        "armor": [
+          "#ffe8a0",
+          "#ffd166",
+          "#c9961e"
+        ],
+        "trim": [
+          "#ffffff",
+          "#e0e4ec"
+        ],
+        "cape": [
+          "#6a2a8a",
+          "#4a1e60"
+        ],
         "plume": "crown",
-        "plumeColor": ["#e8544a", "#b03a2e"],
+        "plumeColor": [
+          "#e8544a",
+          "#b03a2e"
+        ],
         "visor": "#14101c",
         "aura": "#ffd16650"
-      }
+      },
+      "goldBonus": 0.05
     },
     {
       "id": "phantomking",
       "name": "Phantom King",
       "rarity": "legendary",
-      "unlock": { "type": "iap", "sku": "skin_phantomking", "priceUsd": 4.99 },
+      "unlock": {
+        "type": "iap",
+        "sku": "skin_phantomking",
+        "priceUsd": 4.99
+      },
       "dpsBonus": 0.05,
       "art": {
-        "armor": ["#8a94b8", "#5c6488", "#3a4060"],
-        "trim": ["#8ee8ff", "#4fb4d0"],
-        "cape": ["#2a2440", "#1c1830"],
+        "armor": [
+          "#8a94b8",
+          "#5c6488",
+          "#3a4060"
+        ],
+        "trim": [
+          "#8ee8ff",
+          "#4fb4d0"
+        ],
+        "cape": [
+          "#2a2440",
+          "#1c1830"
+        ],
         "plume": "hood",
-        "plumeColor": ["#3a3454", "#262040"],
+        "plumeColor": [
+          "#3a3454",
+          "#262040"
+        ],
         "visor": "#8ee8ff",
         "aura": "#8ee8ff58"
-      }
+      },
+      "goldBonus": 0.05
     }
   ]
 }

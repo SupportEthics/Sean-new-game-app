@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { addBackdrop, addCloseButton } from '../ui/panelInput';
-import { PET_MAX_LEVEL, PETS } from '../config/pets';
+import { EVOLUTION, PET_MAX_LEVEL, PETS, stageName } from '../config/pets';
 import { formatNumber } from '../core/EconomyMath';
 import { EggKind, GameState } from '../core/GameState';
 import { AdService } from '../services/monetization/AdService';
@@ -176,15 +176,19 @@ export class PetsPanel extends Phaser.Scene {
       const level = this.gs.petLevel(pet.id);
       const owned = level > 0;
       const active = this.gs.activePets.includes(pet.id);
+      const stage = this.gs.petStage(pet.id);
+      const mult = EVOLUTION.stageMultipliers[stage];
 
       const row = this.add.container(0, 0);
       const bg = this.add
         .rectangle(THEME.width / 2, y, PANEL_W - 20, ROW_H, THEME.cardBg)
         .setStrokeStyle(2, active ? THEME.gold : owned ? RARITY_TINT[pet.rarity] : THEME.cardBorder);
-      const sprite = this.add.sprite(PANEL_X + 34, y, `pet-${pet.id}`, 0).setScale(1.25);
+      const sprite = this.add
+        .sprite(PANEL_X + 34, y, `pet-${pet.id}`, 0)
+        .setScale(1.25 + stage * 0.2); // evolved pets loom larger in the den too
       if (!owned) sprite.setTintFill(0x3a3048);
       const name = this.add
-        .bitmapText(PANEL_X + 62, y - 20, 'pix', owned ? pet.name : '???', 8)
+        .bitmapText(PANEL_X + 62, y - 20, 'pix', owned ? stageName(pet, stage) : '???', 8)
         .setTint(RARITY_TINT[pet.rarity]);
       const desc = this.add
         .bitmapText(PANEL_X + 62, y - 4, 'pix', pet.desc, 8)
@@ -195,7 +199,7 @@ export class PetsPanel extends Phaser.Scene {
           y + 12,
           'pix',
           owned
-            ? `+${Math.round(level * pet.dpsPerLevel * 100)}% DPS`
+            ? `+${Math.round(level * pet.dpsPerLevel * mult * 100)}% DPS${stage > 0 ? ` (X${mult})` : ''}`
             : `+${Math.round(pet.dpsPerLevel * 100)}% DPS PER LV`,
           8,
         )
@@ -203,7 +207,7 @@ export class PetsPanel extends Phaser.Scene {
       const lvl = this.add
         .bitmapText(
           PANEL_X + PANEL_W - 16,
-          y,
+          y - 10,
           'pix',
           owned ? `LV ${level}/${PET_MAX_LEVEL}` : 'LOCKED',
           8,
@@ -214,10 +218,45 @@ export class PetsPanel extends Phaser.Scene {
       if (active) {
         row.add(
           this.add
-            .bitmapText(PANEL_X + PANEL_W - 16, y - 20, 'pix', 'IN ARENA', 8)
+            .bitmapText(PANEL_X + PANEL_W - 16, y - 22, 'pix', 'IN ARENA', 8)
             .setOrigin(1, 0.5)
             .setTint(0xc9961e),
         );
+      }
+
+      // Evolution: the pet's next form, gated by level + gems
+      if (owned) {
+        const status = this.gs.evolveStatus(pet.id);
+        let evoText: string;
+        let evoTint: number;
+        if (status.reason === 'maxed') {
+          evoText = 'FINAL FORM';
+          evoTint = 0x9a8d6e;
+        } else if (status.reason === 'level') {
+          evoText = `EVOLVE AT LV ${status.levelGate}`;
+          evoTint = 0x9a8d6e;
+        } else if (status.reason === 'gems') {
+          evoText = `EVOLVE: ${status.gems} GEMS`;
+          evoTint = 0x8a5a2e;
+        } else {
+          evoText = `EVOLVE: ${status.gems} GEMS`;
+          evoTint = 0x2884a8;
+        }
+        const evo = this.add
+          .bitmapText(PANEL_X + PANEL_W - 16, y + 12, 'pix', evoText, 8)
+          .setOrigin(1, 0.5)
+          .setTint(evoTint);
+        if (status.ok) {
+          evo.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
+            if (this.gs.evolvePet(pet.id)) {
+              audio.stageUp();
+              this.reveal
+                .setText(`${stageName(pet, this.gs.petStage(pet.id))} ASCENDS!`)
+                .setTint(RARITY_TINT[pet.rarity]);
+            }
+          });
+        }
+        row.add(evo);
       }
       this.rows.add(row);
     });

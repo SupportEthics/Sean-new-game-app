@@ -138,6 +138,11 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.unlockedCells = Math.min((save.state.unlockedCells as number) ?? 20, 40);
     return save;
   },
+  // v19 -> v20: pet evolution stages
+  (save) => {
+    save.state.petStages = {};
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

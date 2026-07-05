@@ -12,17 +12,42 @@ export interface PetDef {
   dpsPerLevel: number;
   /** Relative hatch weight within its egg pool. */
   weight: number;
+  /** Names per evolution stage (0 = hatchling form, matches `name`). */
+  stageNames: [string, string, string];
 }
 
 export const PETS: PetDef[] = [
-  { id: 'pup', name: 'DIRE PUP', desc: 'LOYAL DUNGEON HOUND', rarity: 'common', dpsPerLevel: 0.05, weight: 40 },
-  { id: 'pebble', name: 'PEBBLE GOLEM', desc: 'A BOULDER WITH OPINIONS', rarity: 'common', dpsPerLevel: 0.05, weight: 30 },
-  { id: 'emberbat', name: 'EMBER BAT', desc: 'SPARKS WITH EVERY FLAP', rarity: 'rare', dpsPerLevel: 0.08, weight: 15 },
-  { id: 'wisp', name: 'GRAVE WISP', desc: 'A HELPFUL HAUNTING', rarity: 'rare', dpsPerLevel: 0.08, weight: 10 },
-  { id: 'drake', name: 'MOSS DRAKE', desc: 'ONE DAY A DRAGON', rarity: 'epic', dpsPerLevel: 0.12, weight: 5 },
+  { id: 'pup', name: 'DIRE PUP', desc: 'LOYAL DUNGEON HOUND', rarity: 'common', dpsPerLevel: 0.05, weight: 40,
+    stageNames: ['DIRE PUP', 'DIRE WOLF', 'DIRE WOLF ALPHA'] },
+  { id: 'pebble', name: 'PEBBLE GOLEM', desc: 'A BOULDER WITH OPINIONS', rarity: 'common', dpsPerLevel: 0.05, weight: 30,
+    stageNames: ['PEBBLE GOLEM', 'BOULDER GOLEM', 'MOUNTAIN GOLEM'] },
+  { id: 'emberbat', name: 'EMBER BAT', desc: 'SPARKS WITH EVERY FLAP', rarity: 'rare', dpsPerLevel: 0.08, weight: 15,
+    stageNames: ['EMBER BAT', 'CINDER BAT', 'INFERNO BAT'] },
+  { id: 'wisp', name: 'GRAVE WISP', desc: 'A HELPFUL HAUNTING', rarity: 'rare', dpsPerLevel: 0.08, weight: 10,
+    stageNames: ['GRAVE WISP', 'GRAVE SPIRIT', 'GRAVE ARCHON'] },
+  { id: 'drake', name: 'MOSS DRAKE', desc: 'ONE DAY A DRAGON', rarity: 'epic', dpsPerLevel: 0.12, weight: 5,
+    stageNames: ['MOSS DRAKE', 'MOSS WYVERN', 'MOSS DRAGON'] },
 ];
 
 export const PET_MAX_LEVEL = 10;
+
+/** Evolution: two ascensions per pet. Reaching the level gate and paying
+ * gems multiplies the pet's whole DPS contribution — and it grows visibly
+ * bigger in the arena. */
+export const EVOLUTION = {
+  /** Pet level required to reach stage 1 / stage 2. */
+  levelGates: [5, 10],
+  /** Gem price of each ascension. */
+  gemCosts: [75, 250],
+  /** The pet's DPS contribution is multiplied by this at each stage. */
+  stageMultipliers: [1, 2, 4],
+  /** Arena sprite scale per stage. */
+  scales: [1, 1.2, 1.45],
+} as const;
+
+export function stageName(def: PetDef, stage: number): string {
+  return def.stageNames[Math.min(stage, def.stageNames.length - 1)];
+}
 /** Consolation gems when an egg hatches a pet already at max level. */
 export const PET_DUP_GEMS = 3;
 /** How many pets fight beside the hero in the arena (the full roster). */

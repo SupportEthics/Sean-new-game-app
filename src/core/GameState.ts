@@ -28,6 +28,7 @@ import {
 import {
   ACTIVE_PET_SLOTS,
   eggPool,
+  EVOLUTION,
   goldEggCost,
   EGGS,
   PET_DUP_GEMS,
@@ -41,7 +42,7 @@ import { soulUpgradeById, soulUpgradeCost } from '../config/soulsTree';
 import { buildingById, buildingCost, TOWN } from '../config/town';
 import { RAIDS, raidClearKills, raidGems, raidGoldPerKill, raidKillCap, raidMonsterHp } from '../config/raids';
 import { DEFAULT_SKIN, SkinDef, skinById } from '../config/skins';
-import { premiumSwordById } from '../config/swordSkins';
+import { premiumSwordById, SWORD_ART } from '../config/swordSkins';
 import { BattleState, newBattleState, tick, TickResult } from './BattleSim';
 import { GEAR, unlockedSlots } from '../config/gear';
 import {
@@ -172,6 +173,7 @@ export interface SerializedState {
   buyTierLevel: number;
   soulUpgrades: Record<string, number>;
   pets: Record<string, number>;
+  petStages: Record<string, number>;
   goldEggsBought: number;
   lastFreeEggDay: string;
   removeAds: boolean;
@@ -231,6 +233,8 @@ export class GameState {
   soulUpgrades: Record<string, number> = {};
   /** Pet levels by pet id; absent = not hatched yet. */
   pets: Record<string, number> = {};
+  /** Evolution stage (0-2) by pet id; absent = stage 0. */
+  petStages: Record<string, number> = {};
   /** Lifetime gold eggs bought — drives the escalating gold-egg price. */
   goldEggsBought = 0;
   /** UTC day the free ad egg was last claimed. */
@@ -301,7 +305,8 @@ export class GameState {
       this.townDpsMultiplier *
       (this.dmgBoostActive() ? BOOSTS.dmgMult : 1) *
       (1 + this.soulLevel('might') * 0.1) *
-      levelDpsMultiplier(this.heroLevel)
+      levelDpsMultiplier(this.heroLevel) *
+      this.swordSkinDpsMultiplier
     );
   }
 
@@ -316,7 +321,9 @@ export class GameState {
       (1 + this.soulLevel('fortune') * 0.1) *
       this.skillGoldMultiplier *
       this.fairyGoldMultiplier *
-      this.townGoldMultiplier
+      this.townGoldMultiplier *
+      this.skinGoldMultiplier *
+      this.swordSkinGoldMultiplier
     );
   }
 
@@ -409,6 +416,36 @@ export class GameState {
         this.grid[bestIdx] = tmp;
       }
     }
+  }
+
+  /** Owned skins also pay gold (rares + the paid legendaries). */
+  get skinGoldMultiplier(): number {
+    return (
+      1 +
+      this.ownedSkins.reduce((sum, id) => sum + (skinById(id)?.goldBonus ?? 0), 0)
+    );
+  }
+
+  /** The blade art being WORN pays damage: premium weapons a flat bonus,
+   * tier art +0.5% per art tier — chasing prettier swords makes you stronger. */
+  get swordSkinDpsMultiplier(): number {
+    const key = this.swordSkin;
+    if (key.startsWith('premium-')) {
+      return 1 + (premiumSwordById(key.slice(8))?.dpsBonus ?? 0);
+    }
+    if (key.startsWith('tier-')) {
+      const n = Number(key.slice(5));
+      if (Number.isInteger(n) && n >= 1) return 1 + n * SWORD_ART.dpsPerTier;
+    }
+    // 'auto': the art shown on the strongest equipped blade
+    const best = Math.min(this.grid[0] ?? 1, GEAR.weaponArtCount);
+    return 1 + best * SWORD_ART.dpsPerTier;
+  }
+
+  /** Premium weapons also sweeten gold while worn. */
+  get swordSkinGoldMultiplier(): number {
+    if (!this.swordSkin.startsWith('premium-')) return 1;
+    return 1 + (premiumSwordById(this.swordSkin.slice(8))?.goldBonus ?? 0);
   }
 
   /** Every owned skin grants its bonus permanently (collection incentive). */
@@ -739,10 +776,44 @@ export class GameState {
     return (
       1 +
       Object.entries(this.pets).reduce(
-        (sum, [id, level]) => sum + level * (petById(id)?.dpsPerLevel ?? 0),
+        (sum, [id, level]) =>
+          sum +
+          level *
+            (petById(id)?.dpsPerLevel ?? 0) *
+            EVOLUTION.stageMultipliers[this.petStage(id)],
         0,
       )
     );
+  }
+
+  /** Evolution stage 0-2 for a pet. */
+  petStage(id: string): number {
+    return Math.min(this.petStages[id] ?? 0, EVOLUTION.stageMultipliers.length - 1);
+  }
+
+  /** Why a pet can/can't ascend right now (drives the EVOLVE button). */
+  evolveStatus(id: string): { ok: boolean; reason: 'ready' | 'maxed' | 'level' | 'gems' | 'unhatched'; gems: number; levelGate: number } {
+    const stage = this.petStage(id);
+    if (stage >= EVOLUTION.levelGates.length) {
+      return { ok: false, reason: 'maxed', gems: 0, levelGate: 0 };
+    }
+    const gems = EVOLUTION.gemCosts[stage];
+    const levelGate = EVOLUTION.levelGates[stage];
+    if (this.petLevel(id) === 0) return { ok: false, reason: 'unhatched', gems, levelGate };
+    if (this.petLevel(id) < levelGate) return { ok: false, reason: 'level', gems, levelGate };
+    if (this.gems < gems) return { ok: false, reason: 'gems', gems, levelGate };
+    return { ok: true, reason: 'ready', gems, levelGate };
+  }
+
+  /** Ascend a pet to its next stage: level gate + gems -> 2x/4x pet power. */
+  evolvePet(id: string): boolean {
+    const status = this.evolveStatus(id);
+    if (!status.ok || !petById(id)) return false;
+    this.gems -= status.gems;
+    this.petStages[id] = this.petStage(id) + 1;
+    this.emit('gems:changed', this.gems);
+    this.emit('pets:changed', this.pets);
+    return true;
   }
 
   /** Pets shown fighting in the arena: highest level first, ties by roster order. */
@@ -1377,6 +1448,7 @@ export class GameState {
       buyTierLevel: this.buyTierLevel,
       soulUpgrades: { ...this.soulUpgrades },
       pets: { ...this.pets },
+      petStages: { ...this.petStages },
       goldEggsBought: this.goldEggsBought,
       lastFreeEggDay: this.lastFreeEggDay,
       removeAds: this.removeAds,
@@ -1437,6 +1509,7 @@ export class GameState {
     gs.buyTierLevel = data.buyTierLevel;
     gs.soulUpgrades = { ...data.soulUpgrades };
     gs.pets = { ...data.pets };
+    gs.petStages = { ...data.petStages };
     gs.goldEggsBought = data.goldEggsBought;
     gs.lastFreeEggDay = data.lastFreeEggDay;
     gs.removeAds = data.removeAds;

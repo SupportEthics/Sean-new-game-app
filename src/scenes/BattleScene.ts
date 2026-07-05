@@ -5,6 +5,7 @@ import { isLocationEntrance, locationForStage, locationIndex, speciesForWave } f
 import { RAIDS, raidClearKills } from '../config/raids';
 import { skinById } from '../config/skins';
 import { swordSkinFrame } from '../config/swordSkins';
+import { EVOLUTION } from '../config/pets';
 import { ENEMY_SPECIES, STAGES } from '../config/stages';
 import { isBossWave } from '../core/BattleSim';
 import { formatNumber } from '../core/EconomyMath';
@@ -266,12 +267,15 @@ export class BattleScene extends Phaser.Scene {
     this.gs.activePets.forEach((id, i) => {
       const slot = BattleScene.PET_SLOTS[i];
       if (!slot) return;
+      // Evolved pets stand visibly larger
+      const scale = EVOLUTION.scales[this.gs.petStage(id)];
       this.petShadows.push(
-        this.add.image(slot.x, slot.y + 12, 'shadow').setScale(0.6).setDepth(4),
+        this.add.image(slot.x, slot.y + 12, 'shadow').setScale(0.6 * scale).setDepth(4),
       );
       this.petSprites.push(
         this.add
           .sprite(slot.x, slot.y, `pet-${id}`)
+          .setScale(scale)
           .play(`pet-${id}-idle`)
           .setDepth(slot.y > this.heroY ? 12 : 6),
       );

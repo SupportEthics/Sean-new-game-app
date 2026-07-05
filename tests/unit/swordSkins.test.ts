@@ -7,6 +7,7 @@ import {
   swordSkinFrame,
   tierSkinKey,
 } from '../../src/config/swordSkins';
+import { SKINS } from '../../src/config/skins';
 import { GameState } from '../../src/core/GameState';
 import { SaveManager } from '../../src/core/SaveManager';
 
@@ -80,5 +81,47 @@ describe('sword skins', () => {
     expect(loaded!.state.swordSkin).toBe(premiumSkinKey('voidkatana'));
     expect(loaded!.state.ownedPremiumSwords).toEqual(['voidkatana']);
     expect(loaded!.state.bestTier).toBe(14);
+  });
+});
+
+describe('skin benefits (Sean: skins must pay)', () => {
+  it('rare skins pay gold, legendaries pay BOTH damage and gold', () => {
+    for (const skin of SKINS) {
+      if (skin.rarity === 'rare') {
+        expect(skin.goldBonus).toBeGreaterThan(0);
+      }
+      if (skin.rarity === 'legendary') {
+        expect(skin.dpsBonus).toBeGreaterThan(0); // paid = multiple benefits
+        expect(skin.goldBonus).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('owning gold-bonus skins raises the gold multiplier', () => {
+    const gs = new GameState();
+    const before = gs.goldMultiplier;
+    gs.grantSkin('silver'); // rare: +3% gold
+    expect(gs.goldMultiplier / before).toBeCloseTo(1.03);
+  });
+
+  it('worn tier art pays DPS by its tier', () => {
+    const gs = new GameState();
+    gs.grid[0] = 10;
+    gs.bestTier = 20;
+    const auto = gs.heroDps; // auto: art of the strongest blade (tier 10 -> +5%)
+    expect(gs.swordSkinDpsMultiplier).toBeCloseTo(1.05);
+    gs.setSwordSkin('tier-20');
+    expect(gs.swordSkinDpsMultiplier).toBeCloseTo(1.1);
+    expect(gs.heroDps).toBeGreaterThan(auto); // prettier art = harder hits
+  });
+
+  it('premium weapons pay both damage and gold while worn', () => {
+    const gs = new GameState();
+    gs.grid[0] = 5;
+    const goldBefore = gs.goldMultiplier;
+    gs.grantPremiumSword('scythe');
+    gs.setSwordSkin('premium-scythe');
+    expect(gs.swordSkinDpsMultiplier).toBeCloseTo(1.15);
+    expect(gs.goldMultiplier / goldBefore).toBeCloseTo(1.15);
   });
 });

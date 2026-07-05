@@ -3,11 +3,14 @@ import {
   ACTIVE_PET_SLOTS,
   EGGS,
   eggPool,
+  EVOLUTION,
   goldEggCost,
   PET_DUP_GEMS,
   PET_MAX_LEVEL,
+  petById,
   PETS,
   rollPet,
+  stageName,
 } from '../../src/config/pets';
 import { GameState } from '../../src/core/GameState';
 
@@ -121,5 +124,49 @@ describe('pet bonuses', () => {
     gs.battle.stage = 40;
     expect(gs.prestige()).toBe(true);
     expect(gs.petLevel('drake')).toBe(3);
+  });
+});
+
+describe('pet evolution (Sean: pup -> dire wolf -> alpha)', () => {
+  it('gates on level and gems, then multiplies the pet bonus', () => {
+    const gs = new GameState();
+    gs.pets = { pup: 4 };
+    expect(gs.evolveStatus('pup').reason).toBe('level'); // needs LV 5
+    gs.pets = { pup: 5 };
+    expect(gs.evolveStatus('pup').reason).toBe('gems'); // needs 75 gems
+    gs.addGems(EVOLUTION.gemCosts[0]);
+
+    const before = gs.petDpsMultiplier; // 5 x 5% = 1.25
+    expect(gs.evolvePet('pup')).toBe(true);
+    expect(gs.gems).toBe(0);
+    expect(gs.petStage('pup')).toBe(1);
+    // Stage 1 doubles the pup's whole contribution: 1.25 -> 1.5
+    expect((gs.petDpsMultiplier - 1) / (before - 1)).toBeCloseTo(2);
+  });
+
+  it('second ascension needs max level and ends at the final form', () => {
+    const gs = new GameState();
+    gs.pets = { pup: 10 };
+    gs.petStages = { pup: 1 };
+    gs.addGems(EVOLUTION.gemCosts[1]);
+    expect(gs.evolvePet('pup')).toBe(true);
+    expect(gs.petStage('pup')).toBe(2);
+    expect(gs.evolveStatus('pup').reason).toBe('maxed'); // no third stage
+    expect(gs.evolvePet('pup')).toBe(false);
+  });
+
+  it('stage names follow the dire wolf line', () => {
+    const pup = petById('pup')!;
+    expect(stageName(pup, 0)).toBe('DIRE PUP');
+    expect(stageName(pup, 1)).toBe('DIRE WOLF');
+    expect(stageName(pup, 2)).toBe('DIRE WOLF ALPHA');
+  });
+
+  it('stages survive a serialize round-trip', () => {
+    const gs = new GameState();
+    gs.pets = { drake: 5 };
+    gs.petStages = { drake: 1 };
+    const revived = GameState.deserialize(gs.serialize());
+    expect(revived.petStage('drake')).toBe(1);
   });
 });

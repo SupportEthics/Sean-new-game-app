@@ -26,7 +26,10 @@ export interface SkinDef {
   name: string;
   rarity: SkinRarity;
   unlock: SkinUnlock;
+  /** Permanent bonuses for OWNING the skin (collection incentive):
+   * commons/epics pay DPS, rares pay gold, paid legendaries pay both. */
   dpsBonus: number;
+  goldBonus: number;
   art: SkinArt;
 }
 

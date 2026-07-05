@@ -18,8 +18,7 @@ current status: **M0–M4 done, all six tab-bar tabs live** — skins, 4-sword
 loadout, 6x7 board with purchasable cells, prestige (rebirth at stage 40,
 Souls banked), raids (post-prestige, 20 levels, ad cooldown reset), offline
 earnings (2x-ad popup), Soul Relics tree, daily + weekly + monthly quests
-(daily streak), pets (5 companions from gold/gem/free-ad eggs, dup =
-level-up, top 3 fight in the arena), shop (sub-tabs DEALS/GEMS/COINS/BUNDLES/SKINS — skins tab sells the 5 legendary heroes + 3 premium swords and links to the full wardrobe (SKINS removed from the side MENU — RAID/QUESTS row + REBIRTH); 6 gem packs, 4 coin packs
+(daily streak), pets (5 companions from gold/gem/free-ad eggs, dup = level-up, evolution: 2 ascensions per pet at LV 5/10 for gems, x2/x4 pet bonus + bigger arena sprite, stage names in config/pets.ts EVOLUTION, save v20 petStages), shop (sub-tabs DEALS/GEMS/COINS/BUNDLES/SKINS — skins tab sells the 5 legendary heroes + 3 premium swords and links to the full wardrobe (SKINS removed from the side MENU — RAID/QUESTS row + REBIRTH); 6 gem packs, 4 coin packs
 granting hours of current gold income, 4 gems+coins bundles — each line
 with 49.99/99.99 whale tiers — $0.99 starter pack, $4.99 remove-ads,
 piggy bank cracked via IAP, free ad chest), interstitial
@@ -43,7 +42,7 @@ its own monster pool + entrance banner), raids progressively harder
 4x/level HP), sword skins (SkinsPanel KNIGHT/SWORDS tabs: wear any tier
 art once that tier is reached lifetime — bestTier survives rebirth — or
 3 premium IAP weapons scythe/katana/cleaver in config/swordSkins.ts,
-gear.png frames 25-27, cosmetic only), raid ladder resets on rebirth
+gear.png frames 25-27; skins PAY: owning commons/epics +DPS, rares +gold, legendaries both — worn tier art +0.5% DPS/tier and premium swords +15% DPS +15% gold while worn), raid ladder resets on rebirth
 (raidBest keeps lifetime progress for awards), hero level pays +1% DPS per 10 levels (config/economy.ts HERO_LEVEL, level math in core/EconomyMath, +N% DMG shown under LV), raid kills capped at 3x the quota with early end (config/raids.ts raidKillCap), drag-safe grid (UIScene
 defers rebuilds while a sword is dragged; autoMergeOnce(excludeIndex)
 skips the dragged cell), two-line BUY button, equip row = dedicated 4 gold boxes above a 6x6 merge field (board = 4+36 cells, save v19 repack; MergeLogic EQUIP_CELLS + locked-set params; GameState.syncLoadout keeps slots stocked with the best swords, slot 0 strongest; moving one off snaps back; locked slots show ST 5/15/25 and reject items). Playable core loop in

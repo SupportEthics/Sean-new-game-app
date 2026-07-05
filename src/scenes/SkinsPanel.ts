@@ -37,6 +37,8 @@ interface SwordEntry {
   sku?: string;
   premiumId?: string;
   desc?: string;
+  /** Worn-bonus badge, e.g. '+7.5%' or '+15% +15%G'. */
+  badge?: string;
 }
 
 /**
@@ -238,12 +240,16 @@ export class SkinsPanel extends Phaser.Scene {
         .setTint(stateTint)
         .setOrigin(0.5, 0);
 
-      // +X% DPS badge
-      const bonus = this.add
+      // Bonus badges: damage top-left, gold top-right
+      const dmgBadge = this.add
         .bitmapText(-CARD_W / 2 + 5, -CARD_H / 2 + 5, 'pix', def.dpsBonus ? `+${Math.round(def.dpsBonus * 100)}%` : '', 8)
         .setTint(0xb03a2e);
+      const goldBadge = this.add
+        .bitmapText(CARD_W / 2 - 5, -CARD_H / 2 + 5, 'pix', def.goldBonus ? `+${Math.round(def.goldBonus * 100)}%G` : '', 8)
+        .setTint(0xc9961e)
+        .setOrigin(1, 0);
 
-      card.add([bg, preview, name, state, bonus]);
+      card.add([bg, preview, name, state, dmgBadge, goldBadge]);
       card.setSize(CARD_W, CARD_H);
       card.setInteractive({ useHandCursor: true });
       card.on('pointerup', (ptr: Phaser.Input.Pointer) => {
@@ -261,6 +267,7 @@ export class SkinsPanel extends Phaser.Scene {
     const cur = this.gs.swordSkin;
     const entries: SwordEntry[] = [];
 
+    const autoPct = Math.min(this.gs.grid[0] ?? 1, GEAR.weaponArtCount) * 0.5;
     entries.push({
       key: 'auto',
       name: 'TIER ART',
@@ -269,6 +276,7 @@ export class SkinsPanel extends Phaser.Scene {
       stateText: cur === 'auto' ? 'EQUIPPED' : 'TAP TO EQUIP',
       stateTint: cur === 'auto' ? 0x2e7a1e : 0x8a5a2e,
       desc: 'EACH SWORD ITS OWN',
+      badge: `+${autoPct % 1 === 0 ? autoPct : autoPct.toFixed(1)}%`,
     });
 
     for (const sword of PREMIUM_SWORDS) {
@@ -291,6 +299,7 @@ export class SkinsPanel extends Phaser.Scene {
         sku: sword.sku,
         premiumId: sword.id,
         desc: sword.desc,
+        badge: `+${Math.round(sword.dpsBonus * 100)}% +${Math.round(sword.goldBonus * 100)}%G`,
       });
     }
 
@@ -298,6 +307,7 @@ export class SkinsPanel extends Phaser.Scene {
       const key = tierSkinKey(n);
       const unlocked = this.gs.bestTier >= n;
       const equipped = cur === key;
+      const pct = n * 0.5;
       entries.push({
         key,
         name: TIER_NAMES[n - 1].toUpperCase(),
@@ -305,6 +315,7 @@ export class SkinsPanel extends Phaser.Scene {
         state: equipped ? 'equipped' : unlocked ? 'unlocked' : 'locked',
         stateText: equipped ? 'EQUIPPED' : unlocked ? 'TAP TO EQUIP' : `REACH TIER ${n}`,
         stateTint: equipped ? 0x2e7a1e : unlocked ? 0x8a5a2e : 0x8a7d60,
+        badge: `+${pct % 1 === 0 ? pct : pct.toFixed(1)}%`,
       });
     }
     return entries;
@@ -344,8 +355,9 @@ export class SkinsPanel extends Phaser.Scene {
         .setTint(e.stateTint)
         .setOrigin(0.5, 0);
       const tag = this.add
-        .bitmapText(-CARD_W / 2 + 5, -CARD_H / 2 + 5, 'pix', premium ? 'IAP' : '', 8)
-        .setTint(0xb03a2e);
+        .bitmapText(-CARD_W / 2 + 5, -CARD_H / 2 + 5, 'pix', e.badge ?? '', 8)
+        .setTint(premium ? 0xc9961e : 0xb03a2e)
+        .setMaxWidth(CARD_W - 8);
 
       card.add([bg, preview, name, state, tag]);
       card.setSize(CARD_W, CARD_H);

@@ -133,6 +133,28 @@ test('pets panel with hatched squad', async ({ page }) => {
   await page.screenshot({ path: 'screenshots/08-pets.png' });
 });
 
+test('pets panel with evolution stages', async ({ page }) => {
+  await page.evaluate(() => {
+    const g = window.__game as unknown as {
+      gs: {
+        pets: Record<string, number>;
+        petStages: Record<string, number>;
+        gems: number;
+      };
+      openPets(): void;
+    };
+    g.gs.pets = { pup: 10, emberbat: 6, drake: 3 };
+    g.gs.petStages = { pup: 2, emberbat: 1 }; // alpha wolf + cinder bat
+    g.gs.gems = 500;
+    g.openPets();
+  });
+  await page.waitForFunction(
+    () => (window as unknown as { __petsOpen?: boolean }).__petsOpen === true,
+  );
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: 'screenshots/33-pet-evolution.png' });
+});
+
 test('pets fighting beside the hero', async ({ page }) => {
   await page.evaluate(() => {
     const g = window.__game as unknown as {

@@ -365,7 +365,12 @@ export class ShopPanel extends Phaser.Scene {
       this.card(y, h, owned ? 0x6fae4e : 0xc9961e);
       this.rows.add(this.add.image(PANEL_X + 40, y + h / 2, 'gear', sword.frame).setScale(0.7));
       this.text(70, y + 14, sword.name.toUpperCase(), 0x4a3520);
-      this.text(70, y + 32, sword.desc, 0x8a5a2e);
+      this.text(
+        70,
+        y + 32,
+        `+${Math.round(sword.dpsBonus * 100)}% DMG +${Math.round(sword.goldBonus * 100)}% GOLD`,
+        0xc9961e,
+      );
       if (owned) {
         const lbl = equipped ? 'EQUIPPED' : 'TAP TO WEAR';
         const btn = this.add
@@ -404,7 +409,7 @@ export class ShopPanel extends Phaser.Scene {
       this.text(
         70,
         y + 32,
-        skin.dpsBonus ? `+${Math.round(skin.dpsBonus * 100)}% DPS` : 'COSMETIC',
+        `+${Math.round(skin.dpsBonus * 100)}% DMG +${Math.round(skin.goldBonus * 100)}% GOLD`,
         0xb03a2e,
       );
       if (owned) {
