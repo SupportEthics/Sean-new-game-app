@@ -24,6 +24,15 @@ export const ECONOMY = {
   sellRefundFraction: 0.3,
 } as const;
 
+/** Hero level: a lifetime-kills badge that now also pays (Sean's call) —
+ * +1% DPS per 10 levels, forever, surviving rebirths. */
+export const HERO_LEVEL = {
+  /** Kills needed for level N: killsPerLevelBase * (N-1)^2 */
+  killsPerLevelBase: 5,
+  levelsPerBonus: 10,
+  bonusPerStep: 0.01,
+} as const;
+
 /** Rewarded-ad battle boosts (the buttons on the arena's right edge). */
 export const BOOSTS = {
   /** Watching an ad turns a boost on for this long (real time). */

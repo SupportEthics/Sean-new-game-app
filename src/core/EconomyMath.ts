@@ -1,4 +1,4 @@
-import { ECONOMY, NUMBER_SUFFIXES } from '../config/economy';
+import { ECONOMY, HERO_LEVEL, NUMBER_SUFFIXES } from '../config/economy';
 import { GEAR } from '../config/gear';
 import { STAGES } from '../config/stages';
 
@@ -73,4 +73,20 @@ export function formatNumber(n: number): string {
   const first = String.fromCharCode(97 + Math.floor(extra / 26));
   const second = String.fromCharCode(97 + (extra % 26));
   return `${scaled.toFixed(digits)}${first}${second}`;
+}
+
+// ---- Hero level (lifetime kills badge that also pays a DPS bonus) ----
+
+export function heroLevel(totalKills: number): number {
+  return Math.floor(Math.sqrt(Math.max(0, totalKills) / HERO_LEVEL.killsPerLevelBase)) + 1;
+}
+
+/** Lifetime kills needed to reach this level. */
+export function killsForLevel(level: number): number {
+  return HERO_LEVEL.killsPerLevelBase * (level - 1) * (level - 1);
+}
+
+/** +1% DPS per 10 levels: LV 141 fights 14% harder, forever. */
+export function levelDpsMultiplier(level: number): number {
+  return 1 + Math.floor((level - 1) / HERO_LEVEL.levelsPerBonus) * HERO_LEVEL.bonusPerStep;
 }

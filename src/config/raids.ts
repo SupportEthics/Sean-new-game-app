@@ -14,6 +14,9 @@ export const RAIDS = {
    * 4x/level monster HP. */
   clearKillsBase: 10,
   clearKillsPerLevel: 2,
+  /** Kills stop counting at quota * this — overkill DPS can't farm a
+   * low level forever; the raid ends early once the cap is reached. */
+  killCapMultiplier: 3,
 
   monsterHpBase: 200,
   monsterHpGrowth: 4,
@@ -26,6 +29,10 @@ export const RAIDS = {
 
 export function raidClearKills(level: number): number {
   return RAIDS.clearKillsBase + RAIDS.clearKillsPerLevel * (level - 1);
+}
+
+export function raidKillCap(level: number): number {
+  return raidClearKills(level) * RAIDS.killCapMultiplier;
 }
 
 export function raidMonsterHp(level: number): number {

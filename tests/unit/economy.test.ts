@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { GameState } from '../../src/core/GameState';
 import {
   buyTierUpgradeCost,
   enemyHp,
@@ -6,6 +7,9 @@ import {
   gearCost,
   gearDps,
   goldDrop,
+  heroLevel,
+  killsForLevel,
+  levelDpsMultiplier,
   heroDps,
 } from '../../src/core/EconomyMath';
 import { STAGES } from '../../src/config/stages';
@@ -86,5 +90,29 @@ describe('formatNumber', () => {
   it('handles negatives and infinity', () => {
     expect(formatNumber(-1234)).toBe('-1.23K');
     expect(formatNumber(Infinity)).toBe('∞');
+  });
+});
+
+describe('hero level (lifetime kills)', () => {
+  it('follows the square-root curve', () => {
+    expect(heroLevel(0)).toBe(1);
+    expect(heroLevel(5)).toBe(2);
+    expect(heroLevel(killsForLevel(141))).toBe(141);
+  });
+
+  it('pays +1% DPS per 10 levels', () => {
+    expect(levelDpsMultiplier(1)).toBe(1);
+    expect(levelDpsMultiplier(10)).toBe(1);
+    expect(levelDpsMultiplier(11)).toBeCloseTo(1.01);
+    expect(levelDpsMultiplier(141)).toBeCloseTo(1.14);
+  });
+
+  it('feeds the hero DPS and survives rebirth', () => {
+    const gs = new GameState();
+    gs.grid[0] = 5;
+    const base = gs.heroDps;
+    gs.totalKills = killsForLevel(21); // +2%
+    expect(gs.heroDps / base).toBeCloseTo(1.02);
+    // totalKills is lifetime: prestige doesn't reset it, so nor does the bonus
   });
 });

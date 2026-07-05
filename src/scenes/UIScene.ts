@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { BOOSTS, ECONOMY } from '../config/economy';
 import { GEAR, tierName, weaponFrame } from '../config/gear';
-import { formatNumber, gearDps } from '../core/EconomyMath';
+import { formatNumber, gearDps, heroLevel, killsForLevel, levelDpsMultiplier } from '../core/EconomyMath';
 import { GameState } from '../core/GameState';
 import { InterstitialPolicy } from '../core/Interstitials';
 import { Tutorial, TutorialStep } from '../core/Tutorial';
@@ -17,13 +17,6 @@ const CARD_W = 60;
 const CARD_H = 46;
 const GAP = 2;
 
-/** Level curve (display only, derived from lifetime kills — no save impact). */
-function killsForLevel(level: number): number {
-  return 5 * (level - 1) * (level - 1);
-}
-function levelFromKills(kills: number): number {
-  return Math.floor(Math.sqrt(kills / 5)) + 1;
-}
 
 /**
  * The dense game chrome: currency header, Lv/EXP + stage HUD, sword-card
@@ -38,6 +31,7 @@ export class UIScene extends Phaser.Scene {
   private soulsText!: Phaser.GameObjects.BitmapText;
   private dpsText!: Phaser.GameObjects.BitmapText;
   private levelText!: Phaser.GameObjects.BitmapText;
+  private mightText!: Phaser.GameObjects.BitmapText;
   private expBar!: Phaser.GameObjects.Rectangle;
   private expBarBg!: Phaser.GameObjects.Rectangle;
   private stageText!: Phaser.GameObjects.BitmapText;
@@ -175,7 +169,7 @@ export class UIScene extends Phaser.Scene {
     // Poll HUD values that change every sim tick
     const b = this.gs.battle;
     const kills = this.gs.totalKills;
-    const level = levelFromKills(kills);
+    const level = heroLevel(kills);
     const cur = killsForLevel(level);
     const next = killsForLevel(level + 1);
     const frac = Phaser.Math.Clamp((kills - cur) / Math.max(next - cur, 1), 0, 1);
@@ -197,6 +191,8 @@ export class UIScene extends Phaser.Scene {
         : `WAVE ${b.wave}/10 - ${formatNumber(this.gs.heroDps).toUpperCase()}/S`,
     );
     this.levelText.setText(`LV ${level}`);
+    const might = Math.round((levelDpsMultiplier(level) - 1) * 100);
+    this.mightText.setText(might > 0 ? `+${might}% DMG` : '');
     // Keep the bar to the right of the number; it shrinks if the level is huge
     const barX = Phaser.Math.Clamp(12 + this.levelText.width + 10, 102, 170);
     this.expBarBg.setX(barX);
@@ -275,7 +271,8 @@ export class UIScene extends Phaser.Scene {
 
     // Lv + EXP bar (left) — the bar slides right so it NEVER covers the
     // level number, however many digits it grows to (Sean's screenshot)
-    this.levelText = this.add.bitmapText(12, y + 15, 'pix', 'LV 1', 16);
+    this.levelText = this.add.bitmapText(12, y + 10, 'pix', 'LV 1', 16);
+    this.mightText = this.add.bitmapText(12, y + 30, 'pix', '', 8).setTint(0xff8a5a);
     this.expBarBg = this.add
       .rectangle(102, y + 22, 100, 14, 0x2a1c10)
       .setOrigin(0, 0.5)

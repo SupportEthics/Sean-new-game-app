@@ -39,7 +39,7 @@ import {
 import { SKILLS, skillDefById } from '../config/skills';
 import { soulUpgradeById, soulUpgradeCost } from '../config/soulsTree';
 import { buildingById, buildingCost, TOWN } from '../config/town';
-import { RAIDS, raidClearKills, raidGems, raidGoldPerKill, raidMonsterHp } from '../config/raids';
+import { RAIDS, raidClearKills, raidGems, raidGoldPerKill, raidKillCap, raidMonsterHp } from '../config/raids';
 import { DEFAULT_SKIN, SkinDef, skinById } from '../config/skins';
 import { premiumSwordById } from '../config/swordSkins';
 import { BattleState, newBattleState, tick, TickResult } from './BattleSim';
@@ -51,6 +51,8 @@ import {
   gearCost,
   goldDrop,
   heroDps,
+  heroLevel,
+  levelDpsMultiplier,
   sellValue,
 } from './EconomyMath';
 import {
@@ -297,8 +299,14 @@ export class GameState {
       this.fairyDpsMultiplier *
       this.townDpsMultiplier *
       (this.dmgBoostActive() ? BOOSTS.dmgMult : 1) *
-      (1 + this.soulLevel('might') * 0.1)
+      (1 + this.soulLevel('might') * 0.1) *
+      levelDpsMultiplier(this.heroLevel)
     );
+  }
+
+  /** Hero level, from lifetime kills — never resets, feeds a DPS bonus. */
+  get heroLevel(): number {
+    return heroLevel(this.totalKills);
   }
 
   /** Gold income multiplier from Soul Relics, skill buffs and the fairy. */
@@ -629,8 +637,9 @@ export class GameState {
       bossFailed: false,
     };
 
+    const cap = raidKillCap(raid.level);
     let budget = this.heroDps * dt;
-    while (budget > 0) {
+    while (budget > 0 && raid.kills < cap) {
       const dealt = Math.min(budget, raid.monsterHp);
       raid.monsterHp -= dealt;
       result.damageDealt += dealt;
@@ -649,7 +658,8 @@ export class GameState {
     this.emit('battle:tick', result);
 
     raid.timeLeft -= dt;
-    if (raid.timeLeft <= 0) this.endRaid();
+    // Cap harvested: no reason to sit out the clock
+    if (raid.timeLeft <= 0 || raid.kills >= cap) this.endRaid();
   }
 
   private endRaid(): void {

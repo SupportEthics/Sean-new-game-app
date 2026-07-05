@@ -44,7 +44,7 @@ its own monster pool + entrance banner), raids progressively harder
 art once that tier is reached lifetime — bestTier survives rebirth — or
 3 premium IAP weapons scythe/katana/cleaver in config/swordSkins.ts,
 gear.png frames 25-27, cosmetic only), raid ladder resets on rebirth
-(raidBest keeps lifetime progress for awards), drag-safe grid (UIScene
+(raidBest keeps lifetime progress for awards), hero level pays +1% DPS per 10 levels (config/economy.ts HERO_LEVEL, level math in core/EconomyMath, +N% DMG shown under LV), raid kills capped at 3x the quota with early end (config/raids.ts raidKillCap), drag-safe grid (UIScene
 defers rebuilds while a sword is dragged; autoMergeOnce(excludeIndex)
 skips the dragged cell), two-line BUY button. Playable core loop in
 browser, hi-detail pixel art, 25 hero skins incl. 5 premium IAP behind a

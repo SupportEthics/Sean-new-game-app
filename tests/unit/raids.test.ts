@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { PRESTIGE, soulsFor } from '../../src/config/prestige';
-import { RAIDS, raidClearKills, raidGems, raidGoldPerKill, raidMonsterHp } from '../../src/config/raids';
+import { RAIDS, raidClearKills, raidGems, raidGoldPerKill, raidKillCap, raidMonsterHp } from '../../src/config/raids';
 import { newBattleState } from '../../src/core/BattleSim';
 import { GameState } from '../../src/core/GameState';
 
@@ -116,6 +116,21 @@ describe('raids', () => {
     }
   });
 
+  it('overkill DPS is capped: the raid stops at 3x the quota and ends early', () => {
+    const gs = prestiged();
+    gs.grid[0] = 30; // absurd DPS vs level-1 monsters
+    gs.startRaid(1, 0);
+    let ended: { kills: number; cleared: boolean } | null = null;
+    gs.on('raid:ended', (r) => {
+      ended = r;
+    });
+    gs.update(1); // one second is plenty at this DPS
+    expect(ended).not.toBeNull();
+    expect(ended!.kills).toBe(raidKillCap(1)); // exactly the cap, not thousands
+    expect(ended!.cleared).toBe(true); // cap > quota, so it always clears
+    expect(gs.raid).toBeNull(); // no waiting out the clock
+  });
+
   it('failing the quota gives gems but no unlock', () => {
     const gs = prestiged();
     // Bare hands: 1 DPS vs 200 HP monsters = zero kills
@@ -133,13 +148,14 @@ describe('raids', () => {
     expect(gs.canStartRaid(1, 1000 + RAIDS.cooldownMinutes * 60_000 + 1)).toBe(true);
   });
 
-  it('normal stage battle is paused during a raid', () => {
+  it('normal stage battle is paused while a raid is live', () => {
     const gs = prestiged();
     gs.grid[0] = 12;
     gs.startRaid(1, 0);
     const stageBefore = gs.battle.stage;
     const waveBefore = gs.battle.wave;
-    gs.update(5);
+    gs.update(0.5); // still mid-raid at this DPS (the kill cap ends it later)
+    expect(gs.raid).not.toBeNull();
     expect(gs.battle.stage).toBe(stageBefore);
     expect(gs.battle.wave).toBe(waveBefore);
   });
