@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  BUNDLES,
   FREE_CHEST,
   GEM_PACKS,
+  GOLD_PACKS,
   INTERSTITIAL,
   PIGGY,
   REMOVE_ADS,
@@ -17,11 +19,50 @@ describe('IAP fulfillment', () => {
   it('every shop product is registered in the catalog', () => {
     for (const sku of [
       ...GEM_PACKS.map((p) => p.sku),
+      ...GOLD_PACKS.map((p) => p.sku),
+      ...BUNDLES.map((p) => p.sku),
       STARTER_PACK.sku,
       REMOVE_ADS.sku,
       PIGGY.product.sku,
     ]) {
       expect(productBySku(sku), sku).toBeDefined();
+    }
+  });
+
+  it('gems, coins and bundles each offer 49.99 and 99.99 tiers', () => {
+    for (const list of [GEM_PACKS, GOLD_PACKS, BUNDLES]) {
+      const prices = list.map((p) => p.priceUsd);
+      expect(prices).toContain(49.99);
+      expect(prices).toContain(99.99);
+    }
+  });
+
+  it('coin packs grant hours of the current gold income', () => {
+    const gs = new GameState();
+    gs.grid[0] = 8; // real DPS so income is meaningful
+    const pack = GOLD_PACKS[1];
+    const expected = gs.goldForHours(pack.goldHours);
+    const before = gs.gold;
+    expect(gs.fulfillProduct(pack.sku)).toBe(true);
+    expect(gs.gold - before).toBe(expected);
+    expect(gs.fulfillProduct(pack.sku)).toBe(true); // consumable: repeatable
+  });
+
+  it('bundles grant gems AND gold together', () => {
+    const gs = new GameState();
+    gs.grid[0] = 8;
+    const b = BUNDLES[2]; // the 49.99 royal bundle
+    const goldBefore = gs.gold;
+    expect(gs.fulfillProduct(b.sku)).toBe(true);
+    expect(gs.gems).toBe(b.gems);
+    expect(gs.gold - goldBefore).toBe(gs.goldForHours(b.goldHours));
+  });
+
+  it('bigger spend means more gems per unit of money', () => {
+    for (let i = 1; i < GEM_PACKS.length; i++) {
+      const prev = GEM_PACKS[i - 1].gems / GEM_PACKS[i - 1].priceUsd;
+      const cur = GEM_PACKS[i].gems / GEM_PACKS[i].priceUsd;
+      expect(cur).toBeGreaterThan(prev);
     }
   });
 

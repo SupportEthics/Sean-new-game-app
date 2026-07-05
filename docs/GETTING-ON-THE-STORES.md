@@ -33,6 +33,16 @@ accounts below exist.
 | `gems_pouch`      | consumable      | $4.99  | 500 gems          |
 | `gems_chest`      | consumable      | $9.99  | 1,200 gems        |
 | `gems_hoard`      | consumable      | $19.99 | 2,800 gems        |
+| `gems_vault`      | consumable      | $49.99 | 8,000 gems        |
+| `gems_ransom`     | consumable      | $99.99 | 18,000 gems       |
+| `coins_sack`      | consumable      | $1.99  | 2h of gold income |
+| `coins_wagon`     | consumable      | $9.99  | 12h of gold income |
+| `coins_treasury`  | consumable      | $49.99 | 72h of gold income |
+| `coins_hoard`     | consumable      | $99.99 | 168h of gold income |
+| `bundle_squire`   | consumable      | $9.99  | 700 gems + 8h gold |
+| `bundle_knight`   | consumable      | $19.99 | 1,600 gems + 20h gold |
+| `bundle_royal`    | consumable      | $49.99 | 4,500 gems + 60h gold |
+| `bundle_dragon`   | consumable      | $99.99 | 10,000 gems + 150h gold |
 | `skin_dragon` etc.| non-consumable  | $4.99  | 5 legendary skins (IDs in src/config/skins.json) |
 | `sword_scythe` etc.| non-consumable | $4.99  | 3 premium sword skins (IDs in src/config/swordSkins.ts) |
 

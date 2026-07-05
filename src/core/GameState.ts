@@ -4,8 +4,10 @@ import { FAIRY, fairyLevelCost } from '../config/fairy';
 import { GiftDef } from '../config/gifts';
 import { LOGIN_REWARDS, LoginReward } from '../config/loginRewards';
 import {
+  bundleBySku,
   FREE_CHEST,
   gemPackBySku,
+  goldPackBySku,
   PIGGY,
   REMOVE_ADS,
   STARTER_PACK,
@@ -884,10 +886,28 @@ export class GameState {
    * this method doesn't handle (skins fulfill via grantSkin) or repeats of
    * one-time products.
    */
+  /** A pack's gold grant: N hours of the buyer's current income. */
+  goldForHours(hours: number): number {
+    return Math.max(1, Math.floor(this.goldPerSecondEstimate * hours * 3600));
+  }
+
   fulfillProduct(sku: string): boolean {
     const pack = gemPackBySku(sku);
     if (pack) {
       this.addGems(pack.gems);
+      this.emit('shop:changed', undefined);
+      return true;
+    }
+    const gold = goldPackBySku(sku);
+    if (gold) {
+      this.addGold(this.goldForHours(gold.goldHours));
+      this.emit('shop:changed', undefined);
+      return true;
+    }
+    const bundle = bundleBySku(sku);
+    if (bundle) {
+      this.addGems(bundle.gems);
+      this.addGold(this.goldForHours(bundle.goldHours));
       this.emit('shop:changed', undefined);
       return true;
     }

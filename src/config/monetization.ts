@@ -33,7 +33,38 @@ export const GEM_PACKS: GemPack[] = [
   { sku: 'gems_fistful', priceUsd: 0.99, title: 'FISTFUL OF GEMS', gems: 80, kind: 'consumable' },
   { sku: 'gems_pouch', priceUsd: 4.99, title: 'POUCH OF GEMS', gems: 500, tag: 'POPULAR', kind: 'consumable' },
   { sku: 'gems_chest', priceUsd: 9.99, title: 'CHEST OF GEMS', gems: 1200, kind: 'consumable' },
-  { sku: 'gems_hoard', priceUsd: 19.99, title: 'HOARD OF GEMS', gems: 2800, tag: 'BEST VALUE', kind: 'consumable' },
+  { sku: 'gems_hoard', priceUsd: 19.99, title: 'HOARD OF GEMS', gems: 2800, kind: 'consumable' },
+  { sku: 'gems_vault', priceUsd: 49.99, title: 'VAULT OF GEMS', gems: 8000, kind: 'consumable' },
+  { sku: 'gems_ransom', priceUsd: 99.99, title: 'DRAGONS RANSOM', gems: 18000, tag: 'BEST VALUE', kind: 'consumable' },
+];
+
+/** Gold (coin) packs: the grant scales with the player's CURRENT income —
+ * each pack is worth this many hours of gold-per-second, so a pack is
+ * always meaningful whatever stage the buyer has reached. */
+export interface GoldPack extends IapProduct {
+  goldHours: number;
+  tag?: string;
+}
+
+export const GOLD_PACKS: GoldPack[] = [
+  { sku: 'coins_sack', priceUsd: 1.99, title: 'SACK OF COINS', goldHours: 2, kind: 'consumable' },
+  { sku: 'coins_wagon', priceUsd: 9.99, title: 'WAGON OF COINS', goldHours: 12, tag: 'POPULAR', kind: 'consumable' },
+  { sku: 'coins_treasury', priceUsd: 49.99, title: 'ROYAL TREASURY', goldHours: 72, kind: 'consumable' },
+  { sku: 'coins_hoard', priceUsd: 99.99, title: 'DRAGONS HOARD', goldHours: 168, tag: 'BEST VALUE', kind: 'consumable' },
+];
+
+/** Bundles: gems + gold together, ~20% better than buying separately. */
+export interface Bundle extends IapProduct {
+  gems: number;
+  goldHours: number;
+  tag?: string;
+}
+
+export const BUNDLES: Bundle[] = [
+  { sku: 'bundle_squire', priceUsd: 9.99, title: 'SQUIRES BUNDLE', gems: 700, goldHours: 8, kind: 'consumable' },
+  { sku: 'bundle_knight', priceUsd: 19.99, title: 'KNIGHTS BUNDLE', gems: 1600, goldHours: 20, kind: 'consumable' },
+  { sku: 'bundle_royal', priceUsd: 49.99, title: 'ROYAL BUNDLE', gems: 4500, goldHours: 60, tag: 'POPULAR', kind: 'consumable' },
+  { sku: 'bundle_dragon', priceUsd: 99.99, title: 'DRAGON EMPEROR', gems: 10000, goldHours: 150, tag: 'BEST VALUE', kind: 'consumable' },
 ];
 
 /** One-time starter bundle: gems + a jump-start of gold. */
@@ -90,6 +121,8 @@ export const ALL_PRODUCTS: IapProduct[] = [
   ...SKIN_PRODUCTS,
   ...SWORD_PRODUCTS,
   ...GEM_PACKS,
+  ...GOLD_PACKS,
+  ...BUNDLES,
   STARTER_PACK,
   REMOVE_ADS,
   PIGGY.product,
@@ -101,4 +134,12 @@ export function productBySku(sku: string): IapProduct | undefined {
 
 export function gemPackBySku(sku: string): GemPack | undefined {
   return GEM_PACKS.find((p) => p.sku === sku);
+}
+
+export function goldPackBySku(sku: string): GoldPack | undefined {
+  return GOLD_PACKS.find((p) => p.sku === sku);
+}
+
+export function bundleBySku(sku: string): Bundle | undefined {
+  return BUNDLES.find((p) => p.sku === sku);
 }

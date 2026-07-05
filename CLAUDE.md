@@ -19,8 +19,10 @@ loadout, 6x7 board with purchasable cells, prestige (rebirth at stage 40,
 Souls banked), raids (post-prestige, 20 levels, ad cooldown reset), offline
 earnings (2x-ad popup), Soul Relics tree, daily + weekly + monthly quests
 (daily streak), pets (5 companions from gold/gem/free-ad eggs, dup =
-level-up, top 3 fight in the arena), shop (4 gem packs, $0.99 starter pack,
-$4.99 remove-ads, piggy bank cracked via IAP, free ad chest), interstitial
+level-up, top 3 fight in the arena), shop (scrollable: 6 gem packs, 4 coin packs
+granting hours of current gold income, 4 gems+coins bundles — each line
+with 49.99/99.99 whale tiers — $0.99 starter pack, $4.99 remove-ads,
+piggy bank cracked via IAP, free ad chest), interstitial
 ad breaks (core/Interstitials.ts policy, disabled by remove_ads), 4 active
 skills (Whirlwind/Gold Rush/Time Warp/Battle Fury on sim-time cooldowns),
 fairy companion (stage 10, gold-levelled +DPS/+gold), first-run tutorial
