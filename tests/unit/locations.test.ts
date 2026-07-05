@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { weaponFrame, GEAR, TIER_NAMES, tierName } from '../../src/config/gear';
+import { formatNumber, gearDps } from '../../src/core/EconomyMath';
 import {
   isLocationEntrance,
   LOCATIONS,
@@ -70,6 +71,13 @@ describe('weapon art', () => {
   it('tiers past the art count keep the final blade, never cycling back', () => {
     expect(weaponFrame(26)).toBe(24);
     expect(weaponFrame(GEAR.maxTier)).toBe(24);
+  });
+
+  it('the merge ceiling is tier 80 and its numbers still display', () => {
+    expect(GEAR.maxTier).toBe(80);
+    expect(tierName(80)).toBe('Godsteel Blade +55');
+    expect(formatNumber(gearDps(80))).not.toContain('∞'); // huge but finite
+    expect(formatNumber(gearDps(80)).length).toBeLessThan(10); // readable suffix
   });
 
   it('has a name for all 25 sword designs', () => {

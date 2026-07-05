@@ -11,8 +11,9 @@ export const GEAR = {
   cellCostBase: 2500,
   cellCostGrowth: 1.75,
 
-  /** Highest merge tier available (tiers are 1-based) */
-  maxTier: 40,
+  /** Highest merge tier available (tiers are 1-based). Doubled from 40 at
+   * Sean's request — late-game merging needs the headroom. */
+  maxTier: 80,
 
   /** Distinct sword sprites in the gear sheet; tiers past this keep the
    * final design (no cycling back to tier-1 art). */
