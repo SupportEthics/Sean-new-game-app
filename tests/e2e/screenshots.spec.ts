@@ -295,8 +295,33 @@ test('hall of legends centred on the player', async ({ page }) => {
   await page.screenshot({ path: 'screenshots/25-ranks.png' });
 });
 
-test('twilight biome at stage 12', async ({ page }) => {
+test('dark forest location at stage 12', async ({ page }) => {
   await page.evaluate(() => window.__game.setWave(12, 3));
   await page.waitForTimeout(1200);
   await page.screenshot({ path: 'screenshots/04-biome.png' });
+});
+
+test('castle location with gargoyles at stage 25', async ({ page }) => {
+  await page.evaluate(() => window.__game.setWave(25, 2));
+  await page.waitForTimeout(1200);
+  await page.screenshot({ path: 'screenshots/26-castle.png' });
+});
+
+test('void citadel with cultists at stage 75', async ({ page }) => {
+  await page.evaluate(() => window.__game.setWave(75, 4));
+  await page.waitForTimeout(1200);
+  await page.screenshot({ path: 'screenshots/27-void-citadel.png' });
+});
+
+test('late-game sword art past tier 12', async ({ page }) => {
+  await page.evaluate(() => {
+    (window.__game as unknown as { setStage(s: number): void }).setStage(31);
+    window.__game.addGold(1e12);
+    const tiers = [22, 20, 18, 16, 15, 14, 13, 12, 10, 8, 6, 4];
+    tiers.forEach((t, i) => (window.__game.gs.grid[i] = t));
+    window.__game.gs.highestTier = 22;
+  });
+  await page.mouse.click(247, 761); // buy so grid:changed fires
+  await page.waitForTimeout(1500);
+  await page.screenshot({ path: 'screenshots/28-late-swords.png' });
 });

@@ -14,6 +14,10 @@ export const GEAR = {
   /** Highest merge tier available (tiers are 1-based) */
   maxTier: 40,
 
+  /** Distinct sword sprites in the gear sheet; tiers past this keep the
+   * final design (no cycling back to tier-1 art). */
+  weaponArtCount: 25,
+
   /** DPS of a tier-1 weapon */
   baseDps: 2,
   /** Each tier multiplies DPS by this (merging 2 of a kind should be a real upgrade) */
@@ -30,6 +34,12 @@ export const GEAR = {
    * the locked slots and their requirements. Top-N swords auto-equip. */
   equipSlotStages: [1, 5, 15, 25],
 } as const;
+
+/** Sprite frame for a tier: unique art up to weaponArtCount, then the
+ * final blade design persists for every tier above it. */
+export function weaponFrame(tier: number): number {
+  return Math.min(Math.max(tier, 1), GEAR.weaponArtCount) - 1;
+}
 
 /** How many swords the hero can wield at `highestStage`. */
 export function unlockedSlots(highestStage: number): number {
@@ -58,6 +68,11 @@ export const TIER_NAMES: readonly string[] = [
   'Dragon Spur',
   'Mythic Quill',
   'Celestial Thorn',
+  'Frost Fang',
+  'Void Edge',
+  'Soul Cleaver',
+  'Doom Talon',
+  'Godsteel Blade',
 ];
 
 export function tierName(tier: number): string {

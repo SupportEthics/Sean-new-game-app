@@ -290,6 +290,277 @@ function wraith(frame) {
   return finish(p);
 }
 
+function serpent(frame) {
+  const p = new Pix(44, 44);
+  const SCALE = ['#7ac46a', '#54a048', '#367030'];
+  const DK = '#367030';
+  const sway = frame === 1 ? 2 : 0;
+
+  // Coiled body: three stacked loops, widest at the base
+  p.domeEllipse(22, 36, 14, 6, SCALE);
+  p.domeEllipse(21, 29, 11, 5, SCALE);
+  p.domeEllipse(22, 23, 8, 4, ['#8ad47a', '#54a048', '#367030']);
+  // Coil shadows separating the loops
+  p.line(9, 33, 35, 33, DK);
+  p.line(11, 27, 32, 27, DK);
+  // Tail tip poking out of the base coil
+  p.line(35, 38, 41, 35, '#54a048');
+  p.tri(40, 33, 43, 35, 40, 37, '#7ac46a');
+  // Raised neck curving up out of the coils
+  p.cylRect(24 + sway, 8, 4, 16, SCALE);
+  // Head striking forward
+  p.domeEllipse(27 + sway, 7, 6, 4.5, SCALE);
+  p.rect(31 + sway, 5, 6, 3, '#54a048'); // snout
+  p.rect(31 + sway, 5, 6, 1, '#7ac46a');
+  // Open jaw + fangs
+  p.tri(31 + sway, 9, 37 + sway, 9, 32 + sway, 12, DK);
+  p.set(32 + sway, 9, '#f4f0e4');
+  p.set(35 + sway, 9, '#f4f0e4');
+  // Forked tongue
+  p.line(37 + sway, 7, 41 + sway, 6, '#e8382e');
+  p.set(42 + sway, 5, '#e8382e');
+  p.set(42 + sway, 7, '#e8382e');
+  // Eye slit
+  p.rect(27 + sway, 5, 2, 1, '#ffe86b');
+  p.set(28 + sway, 5, '#14101c');
+  // Belly-scale bands on the neck
+  for (let y = 10; y <= 22; y += 3) p.rect(25 + sway, y, 2, 1, '#a8d89a');
+  // Scale specks over the coils
+  p.noise(10, 20, 24, 18, '#2c5a26', 8);
+  return finish(p);
+}
+
+function ogre(frame) {
+  const p = new Pix(44, 44);
+  const SKIN = ['#a8b06a', '#88904e', '#606838'];
+  const DK = '#606838';
+  const bob = frame === 1 ? 1 : 0;
+
+  // Spiked wooden club raised over the right shoulder
+  p.cylRect(35, 2 + bob, 3, 16, ['#a87844', '#8a5f33', '#6b4423']);
+  p.domeEllipse(37, 4 + bob, 4, 5, ['#8a5f33', '#6b4423', '#4a3826']);
+  for (const [sx, sy] of [[34, 2], [40, 3], [39, 8]]) p.set(sx, sy + bob, '#c9ced4');
+  // Hulking body, belly first
+  p.domeEllipse(20, 24 + bob, 12, 10, SKIN);
+  p.ellipse(20, 27 + bob, 7, 6, '#c0c88a'); // belly
+  p.set(20, 27 + bob, DK); // navel
+  // Ragged loincloth
+  p.rect(14, 31 + bob, 13, 3, '#6b4423');
+  for (let x = 14; x <= 25; x += 3) p.rect(x, 34 + bob, 2, 2, '#5c3a1c');
+  // Arms: right up to the club, left hanging with big knuckles
+  p.cylRect(30, 14 + bob, 5, 9, SKIN);
+  p.cylRect(6, 20 + bob, 5, 12, SKIN);
+  p.domeEllipse(8, 33 + bob, 4, 3.5, ['#88904e', '#78803e', '#606838']);
+  // Head: low, jutting jaw
+  p.domeEllipse(19, 9 + bob, 7, 6, SKIN);
+  p.rect(13, 12 + bob, 12, 3, '#88904e'); // jaw
+  // Underbite tusks
+  p.set(14, 11 + bob, '#f4f0e4');
+  p.set(23, 11 + bob, '#f4f0e4');
+  p.set(14, 10 + bob, '#f4f0e4');
+  // Piggy eyes + heavy brow
+  p.rect(15, 7 + bob, 2, 1, '#ffb347');
+  p.rect(21, 7 + bob, 2, 1, '#ffb347');
+  p.rect(14, 6 + bob, 10, 1, DK);
+  // Topknot + ear
+  p.rect(18, 2 + bob, 3, 2, '#4a3826');
+  p.tri(11, 8 + bob, 13, 10 + bob, 10, 12 + bob, '#88904e');
+  // Warts
+  p.noise(12, 18, 16, 12, '#78803e', 6);
+  // Stumpy legs
+  p.cylRect(13, 33 + bob, 5, 9 - bob, SKIN);
+  p.cylRect(23, 33 + bob, 5, 9 - bob, SKIN);
+  p.rect(11, 41, 8, 2, DK);
+  p.rect(22, 41, 8, 2, DK);
+  return finish(p);
+}
+
+function cultist(frame) {
+  const p = new Pix(44, 44);
+  const ROBE = ['#8a4ab0', '#6a3488', '#482260'];
+  const DK = '#482260';
+  const off = frame === 1 ? 1 : 0;
+
+  // Crooked staff topped with a void orb
+  p.line(33, 8 - off, 36, 40, '#4a3826');
+  p.line(34, 8 - off, 37, 40, '#3a2a1e');
+  p.circle(33, 6 - off, 3, '#2c2a3c');
+  p.circle(33, 6 - off, 1.5, '#b06af0');
+  p.set(33, 5 - off, '#e8c4ff');
+  // Hooded head bowed over the ritual
+  p.domeEllipse(20, 9 - off, 7, 6.5, ROBE);
+  p.ellipse(20, 11 - off, 4.5, 4, '#14101c'); // shadowed face
+  p.rect(17, 10 - off, 2, 1, '#b06af0');
+  p.rect(22, 10 - off, 2, 1, '#b06af0');
+  // Hood peak
+  p.tri(18, 3 - off, 23, 3 - off, 20, 0 - off, '#6a3488');
+  // Robe: flowing to the ground
+  for (let y = 0; y < 24; y++) {
+    const yy = 15 - off + y;
+    const half = 5 + Math.round(y * 0.35);
+    p.rect(20 - half, yy, half * 2, 1, y % 7 === 5 ? DK : '#6a3488');
+  }
+  // Robe centre stripe + rope belt
+  p.rect(19, 16 - off, 3, 22, DK);
+  p.rect(13, 24 - off, 15, 1, '#c99a2e');
+  p.set(21, 25 - off, '#c99a2e');
+  // Highlight edge
+  p.line(13, 16 - off, 10, 36 - off, '#a86ac8');
+  // Sleeve arms: right grips the staff, left raised with a curved dagger
+  p.line(25, 18 - off, 32, 16 - off, '#6a3488');
+  p.rect(31, 15 - off, 3, 3, '#e0c8a8'); // hand
+  p.line(15, 18 - off, 8, 14 - off, '#6a3488');
+  p.rect(6, 12 - off, 3, 3, '#e0c8a8');
+  p.line(7, 11 - off, 4, 5 - off, '#c9ced4');
+  p.set(4, 4 - off, '#ffffff');
+  // Hem shadow
+  p.rect(9, 38, 23, 2, DK);
+  return finish(p);
+}
+
+function ghoul(frame) {
+  const p = new Pix(44, 44);
+  const FLESH = ['#a8c088', '#88a068', '#5c7444'];
+  const DK = '#5c7444';
+  const lurch = frame === 1 ? 2 : 0;
+
+  // Hunched spine arcing over the head
+  p.domeEllipse(20, 20, 10, 9, FLESH);
+  for (let x = 13; x <= 27; x += 3) p.set(x, 12, DK); // knobbly spine
+  // Ribs showing through torn flesh
+  for (const ry of [18, 21, 24]) {
+    p.line(14, ry, 20, ry + 1, DK);
+    p.set(13, ry, '#d8d4c8');
+  }
+  // Gut wound
+  p.rect(22, 23, 4, 3, '#6a2430');
+  p.set(23, 24, '#8a3440');
+  // Head hanging low and forward
+  p.domeEllipse(30 + lurch, 12, 5.5, 5, FLESH);
+  p.rect(33 + lurch, 14, 6, 2, '#88a068'); // jaw
+  // Dead eyes + gaping mouth
+  p.rect(29 + lurch, 10, 2, 2, '#ffe86b');
+  p.set(29 + lurch, 10, '#14101c');
+  p.tri(33 + lurch, 16, 39 + lurch, 16, 34 + lurch, 19, '#14101c');
+  p.set(34 + lurch, 16, '#f4f0e4');
+  p.set(37 + lurch, 16, '#f4f0e4');
+  // Straggly hair
+  for (let i = 0; i < 4; i++) p.line(27 + i * 2 + lurch, 7, 25 + i * 2 + lurch, 3, DK);
+  // Long clawed arms dragging the ground
+  p.line(25, 22, 33 + lurch, 32, '#88a068');
+  p.line(33 + lurch, 32, 34 + lurch, 40, DK);
+  for (let i = 0; i < 3; i++) p.line(33 + i + lurch, 40, 32 + i * 2 + lurch, 43, '#d8d4c8');
+  p.line(15, 24, 10 - lurch, 34, '#88a068');
+  p.line(10 - lurch, 34, 9 - lurch, 40, DK);
+  for (let i = 0; i < 3; i++) p.line(8 + i - lurch, 40, 6 + i * 2 - lurch, 43, '#d8d4c8');
+  // Crouched legs
+  p.cylRect(15, 28, 4, 8, FLESH);
+  p.cylRect(22, 29, 4, 7, FLESH);
+  p.rect(14, 36, 5, 2, DK);
+  p.rect(21, 36, 5, 2, DK);
+  // Rot blotches
+  p.noise(12, 15, 16, 10, '#4a6038', 7);
+  return finish(p);
+}
+
+function gargoyle(frame) {
+  const p = new Pix(44, 44);
+  const STONE = ['#b0aebc', '#8a8896', '#5e5c6a'];
+  const DK = '#5e5c6a';
+  const up = frame === 0;
+
+  // Stone bat wings, jagged edges
+  const wy = up ? 4 : 12;
+  p.tri(2, wy, 14, 16, 12, 26, '#8a8896');
+  p.tri(42, wy, 30, 16, 32, 26, '#8a8896');
+  p.line(2, wy, 12, 24, DK);
+  p.line(42, wy, 32, 24, DK);
+  p.line(5, wy + 3, 13, 20, DK);
+  p.line(39, wy + 3, 31, 20, DK);
+  // Perched body, crouching on a plinth
+  p.domeEllipse(22, 24, 9, 8, STONE);
+  // Plinth base
+  p.rect(13, 38, 18, 4, '#6e6c7a');
+  p.rect(12, 40, 20, 2, DK);
+  // Crouched legs gripping the plinth edge
+  p.cylRect(14, 30, 4, 8, STONE);
+  p.cylRect(26, 30, 4, 8, STONE);
+  for (const x of [13, 16, 26, 29]) p.tri(x, 38, x + 2, 38, x + 1, 41, '#b0aebc'); // talons
+  // Arms braced on knees
+  p.line(15, 22, 12, 30, DK);
+  p.line(29, 22, 32, 30, DK);
+  // Horned head with muzzle
+  p.domeEllipse(22, 11, 6, 5.5, STONE);
+  p.rect(18, 13, 9, 3, '#8a8896'); // muzzle
+  p.set(19, 13, '#f4f0e4');
+  p.set(24, 13, '#f4f0e4'); // fangs
+  // Curled ram horns
+  p.line(16, 8, 13, 5, '#6e6c7a');
+  p.line(13, 5, 14, 2, '#8a8896');
+  p.line(28, 8, 31, 5, '#6e6c7a');
+  p.line(31, 5, 30, 2, '#8a8896');
+  // Glowing amber eyes
+  p.rect(19, 9, 2, 2, '#ffb347');
+  p.rect(24, 9, 2, 2, '#ffb347');
+  p.set(19, 9, '#ffe86b');
+  p.set(24, 9, '#ffe86b');
+  // Weathering cracks
+  p.line(18, 20, 21, 27, DK);
+  p.line(27, 18, 25, 24, DK);
+  p.noise(14, 18, 16, 12, '#78768a', 6);
+  return finish(p);
+}
+
+function lich(frame) {
+  const p = new Pix(44, 44);
+  const ROBE = ['#5a7a9c', '#3e5a78', '#283e56'];
+  const DK = '#283e56';
+  const off = frame === 1 ? 1 : 0;
+
+  // Ice staff with a frozen shard
+  p.line(9, 6 - off, 7, 38, '#4a3826');
+  p.line(10, 6 - off, 8, 38, '#3a2a1e');
+  p.tri(7, 5 - off, 12, 5 - off, 9, 0 - off, '#bce8f8');
+  p.tri(7, 5 - off, 12, 5 - off, 10, 9 - off, '#8ac4e0');
+  p.set(9, 3 - off, '#ffffff');
+  // Skull head under a frost crown
+  p.domeEllipse(23, 9 - off, 6, 5.5, ['#f4f0e4', '#d8d4c8', '#a8a498']);
+  p.rect(19, 13 - off, 9, 3, '#d8d4c8'); // jaw
+  for (let x = 19; x <= 27; x += 2) p.set(x, 15 - off, '#a8a498');
+  // Frozen eye sockets
+  p.rect(19, 7 - off, 3, 3, '#14101c');
+  p.rect(25, 7 - off, 3, 3, '#14101c');
+  p.set(20, 8 - off, '#8ae8ff');
+  p.set(26, 8 - off, '#8ae8ff');
+  // Ice crown spikes
+  for (const [cx, ch] of [[18, 3], [21, 5], [24, 4], [27, 5], [30, 3]]) {
+    p.line(cx, 4 - off, cx, 4 - ch - off, '#bce8f8');
+  }
+  // Robe flowing to a drifting hem (no feet: he floats)
+  for (let y = 0; y < 22; y++) {
+    const yy = 16 - off + y;
+    const sway = Math.round(Math.sin(y / 4 + frame * 1.5) * 1.5);
+    const half = 5 + Math.round(y * 0.4);
+    p.rect(23 - half + sway, yy, half * 2, 1, y % 6 === 4 ? DK : '#3e5a78');
+  }
+  // Frost trim + highlight edge
+  p.rect(21, 17 - off, 5, 1, '#bce8f8');
+  p.line(17, 16 - off, 13, 34 - off, '#7a9cbc');
+  // Tattered floating hem
+  for (let x = 12; x <= 34; x += 4) {
+    const drop = (x / 4 + frame) % 2 === 0 ? 3 : 1;
+    p.rect(x, 37 - off, 3, drop, '#3e5a78');
+  }
+  // Bone hands: right grips the staff, left conjures a frost orb
+  p.rect(10, 16 - off, 3, 2, '#d8d4c8');
+  p.rect(31, 20 - off, 3, 2, '#d8d4c8');
+  p.circle(35, 18 - off, 2.5, '#8ac4e0');
+  p.circle(35, 17 - off, 1.2, '#e8f8ff');
+  p.set(38, 15 - off, '#bce8f8');
+  p.set(33, 21 - off, '#bce8f8');
+  return finish(p);
+}
+
 // ---------- Pets (28x28 logical, 2 frames each) ----------
 
 function petPup(frame) {
@@ -439,6 +710,20 @@ const WEAPONS = [
   { blade: '#ff6b6b', len: 16, w: 5, guard: '#b33951', gem: '#ffd166', glow: '#ff6b6b88', name: 'ruby' },
   { blade: '#b39dff', len: 17, w: 4, guard: '#6b4fd0', gem: '#fff36b', glow: '#b39dff90', name: 'storm' },
   { blade: '#ffb347', len: 17, w: 5, guard: '#e86a2e', gem: '#ffffff', glow: '#ffb34790', name: 'solar' },
+  // Tiers 13-25: the late-game arsenal (Sean: no more recycling past 12)
+  { blade: '#bce8f8', len: 18, w: 4, guard: '#6aa8c4', gem: '#ffffff', glow: '#bce8f890', name: 'frost' },
+  { blade: '#8ad84e', len: 18, w: 5, guard: '#4e8a2e', gem: '#2c5c14', glow: '#8ad84e90', name: 'venom' },
+  { blade: '#d84e5c', len: 19, w: 5, guard: '#7a1c24', gem: '#14060a', glow: '#d84e5c90', name: 'blood' },
+  { blade: '#3c3450', len: 19, w: 5, guard: '#9d7aff', gem: '#c8b4ff', glow: '#9d7aff90', name: 'void' },
+  { blade: '#e8e8ff', len: 20, w: 4, guard: '#8a8ac0', gem: '#4ec3e8', glow: '#c8c8ff90', name: 'moon' },
+  { blade: '#e8dcc0', len: 20, w: 6, guard: '#c99a2e', gem: '#c2482e', glow: '#e8dcc090', name: 'dragonbone' },
+  { blade: '#5ce8c4', len: 21, w: 5, guard: '#2a8a70', gem: '#e8fff8', glow: '#5ce8c490', name: 'soul' },
+  { blade: '#ff7a2e', len: 21, w: 6, guard: '#8a2408', gem: '#ffe86b', glow: '#ff7a2e95', name: 'infernal' },
+  { blade: '#4e8ae8', len: 22, w: 5, guard: '#1c3c8a', gem: '#bce8f8', glow: '#4e8ae890', name: 'tide' },
+  { blade: '#fff2c8', len: 22, w: 6, guard: '#e8b84e', gem: '#ff9adc', glow: '#fff2c895', name: 'celestial' },
+  { blade: '#6a2438', len: 23, w: 6, guard: '#2c0a14', gem: '#ff3c5c', glow: '#a8244890', name: 'doom' },
+  { blade: '#a8ffd8', len: 23, w: 5, guard: '#5cb48a', gem: '#ffb4e8', glow: '#a8ffd895', name: 'aurora' },
+  { blade: '#ffffff', len: 24, w: 6, guard: '#ffd166', gem: '#4ec3e8', glow: '#ffffff98', name: 'godsteel' },
 ];
 
 function weapon(spec) {
@@ -822,6 +1107,12 @@ writeSheet(`${OUT}/enemy-spider.png`, [spider(0), spider(1)], 1);
 writeSheet(`${OUT}/enemy-golem.png`, [golem(0), golem(1)], 1);
 writeSheet(`${OUT}/enemy-imp.png`, [imp(0), imp(1)], 1);
 writeSheet(`${OUT}/enemy-wraith.png`, [wraith(0), wraith(1)], 1);
+writeSheet(`${OUT}/enemy-serpent.png`, [serpent(0), serpent(1)], 1);
+writeSheet(`${OUT}/enemy-ogre.png`, [ogre(0), ogre(1)], 1);
+writeSheet(`${OUT}/enemy-cultist.png`, [cultist(0), cultist(1)], 1);
+writeSheet(`${OUT}/enemy-ghoul.png`, [ghoul(0), ghoul(1)], 1);
+writeSheet(`${OUT}/enemy-gargoyle.png`, [gargoyle(0), gargoyle(1)], 1);
+writeSheet(`${OUT}/enemy-lich.png`, [lich(0), lich(1)], 1);
 writeSheet(`${OUT}/pet-pup.png`, [petPup(0), petPup(1)], 1);
 writeSheet(`${OUT}/pet-emberbat.png`, [petEmberbat(0), petEmberbat(1)], 1);
 writeSheet(`${OUT}/pet-wisp.png`, [petWisp(0), petWisp(1)], 1);

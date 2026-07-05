@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { BOOSTS, ECONOMY } from '../config/economy';
-import { GEAR, tierName } from '../config/gear';
+import { GEAR, tierName, weaponFrame } from '../config/gear';
 import { formatNumber, gearDps } from '../core/EconomyMath';
 import { GameState } from '../core/GameState';
 import { InterstitialPolicy } from '../core/Interstitials';
@@ -1155,7 +1155,7 @@ export class UIScene extends Phaser.Scene {
       const border = this.add
         .rectangle(0, 0, CARD_W, CARD_H)
         .setStrokeStyle(isEquipped ? 3 : 2, isEquipped ? 0xffd166 : tierColor(tier));
-      const icon = this.add.image(-14, 1, 'gear', (tier - 1) % 12).setScale(0.5);
+      const icon = this.add.image(-14, 1, 'gear', weaponFrame(tier)).setScale(0.5);
       const dmg = this.add
         .bitmapText(
           CARD_W / 2 - 3,

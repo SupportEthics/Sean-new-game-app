@@ -25,7 +25,7 @@ export const STAGES = {
   heroAttacksPerSecond: 2,
 } as const;
 
-/** Monster species rotate by stage for variety. */
+/** Monster roster; each location fields its own pool (see locations.ts). */
 export const ENEMY_SPECIES = [
   { key: 'wolf', name: 'Dire Wolf', color: 0x6a707e },
   { key: 'skeleton', name: 'Bone Warrior', color: 0xe8e4d8 },
@@ -33,4 +33,12 @@ export const ENEMY_SPECIES = [
   { key: 'golem', name: 'Stone Golem', color: 0x7a7284 },
   { key: 'imp', name: 'Flame Imp', color: 0xc2482e },
   { key: 'wraith', name: 'Grave Wraith', color: 0x4a4460 },
+  { key: 'serpent', name: 'Fang Serpent', color: 0x54a048 },
+  { key: 'ogre', name: 'Gnarl Ogre', color: 0x88904e },
+  { key: 'cultist', name: 'Void Cultist', color: 0x6a3488 },
+  { key: 'ghoul', name: 'Rot Ghoul', color: 0x88a068 },
+  { key: 'gargoyle', name: 'Stone Gargoyle', color: 0x8a8896 },
+  { key: 'lich', name: 'Frost Lich', color: 0x3e5a78 },
 ] as const;
+
+export type EnemySpeciesKey = (typeof ENEMY_SPECIES)[number]['key'];

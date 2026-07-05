@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
-import { GEAR } from '../config/gear';
+import { GEAR, weaponFrame } from '../config/gear';
 import { GIFTS, rollGift } from '../config/gifts';
+import { isLocationEntrance, locationForStage, locationIndex, speciesForWave } from '../config/locations';
 import { RAIDS } from '../config/raids';
 import { skinById } from '../config/skins';
 import { ENEMY_SPECIES, STAGES } from '../config/stages';
@@ -151,7 +152,7 @@ export class BattleScene extends Phaser.Scene {
   // ---- Arena construction ----
 
   private biomeIndex(): number {
-    return Math.floor((this.gs.battle.stage - 1) / 5) % THEME.biomes.length;
+    return locationIndex(this.gs.battle.stage);
   }
 
   /** Static arena furniture, created once: wall, floor, fence, torches. */
@@ -202,11 +203,11 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  /** Per-biome pass: tint the tiles and scatter this stage's props. */
+  /** Per-location pass: tint the tiles and scatter this stage's props. */
   private redrawArena(): void {
-    const biome = THEME.biomes[this.biomeIndex()];
-    this.floorTs.setTint(biome.dirt);
-    this.wallTs.setTint(biome.dirtDark);
+    const loc = locationForStage(this.gs.battle.stage);
+    this.floorTs.setTint(loc.floor);
+    this.wallTs.setTint(loc.wall);
 
     this.decoLayer.clear(true, true);
     const stage = this.gs.battle.stage;
@@ -215,7 +216,7 @@ export class BattleScene extends Phaser.Scene {
       const x = 32 + ((stage * 61 + i * 127) % (THEME.width - 64));
       const y = L.arenaTop + 84 + ((stage * 23 + i * 71) % (L.arenaBottom - L.arenaTop - 160));
       this.decoLayer.add(
-        this.add.image(x, y, 'tiles', 1).setTint(biome.dirt).setDepth(1).setAlpha(0.9),
+        this.add.image(x, y, 'tiles', 1).setTint(loc.floor).setDepth(1).setAlpha(0.9),
       );
     }
     // Battlefield litter: skull, rock, stuck sword, bone, crate
@@ -414,7 +415,7 @@ export class BattleScene extends Phaser.Scene {
       const tier = equipped[i];
       this.slotLocks[i].setVisible(!unlocked);
       if (unlocked && tier !== undefined) {
-        icon.setVisible(true).setFrame((tier - 1) % 12);
+        icon.setVisible(true).setFrame(weaponFrame(tier));
       } else {
         icon.setVisible(false);
       }
@@ -443,8 +444,8 @@ export class BattleScene extends Phaser.Scene {
 
     this.blades.forEach((blade, i) => {
       const tier = equipped[i] ?? 1;
-      blade.img.setFrame((tier - 1) % 12);
-      const band = Math.min((tier - 1) / 12, 1);
+      blade.img.setFrame(weaponFrame(tier));
+      const band = Math.min((tier - 1) / GEAR.weaponArtCount, 1);
       blade.glow.setAlpha(0.18 + band * 0.35);
     });
   }
@@ -478,7 +479,7 @@ export class BattleScene extends Phaser.Scene {
       this.redrawArena();
     }
 
-    const species = ENEMY_SPECIES[(b.stage + b.wave) % ENEMY_SPECIES.length];
+    const species = speciesForWave(b.stage, b.wave);
     const tex = `enemy-${species.key}`;
     this.enemy.setTexture(tex);
     this.enemy.play(`${tex}-idle`);
@@ -626,14 +627,20 @@ export class BattleScene extends Phaser.Scene {
     this.enemy.setTintFill(0xffffff);
     this.time.delayedCall(90, () => this.enemy.clearTint());
     if (!this.reduceMotion) this.cameras.main.shake(220, 0.008);
+    // Arriving somewhere new? Announce the place, not just the number.
+    const stage = this.gs.battle.stage;
+    const label = isLocationEntrance(stage)
+      ? `${locationForStage(stage).name}\nStage ${stage}`
+      : `Stage ${stage}!`;
     const banner = this.add
-      .text(THEME.width / 2, L.arenaTop + 120, `Stage ${this.gs.battle.stage}!`, {
+      .text(THEME.width / 2, L.arenaTop + 120, label, {
         fontFamily: THEME.fontFamily,
-        fontSize: '32px',
+        fontSize: isLocationEntrance(stage) ? '26px' : '32px',
         fontStyle: 'bold',
         color: THEME.textGold,
         stroke: '#2a1c10',
         strokeThickness: 6,
+        align: 'center',
       })
       .setOrigin(0.5)
       .setScale(0.4)

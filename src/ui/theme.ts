@@ -14,19 +14,7 @@ export const THEME = {
     tabBarTop: 780,
   },
 
-  /** Arena palettes (top-down field); the world shifts every 5 stages. */
-  biomes: [
-    // Greenfield Camp — the classic dirt arena
-    { dirt: 0xc98a4b, dirtDark: 0xb2763c, grass: 0x6fae4e, grassDark: 0x5c9440 },
-    // Ember Wastes
-    { dirt: 0xa85c38, dirtDark: 0x92492c, grass: 0x9a7434, grassDark: 0x82602a },
-    // Frozen Pass
-    { dirt: 0xb8c4d4, dirtDark: 0xa2b0c4, grass: 0xd8e4ee, grassDark: 0xbccbdc },
-    // Cursed Swamp
-    { dirt: 0x8a7a4e, dirtDark: 0x76683e, grass: 0x5c7a3c, grassDark: 0x4a6530 },
-    // Shadow Keep
-    { dirt: 0x6e5c72, dirtDark: 0x5c4c60, grass: 0x4e4258, grassDark: 0x3e3448 },
-  ],
+  // Arena palettes live in src/config/locations.ts (one per 10-stage set).
 
   // Parchment & wood UI (Idle Sword Master register)
   panelBg: 0xd9c491,      // parchment panel
