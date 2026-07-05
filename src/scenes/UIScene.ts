@@ -43,6 +43,7 @@ export class UIScene extends Phaser.Scene {
   private stageText!: Phaser.GameObjects.BitmapText;
   private waveText!: Phaser.GameObjects.BitmapText;
   private buyLabel!: Phaser.GameObjects.BitmapText;
+  private buyTitle!: Phaser.GameObjects.BitmapText;
   private buyBg!: Phaser.GameObjects.Image;
   private upgradeBg!: Phaser.GameObjects.Image;
   private upgradeLabel!: Phaser.GameObjects.BitmapText;
@@ -75,6 +76,10 @@ export class UIScene extends Phaser.Scene {
   private raidIcon!: Phaser.GameObjects.Image;
   private rebirthButton!: Phaser.GameObjects.Container;
   private confirmLayer: Phaser.GameObjects.Container | null = null;
+  /** The sword card mid-drag; grid rebuilds are deferred while set so an
+   * auto merge/buy can't yank the card out of the player's finger. */
+  private draggingItem: Phaser.GameObjects.Container | null = null;
+  private rebuildQueued = false;
 
   constructor() {
     super('UI');
@@ -99,10 +104,10 @@ export class UIScene extends Phaser.Scene {
     this.gs.on('gold:changed', () => this.refreshTexts());
     this.gs.on('gems:changed', () => this.refreshTexts());
     this.gs.on('grid:changed', () => {
-      this.rebuildItems();
+      this.queueRebuild();
       this.refreshTexts();
     });
-    this.gs.on('stage:changed', () => this.rebuildItems()); // slot unlocks re-badge cards
+    this.gs.on('stage:changed', () => this.queueRebuild()); // slot unlocks re-badge cards
     this.refreshTexts();
 
     // Interstitial ad breaks between stages, paced by the core policy and
@@ -124,7 +129,9 @@ export class UIScene extends Phaser.Scene {
       callback: () => {
         const now = Date.now();
         if (now < this.autoBuyUntil && this.gs.canBuy) this.gs.buyGear();
-        if (now < this.autoMergeUntil) this.gs.autoMergeOnce();
+        if (now < this.autoMergeUntil) {
+          this.gs.autoMergeOnce(this.draggingItem?.getData('index') as number | undefined);
+        }
       },
     });
     // Countdown labels on the automation buttons + ad boosts
@@ -1066,7 +1073,8 @@ export class UIScene extends Phaser.Scene {
       .setDisplaySize(116, 34)
       .setTint(THEME.buttonBg)
       .setInteractive({ useHandCursor: true });
-    this.buyLabel = this.add.bitmapText(247, y, 'pix', '', 8).setOrigin(0.5);
+    this.buyTitle = this.add.bitmapText(247, y - 8, 'pix', '', 8).setOrigin(0.5);
+    this.buyLabel = this.add.bitmapText(247, y + 7, 'pix', '', 8).setOrigin(0.5);
     this.buyBg.on('pointerdown', () => {
       if (this.gs.buyGear()) {
         audio.buy();
@@ -1153,7 +1161,17 @@ export class UIScene extends Phaser.Scene {
 
   // ---- Sword cards ----
 
+  /** Rebuild now — unless a drag is live, in which case wait for dragend. */
+  private queueRebuild(): void {
+    if (this.draggingItem) {
+      this.rebuildQueued = true;
+      return;
+    }
+    this.rebuildItems();
+  }
+
   private rebuildItems(): void {
+    this.rebuildQueued = false;
     this.itemLayer.removeAll(true);
     this.renderLockedCells();
 
@@ -1203,6 +1221,7 @@ export class UIScene extends Phaser.Scene {
     this.input.on(
       'dragstart',
       (_p: Phaser.Input.Pointer, obj: Phaser.GameObjects.Container) => {
+        this.draggingItem = obj;
         this.itemLayer.bringToTop(obj);
         obj.setScale(1.12);
         // Offer the bin for anything that may be sold (never the loadout)
@@ -1231,7 +1250,9 @@ export class UIScene extends Phaser.Scene {
       'dragend',
       (_p: Phaser.Input.Pointer, obj: Phaser.GameObjects.Container) => {
         obj.setScale(1);
-        this.handleDrop(obj);
+        this.draggingItem = null;
+        this.handleDrop(obj); // a successful drop rebuilds via grid:changed
+        if (this.rebuildQueued) this.rebuildItems(); // grid moved under a no-op drop
       },
     );
   }
@@ -1369,9 +1390,8 @@ export class UIScene extends Phaser.Scene {
       .setText(`${formatNumber(this.gs.souls).toUpperCase()}S`);
     this.dpsText.setText(`${formatNumber(this.gs.heroDps).toUpperCase()} DPS`);
 
-    this.buyLabel.setText(
-      `BUY T${this.gs.buyTier} - ${formatNumber(this.gs.buyCost).toUpperCase()}G`,
-    );
+    this.buyTitle.setText(`BUY T${this.gs.buyTier}`);
+    this.buyLabel.setText(`${formatNumber(this.gs.buyCost).toUpperCase()}G`);
     this.buyBg.setTint(this.gs.canBuy ? THEME.buttonBg : THEME.buttonBgDisabled);
 
     const upCost = this.gs.buyTierUpgradeCost;

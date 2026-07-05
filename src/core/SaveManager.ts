@@ -120,6 +120,11 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.bestTier = save.state.highestTier ?? 1;
     return save;
   },
+  // v17 -> v18: raid ladder resets on rebirth; lifetime best kept for awards
+  (save) => {
+    save.state.raidBest = save.state.raidHighest ?? 0;
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

@@ -189,6 +189,7 @@ export interface SerializedState {
   prestigeCount: number;
   souls: number;
   raidHighest: number;
+  raidBest: number;
   raidReadyAt: number;
 }
 
@@ -259,8 +260,11 @@ export class GameState {
   daily: DailyState = freshDaily(utcDay(0));
   weekly: PeriodQuestState = freshPeriod('');
   monthly: PeriodQuestState = freshPeriod('');
-  /** Highest raid level cleared (next level = raidHighest + 1). */
+  /** Highest raid level cleared THIS rebirth (next = raidHighest + 1);
+   * resets on prestige so the ladder is farmable again. */
   raidHighest = 0;
+  /** Lifetime best raid level — feeds achievements, never resets. */
+  raidBest = 0;
   /** Epoch ms when the next raid may start. */
   raidReadyAt = 0;
   /** Active raid, or null. Not persisted — quitting abandons the raid. */
@@ -521,10 +525,12 @@ export class GameState {
     return gold;
   }
 
-  /** Auto-merge one pair — never touching equipped swords; merging those
-   * is a deliberate manual drag. */
-  autoMergeOnce(): number | null {
-    const pair = findBestMerge(this.grid, new Set(this.equippedIndices));
+  /** Auto-merge one pair — never touching equipped swords (merging those
+   * is a deliberate manual drag) nor a cell the player is mid-dragging. */
+  autoMergeOnce(excludeIndex?: number): number | null {
+    const skip = new Set(this.equippedIndices);
+    if (excludeIndex !== undefined) skip.add(excludeIndex);
+    const pair = findBestMerge(this.grid, skip);
     return pair ? this.mergeAt(pair.from, pair.to) : null;
   }
 
@@ -542,7 +548,8 @@ export class GameState {
   /**
    * Rebirth: reset the run (gold, gear, stages) and bank Souls. Permanent
    * account progress survives: skins, gems, board cells, sword-slot record
-   * (highestStage), raids and prestige count.
+   * (highestStage) and prestige count. The raid ladder resets with the run
+   * (Sean: rebirth should reopen the lower raid levels to farm again).
    */
   prestige(): boolean {
     if (!this.canPrestige) return false;
@@ -552,6 +559,7 @@ export class GameState {
     this.grid = this.grid.map(() => null);
     this.highestTier = 1;
     this.buyTierLevel = 1;
+    this.raidHighest = 0;
     // The new cycle's monsters already carry the higher rebirth HP scale
     this.battle = newBattleState(1, 1, this.enemyHpMultiplier);
     this.emit('prestige:done', this.prestigeCount);
@@ -649,7 +657,10 @@ export class GameState {
     const gems =
       raidGems(raid.level, raid.kills) + (raid.kills > 0 ? this.soulLevel('raider') : 0);
     if (gems > 0) this.addGems(gems);
-    if (cleared) this.raidHighest = Math.max(this.raidHighest, raid.level);
+    if (cleared) {
+      this.raidHighest = Math.max(this.raidHighest, raid.level);
+      this.raidBest = Math.max(this.raidBest, raid.level);
+    }
     this.emit('raid:ended', {
       level: raid.level,
       kills: raid.kills,
@@ -1130,7 +1141,7 @@ export class GameState {
       case 'prestiges':
         return this.prestigeCount;
       case 'raids':
-        return this.raidHighest;
+        return this.raidBest;
       case 'gold':
         return this.totalGoldEarned;
     }
@@ -1326,6 +1337,7 @@ export class GameState {
       prestigeCount: this.prestigeCount,
       souls: this.souls,
       raidHighest: this.raidHighest,
+      raidBest: this.raidBest,
       raidReadyAt: this.raidReadyAt,
     };
   }
@@ -1385,6 +1397,7 @@ export class GameState {
     gs.prestigeCount = data.prestigeCount;
     gs.souls = data.souls;
     gs.raidHighest = data.raidHighest;
+    gs.raidBest = data.raidBest;
     gs.raidReadyAt = data.raidReadyAt;
     return gs;
   }

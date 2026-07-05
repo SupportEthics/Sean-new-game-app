@@ -137,3 +137,72 @@ test('skins grid scrolls from a drag that starts on a card', async ({ page }) =>
   await page.touchscreen.tap(356, 116);
   await page.waitForFunction(() => window.__skinsOpen === false);
 });
+
+test('dragging a sword survives auto-merge firing mid-drag', async ({ page }) => {
+  // Seed a board with mergeable pairs plus the sword we'll drag, then buy
+  // through the UI so the grid renders
+  await page.evaluate(() => {
+    const g = window.__game as unknown as {
+      gs: { gold: number; grid: (number | null)[] };
+      addGold(n: number): void;
+    };
+    g.addGold(1e9);
+    g.gs.grid[0] = 5; // the sword under the finger
+    g.gs.grid[2] = 2;
+    g.gs.grid[3] = 2; // fodder pairs for auto-merge to chew on
+    g.gs.grid[4] = 3;
+    g.gs.grid[5] = 3;
+  });
+  await page.mouse.click(247, 761); // BUY fires grid:changed -> render
+  await page.waitForTimeout(300);
+
+  // Switch auto-merge on (the 900ms ticker is already running)
+  await page.evaluate(() => {
+    const game = (window.__game as unknown as { game: Phaser.Game }).game;
+    (game.scene.getScene('UI') as unknown as { autoMergeUntil: number }).autoMergeUntil =
+      Date.now() + 60_000;
+  });
+
+  const cells = await page.evaluate(() => {
+    const game = (window.__game as unknown as { game: Phaser.Game }).game;
+    const ui = game.scene.getScene('UI') as unknown as {
+      cellCenters: { x: number; y: number }[];
+    };
+    return { from: ui.cellCenters[0], to: ui.cellCenters[17] };
+  });
+
+  // Slow drag lasting ~2.7s: at least two auto-merge beats land mid-drag
+  await page.mouse.move(cells.from.x, cells.from.y);
+  await page.mouse.down();
+  for (let i = 1; i <= 9; i++) {
+    const x = cells.from.x + ((cells.to.x - cells.from.x) * i) / 9;
+    const y = cells.from.y + ((cells.to.y - cells.from.y) * i) / 9;
+    await page.mouse.move(x, y);
+    await page.waitForTimeout(300);
+  }
+
+  // The card must still be alive and under the pointer, not snapped home
+  const midDrag = await page.evaluate(() => {
+    const game = (window.__game as unknown as { game: Phaser.Game }).game;
+    const ui = game.scene.getScene('UI') as unknown as {
+      draggingItem: { x: number; y: number; active: boolean } | null;
+    };
+    return ui.draggingItem
+      ? { active: ui.draggingItem.active, x: ui.draggingItem.x, y: ui.draggingItem.y }
+      : null;
+  });
+  expect(midDrag).not.toBeNull();
+  expect(midDrag!.active).toBe(true);
+  expect(Math.abs(midDrag!.x - cells.to.x)).toBeLessThan(8);
+
+  await page.mouse.up();
+  await page.waitForTimeout(300);
+
+  // The drop landed: the tier-5 sword now lives in the target cell
+  const landed = await page.evaluate(() => {
+    const gs = (window.__game as unknown as { gs: { grid: (number | null)[] } }).gs;
+    return { from: gs.grid[0], to: gs.grid[17] };
+  });
+  expect(landed.to).toBe(5);
+  expect(landed.from).toBeNull();
+});

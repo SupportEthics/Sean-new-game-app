@@ -41,9 +41,12 @@ its own monster pool + entrance banner), raids progressively harder
 4x/level HP), sword skins (SkinsPanel KNIGHT/SWORDS tabs: wear any tier
 art once that tier is reached lifetime — bestTier survives rebirth — or
 3 premium IAP weapons scythe/katana/cleaver in config/swordSkins.ts,
-gear.png frames 25-27, cosmetic only). Playable core loop in
+gear.png frames 25-27, cosmetic only), raid ladder resets on rebirth
+(raidBest keeps lifetime progress for awards), drag-safe grid (UIScene
+defers rebuilds while a sword is dragged; autoMergeOnce(excludeIndex)
+skips the dragged cell), two-line BUY button. Playable core loop in
 browser, hi-detail pixel art, 25 hero skins incl. 5 premium IAP behind a
-web-mock IapService, save v17. M5 Capacitor wrap done: android/ + ios/
+web-mock IapService, save v18. M5 Capacitor wrap done: android/ + ios/
 native projects (appId uk.co.supportethics.soulforgeknight), service
 factory picks AdMobAd/RevenueCatIap on native (Google test ad units;
 RevenueCat dormant until real keys land in src/config/native.ts) vs web

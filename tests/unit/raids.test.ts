@@ -42,6 +42,16 @@ describe('prestige', () => {
     expect(gs.highestStage).toBe(45); // sword-slot record kept
   });
 
+  it('rebirth reopens the raid ladder but keeps the lifetime best', () => {
+    const gs = atStage(45);
+    gs.raidHighest = 7;
+    gs.raidBest = 7;
+    expect(gs.prestige()).toBe(true);
+    expect(gs.raidHighest).toBe(0); // level 1 is the next raid again
+    expect(gs.raidNextLevel).toBe(1);
+    expect(gs.raidBest).toBe(7); // achievements don't lose progress
+  });
+
   it('souls scale with the stage reached', () => {
     expect(soulsFor(39)).toBe(0);
     expect(soulsFor(40)).toBeGreaterThan(0);

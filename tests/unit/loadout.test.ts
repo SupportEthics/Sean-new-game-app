@@ -55,6 +55,16 @@ describe('auto-merge respects the loadout', () => {
     expect(gs.grid[0]).toBe(3); // equipped sword untouched
   });
 
+  it('never auto-merges a sword the player is dragging', () => {
+    const gs = new GameState();
+    gs.grid[0] = 9; // equipped
+    gs.grid[3] = 2;
+    gs.grid[4] = 2; // the only pair on the board
+    expect(gs.autoMergeOnce(4)).toBeNull(); // index 4 is mid-drag: hands off
+    expect(gs.grid[4]).toBe(2);
+    expect(gs.autoMergeOnce()).toBe(3); // released: merges as normal
+  });
+
   it('manual merges of equipped swords still work', () => {
     const gs = new GameState();
     gs.grid[0] = 3;
