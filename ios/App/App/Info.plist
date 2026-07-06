@@ -43,10 +43,10 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
-	<!-- Google's public TEST app ID — swap for the real AdMob app ID before release
-	     (see docs/GETTING-ON-THE-STORES.md). AdMob crashes at launch without this key. -->
+	<!-- Sean's real AdMob app ID (Soulforge Knight iOS). AdMob crashes at
+	     launch without this key. -->
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<string>ca-app-pub-1071330978490238~9700704114</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>Your data will be used to show you ads that are more relevant to you. You can still play the full game if you decline.</string>
 	<key>SKAdNetworkItems</key>

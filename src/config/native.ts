@@ -1,17 +1,17 @@
 // Native store/ad identifiers — data only.
 //
-// AdMob: these are Google's OFFICIAL public test ad unit IDs. They always
-// serve test ads and are safe to ship to internal testers. At M6 store
-// readiness, replace them with the real ad units created in the AdMob
-// console (and add the app IDs to AndroidManifest.xml / Info.plist).
+// AdMob iOS: Sean's REAL ad units (account ca-app-pub-1071330978490238,
+// app ID in ios/App/App/Info.plist). Android still runs Google's OFFICIAL
+// public test IDs until Sean creates the Android app in the AdMob console
+// (its app ID then also goes into AndroidManifest.xml).
 export const ADMOB = {
   android: {
     rewarded: 'ca-app-pub-3940256099942544/5224354917',
     interstitial: 'ca-app-pub-3940256099942544/1033173712',
   },
   ios: {
-    rewarded: 'ca-app-pub-3940256099942544/1712485313',
-    interstitial: 'ca-app-pub-3940256099942544/4411468910',
+    rewarded: 'ca-app-pub-1071330978490238/4825862946',
+    interstitial: 'ca-app-pub-1071330978490238/8544746562',
   },
 };
 
