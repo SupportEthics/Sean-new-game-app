@@ -43,6 +43,10 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<!-- Only standard HTTPS is used, which is exempt from export compliance;
+	     this answers App Store Connect's per-build encryption question. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<!-- Sean's real AdMob app ID (Soulforge Knight iOS). AdMob crashes at
 	     launch without this key. -->
 	<key>GADApplicationIdentifier</key>
