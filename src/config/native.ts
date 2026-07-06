@@ -15,13 +15,13 @@ export const ADMOB = {
   },
 };
 
-// RevenueCat: per-platform public SDK keys, created in the RevenueCat
-// dashboard once the App Store / Play Console apps exist (M6). While these
-// placeholders remain, the native IAP service stays dormant and purchases
-// report a friendly "store not connected" error instead of crashing.
+// RevenueCat: per-platform public SDK keys from the dashboard. iOS is
+// Sean's real key (project "Soulforge Knight"); Android stays a
+// placeholder until the Play app exists, which keeps the Android IAP
+// service dormant ("store not connected") instead of crashing.
 export const REVENUECAT = {
   androidApiKey: 'REPLACE_WITH_REVENUECAT_ANDROID_KEY',
-  iosApiKey: 'REPLACE_WITH_REVENUECAT_IOS_KEY',
+  iosApiKey: 'appl_CUzhbMvcaITCxtiuTmhpPkgqMKP',
 };
 
 // Platform leaderboard IDs, created in App Store Connect (Game Center) and
