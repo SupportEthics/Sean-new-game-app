@@ -72,6 +72,27 @@ export function eggPool(kind: 'gold' | 'gem' | 'free'): PetDef[] {
   return kind === 'gem' ? PETS.filter((p) => p.rarity !== 'common') : PETS;
 }
 
+export interface EggOdd {
+  petId: string;
+  name: string;
+  /** Exact drop chance in percent (0-100), derived from pool weights. */
+  pct: number;
+}
+
+/** Drop odds per egg kind — Apple 3.1.1 loot-box disclosure. Derived
+ * straight from the eggPool weights so it can never drift from rollPet. */
+export function eggOdds(kind: 'gold' | 'gem' | 'free'): EggOdd[] {
+  const pool = eggPool(kind);
+  const total = pool.reduce((sum, p) => sum + p.weight, 0);
+  return pool.map((p) => ({ petId: p.id, name: p.name, pct: (p.weight / total) * 100 }));
+}
+
+/** Whole percents where exact, one decimal otherwise (e.g. 40% / 33.3%). */
+export function formatOddsPct(pct: number): string {
+  const whole = Math.round(pct);
+  return Math.abs(pct - whole) < 0.05 ? `${whole}%` : `${pct.toFixed(1)}%`;
+}
+
 /** Map a uniform roll in [0,1) onto the pool via hatch weights. */
 export function rollPet(roll: number, pool: PetDef[]): PetDef {
   const total = pool.reduce((sum, p) => sum + p.weight, 0);

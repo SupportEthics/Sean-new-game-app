@@ -411,6 +411,19 @@ test('late-game sword art past tier 12', async ({ page }) => {
   await page.screenshot({ path: 'screenshots/28-late-swords.png' });
 });
 
+test('hatch odds disclosure modal', async ({ page }) => {
+  await page.evaluate(() =>
+    (window.__game as unknown as { openPets(): void }).openPets(),
+  );
+  await page.waitForFunction(
+    () => (window as unknown as { __petsOpen?: boolean }).__petsOpen === true,
+  );
+  await page.waitForTimeout(500);
+  await page.mouse.click(334, 302); // ODDS button right of the egg caption
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: 'screenshots/35-hatch-odds.png' });
+});
+
 test('treasure ad preview modal', async ({ page }) => {
   await page.evaluate(() => {
     (window.__game as unknown as { setStage(s: number): void }).setStage(143);

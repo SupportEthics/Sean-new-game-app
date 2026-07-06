@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   ACTIVE_PET_SLOTS,
+  eggOdds,
   EGGS,
   eggPool,
   EVOLUTION,
+  formatOddsPct,
   goldEggCost,
   PET_DUP_GEMS,
   PET_MAX_LEVEL,
@@ -32,6 +34,36 @@ describe('egg rolls', () => {
     for (const pet of eggPool('gem')) expect(pet.rarity).not.toBe('common');
     expect(eggPool('gold')).toHaveLength(PETS.length);
     expect(eggPool('free')).toHaveLength(PETS.length);
+  });
+});
+
+describe('hatch odds', () => {
+  it('percentages per egg sum to 100 and mirror the pool weights', () => {
+    for (const kind of ['gold', 'gem', 'free'] as const) {
+      const pool = eggPool(kind);
+      const total = pool.reduce((sum, p) => sum + p.weight, 0);
+      const odds = eggOdds(kind);
+      // Every pet in the pool appears, in pool order, under its display name
+      expect(odds.map((o) => o.petId)).toEqual(pool.map((p) => p.id));
+      expect(odds.map((o) => o.name)).toEqual(pool.map((p) => p.name));
+      expect(odds.reduce((sum, o) => sum + o.pct, 0)).toBeCloseTo(100, 6);
+      odds.forEach((o, i) => expect(o.pct).toBeCloseTo((pool[i].weight / total) * 100, 6));
+    }
+  });
+
+  it('gem eggs redistribute the rare+epic weights, commons excluded', () => {
+    const gem = eggOdds('gem');
+    expect(gem.find((o) => o.petId === 'pup')).toBeUndefined();
+    expect(gem.find((o) => o.petId === 'pebble')).toBeUndefined();
+    // Gold and free eggs share the full pool, so their odds are identical
+    expect(eggOdds('free')).toEqual(eggOdds('gold'));
+  });
+
+  it('formats whole percents plainly and fractional ones to one decimal', () => {
+    expect(formatOddsPct(40)).toBe('40%');
+    expect(formatOddsPct(5)).toBe('5%');
+    expect(formatOddsPct(100 / 3)).toBe('33.3%');
+    expect(formatOddsPct(50 / 3)).toBe('16.7%');
   });
 });
 

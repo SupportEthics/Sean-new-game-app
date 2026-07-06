@@ -1,6 +1,14 @@
 import Phaser from 'phaser';
 import { addBackdrop, addCloseButton } from '../ui/panelInput';
-import { EVOLUTION, PET_MAX_LEVEL, PETS, stageName } from '../config/pets';
+import {
+  EggOdd,
+  eggOdds,
+  EVOLUTION,
+  formatOddsPct,
+  PET_MAX_LEVEL,
+  PETS,
+  stageName,
+} from '../config/pets';
 import { formatNumber } from '../core/EconomyMath';
 import { EggKind, GameState } from '../core/GameState';
 import { AdService } from '../services/monetization/AdService';
@@ -28,6 +36,7 @@ export class PetsPanel extends Phaser.Scene {
   private rows!: Phaser.GameObjects.Container;
   private eggs!: Phaser.GameObjects.Container;
   private reveal!: Phaser.GameObjects.BitmapText;
+  private oddsLayer: Phaser.GameObjects.Container | null = null;
   private adBusy = false;
 
   constructor() {
@@ -58,10 +67,23 @@ export class PetsPanel extends Phaser.Scene {
       .setOrigin(0.5, 0);
     addCloseButton(this, PANEL_X + PANEL_W - 22, PANEL_Y + 12, () => this.scene.stop());
 
+    // Centred in the space left of the ODDS button so the two never collide
     this.reveal = this.add
-      .bitmapText(THEME.width / 2, PANEL_Y + 148, 'pix', 'HATCH EGGS TO RECRUIT COMPANIONS', 8)
+      .bitmapText(163, PANEL_Y + 148, 'pix', 'HATCH EGGS TO RECRUIT COMPANIONS', 8)
       .setTint(0x8a5a2e)
       .setOrigin(0.5, 0);
+
+    // Apple 3.1.1: hatch odds must be disclosed before any paid egg purchase.
+    // Sits right of the caption, in the gap between the egg cards and rows.
+    const oddsX = PANEL_X + PANEL_W - 44;
+    const oddsY = PANEL_Y + 152;
+    this.add
+      .image(oddsX, oddsY, 'btn-sm')
+      .setDisplaySize(56, 18)
+      .setTint(0x2884a8)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => this.openOdds());
+    this.add.bitmapText(oddsX, oddsY, 'pix', 'ODDS', 8).setOrigin(0.5).setTint(0xffffff);
 
     this.eggs = this.add.container(0, 0);
     this.rows = this.add.container(0, 0);
@@ -80,6 +102,95 @@ export class PetsPanel extends Phaser.Scene {
         (window as unknown as { __petsOpen?: boolean }).__petsOpen = false;
       });
     }
+  }
+
+  /** HATCH ODDS modal: every pet's drop chance per egg type, straight from
+   * the eggPool weights. Egg kinds with identical pools share one list. */
+  private openOdds(): void {
+    if (this.oddsLayer) return;
+    const kinds: { kind: EggKind; label: string }[] = [
+      { kind: 'gold', label: 'GOLD EGG' },
+      { kind: 'gem', label: 'GEM EGG' },
+      { kind: 'free', label: 'FREE EGG' },
+    ];
+    const groups: { labels: string[]; odds: EggOdd[] }[] = [];
+    for (const { kind, label } of kinds) {
+      const odds = eggOdds(kind);
+      const key = JSON.stringify(odds);
+      const match = groups.find((g) => JSON.stringify(g.odds) === key);
+      if (match) match.labels.push(label);
+      else groups.push({ labels: [label], odds });
+    }
+
+    const layer = this.add.container(0, 0).setDepth(60);
+    this.oddsLayer = layer;
+    const lineCount = groups.reduce((n, g) => n + 1 + g.odds.length, 0);
+    const boxW = 300;
+    const boxH = 92 + lineCount * 14 + (groups.length - 1) * 10;
+    const boxX = (THEME.width - boxW) / 2;
+    const boxY = Math.round((THEME.height - boxH) / 2);
+    const box = new Phaser.Geom.Rectangle(boxX, boxY, boxW, boxH);
+
+    const close = (): void => {
+      layer.destroy();
+      this.oddsLayer = null;
+    };
+    const dim = this.add
+      .rectangle(THEME.width / 2, THEME.height / 2, THEME.width, THEME.height, 0x14101c, 0.7)
+      .setInteractive();
+    dim.on('pointerdown', (ptr: Phaser.Input.Pointer) => {
+      if (!box.contains(ptr.x, ptr.y)) close();
+    });
+    const g = this.add.graphics();
+    g.fillStyle(THEME.cardBg);
+    g.fillRoundedRect(boxX, boxY, boxW, boxH, 12);
+    g.lineStyle(3, 0xc9961e);
+    g.strokeRoundedRect(boxX, boxY, boxW, boxH, 12);
+    layer.add([dim, g]);
+    layer.add(
+      this.add
+        .bitmapText(THEME.width / 2, boxY + 16, 'pix', 'HATCH ODDS', 16)
+        .setTint(0xc9961e)
+        .setOrigin(0.5, 0),
+    );
+
+    let y = boxY + 48;
+    for (const group of groups) {
+      layer.add(
+        this.add
+          .bitmapText(THEME.width / 2, y, 'pix', group.labels.join(' + '), 8)
+          .setTint(0xc9961e)
+          .setOrigin(0.5, 0),
+      );
+      y += 14;
+      for (const odd of group.odds) {
+        layer.add(
+          this.add
+            .bitmapText(boxX + 30, y, 'pix', odd.name, 8)
+            .setTint(0x4a3520)
+            .setOrigin(0, 0),
+        );
+        layer.add(
+          this.add
+            .bitmapText(boxX + boxW - 30, y, 'pix', formatOddsPct(odd.pct), 8)
+            .setTint(0x2e7a1e)
+            .setOrigin(1, 0),
+        );
+        y += 14;
+      }
+      y += 10;
+    }
+
+    const btn = this.add
+      .image(THEME.width / 2, boxY + boxH - 24, 'btn-sm')
+      .setTint(THEME.buttonBgDisabled)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', close);
+    const btnLbl = this.add
+      .bitmapText(THEME.width / 2, boxY + boxH - 24, 'pix', 'CLOSE', 8)
+      .setOrigin(0.5)
+      .setTint(0xffffff);
+    layer.add([btn, btnLbl]);
   }
 
   private hatch(kind: EggKind): void {
