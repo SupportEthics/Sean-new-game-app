@@ -69,7 +69,7 @@ export const BUNDLES: Bundle[] = [
 
 /** One-time starter bundle: gems + a jump-start of gold. */
 export const STARTER_PACK: IapProduct & { gems: number; goldMinutes: number } = {
-  sku: 'starter_pack',
+  sku: 'soulforge_starter_pack',
   priceUsd: 0.99,
   title: 'STARTER PACK',
   gems: 120,

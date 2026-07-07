@@ -32,7 +32,7 @@ accounts below exist.
 
 | Product ID        | Type            | Price  | What it is        |
 |-------------------|-----------------|--------|-------------------|
-| `starter_pack`    | non-consumable  | $0.99  | one-time bundle   |
+| `soulforge_starter_pack` | non-consumable | $0.99 | one-time bundle (renamed: `starter_pack` was taken team-wide) |
 | `remove_ads`      | non-consumable  | $4.99  | no ad breaks      |
 | `piggy_crack`     | consumable      | $2.99  | open piggy bank   |
 | `gems_fistful`    | consumable      | $0.99  | 80 gems           |
