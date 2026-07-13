@@ -7,7 +7,8 @@ import { InterstitialPolicy } from '../core/Interstitials';
 import { Tutorial, TutorialStep } from '../core/Tutorial';
 import { LOGIN_REWARDS } from '../config/loginRewards';
 import { formatDuration } from '../core/OfflineEarnings';
-import { SaveManager } from '../core/SaveManager';
+import { SAVE_KEY, SaveManager } from '../core/SaveManager';
+import { CloudSaveService } from '../services/CloudSave';
 import { AdPlacement, AdService } from '../services/monetization/AdService';
 import { audio } from '../services/AudioService';
 import { THEME, tierColor } from '../ui/theme';
@@ -221,6 +222,24 @@ export class UIScene extends Phaser.Scene {
 
   private persist(): void {
     this.saveManager.save(this.gs);
+    this.maybeCloudBackup();
+  }
+
+  /** Debounced silent cloud push riding the persist timer: signed-in native
+   * players get a fresh backup at most every 5 minutes. Never blocks and
+   * never throws — a failed push just waits for the next persist. */
+  private maybeCloudBackup(): void {
+    const svc = this.registry.get('cloudSave') as CloudSaveService | undefined;
+    if (!svc?.isAvailable) return;
+    if (Date.now() - this.prefTime('cloud_backup_at') < 5 * 60_000) return;
+    void (async () => {
+      if (!(await svc.isSignedIn())) return;
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (!raw) return;
+      if (await svc.backup(JSON.parse(raw), this.gs.highestStage)) {
+        this.setPrefTime('cloud_backup_at', Date.now());
+      }
+    })().catch(() => {});
   }
 
   // ---- Header: ornate wood strip with currencies ----
@@ -372,6 +391,24 @@ export class UIScene extends Phaser.Scene {
       }
     });
     quests.icon(this.add.image(0, 0, 'icons', 1).setScale(0.9));
+
+    // CLOUD: Apple-account save backup/restore. The column below is full
+    // (REBIRTH already touches the arena floor) so it opens a second column
+    // beside RAID — only visible while the menu is fanned out anyway.
+    this.sideButton(this.sideMenu, bx + 56, rowA, 'CLOUD', () => {
+      this.toggleMenu(false);
+      if (!this.scene.isActive('Cloud')) {
+        audio.buy();
+        this.scene.launch('Cloud');
+      }
+    });
+    const cloudMark = this.add.graphics();
+    cloudMark.fillStyle(0xbfd4e8);
+    cloudMark.fillCircle(bx + 56 - 8, rowA - 6, 6);
+    cloudMark.fillCircle(bx + 56 + 1, rowA - 10, 7);
+    cloudMark.fillCircle(bx + 56 + 9, rowA - 5, 5);
+    cloudMark.fillRoundedRect(bx + 56 - 13, rowA - 6, 26, 7, 3);
+    this.sideMenu.add(cloudMark);
 
     // Rebirth appears at the column's foot once the run reaches stage 40
     this.rebirthButton = this.add.container(0, 0).setVisible(false);

@@ -19,7 +19,9 @@ import { SoulsPanel } from './scenes/SoulsPanel';
 import { TitleScene } from './scenes/TitleScene';
 import { TownPanel } from './scenes/TownPanel';
 import { UIScene } from './scenes/UIScene';
+import { CloudPanel } from './scenes/CloudPanel';
 import { LeaderboardPanel } from './scenes/LeaderboardPanel';
+import { makeCloudSave } from './services/CloudSave';
 import { LeaderboardService, WebMockLeaderboard } from './services/LeaderboardService';
 import { hydrateSaveFromPreferences, MirroredStorage } from './services/NativeSave';
 import { createMonetization } from './services/monetization/factory';
@@ -39,6 +41,8 @@ async function boot(): Promise<void> {
   const { iap, ads } = createMonetization();
   // Platform leaderboards stay mocked until store setup (see the service)
   const leaderboard: LeaderboardService = new WebMockLeaderboard();
+  // Apple-account cloud saves on configured iOS builds, quiet mock elsewhere
+  const cloudSave = makeCloudSave();
   gs.on('stage:changed', () => void leaderboard.submitHighestStage(gs.highestStage));
 
   // App Store restore flow: non-consumables reappear on reinstall.
@@ -55,7 +59,7 @@ async function boot(): Promise<void> {
       width: THEME.width,
       height: THEME.height,
     },
-    scene: [BootScene, PreloadScene, TitleScene, BattleScene, UIScene, SkinsPanel, RaidPanel, SoulsPanel, QuestsPanel, PetsPanel, ShopPanel, SkillsPanel, FairyPanel, TownPanel, LeaderboardPanel],
+    scene: [BootScene, PreloadScene, TitleScene, BattleScene, UIScene, SkinsPanel, RaidPanel, SoulsPanel, QuestsPanel, PetsPanel, ShopPanel, SkillsPanel, FairyPanel, TownPanel, LeaderboardPanel, CloudPanel],
     callbacks: {
       preBoot: (g) => {
         g.registry.set('gs', gs);
@@ -63,6 +67,7 @@ async function boot(): Promise<void> {
         g.registry.set('iap', iap);
         g.registry.set('ads', ads);
         g.registry.set('leaderboard', leaderboard);
+        g.registry.set('cloudSave', cloudSave);
         g.registry.set('offline', offline);
       },
     },
@@ -111,6 +116,7 @@ async function boot(): Promise<void> {
       openFairy: () => game.scene.getScene('UI')?.scene.launch('Fairy'),
     openTown: () => game.scene.getScene('UI')?.scene.launch('Town'),
     openRanks: () => game.scene.getScene('UI')?.scene.launch('Ranks'),
+    openCloud: () => game.scene.getScene('UI')?.scene.launch('Cloud'),
     spawnGift: () => (game.scene.getScene('Battle') as unknown as { spawnGift(): void }).spawnGift(),
     openLogin: () => {
       gs.lastLoginClaimDay = '';

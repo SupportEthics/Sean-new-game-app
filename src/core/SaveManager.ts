@@ -175,7 +175,7 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 }
 
-const SAVE_KEY = 'pawsblades_save_v1';
+export const SAVE_KEY = 'pawsblades_save_v1';
 
 export class SaveManager {
   constructor(
