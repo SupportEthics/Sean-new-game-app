@@ -69,6 +69,19 @@ import {
   TOTAL_CELLS,
 } from './MergeLogic';
 
+/** Random UUID for the leaderboard row; crypto when available (browser,
+ * node), timestamp fallback otherwise. */
+function newDeviceId(): string {
+  const c = globalThis.crypto as Crypto | undefined;
+  if (c?.randomUUID) return c.randomUUID();
+  // Fallback: hand-rolled v4-shaped UUID (valid for the server's uuid type)
+  const hex = (n: number) =>
+    Math.floor(Math.random() * 16 ** n)
+      .toString(16)
+      .padStart(n, '0');
+  return `${hex(8)}-${hex(4)}-4${hex(3)}-8${hex(3)}-${hex(12)}`;
+}
+
 export interface GameEvents {
   'gold:changed': number;
   'gems:changed': number;
@@ -168,6 +181,8 @@ export interface SerializedState {
   activeSkin: string;
   swordSkin: string;
   ownedPremiumSwords: string[];
+  deviceId?: string;
+  boardName?: string | null;
   bestTier: number;
   unlockedCells: number;
   buyTierLevel: number;
@@ -222,6 +237,11 @@ export class GameState {
    * 'premium-<id>'. Purely visual — never affects DPS. */
   swordSkin = 'auto';
   ownedPremiumSwords: string[] = [];
+  /** Anonymous id for the global leaderboard row — random, never reused
+   * across installs, no personal data. */
+  deviceId: string = newDeviceId();
+  /** Call sign shown on the global board; null until the player joins. */
+  boardName: string | null = null;
   /** Best merge tier ever reached, across rebirths — unlocks blade art. */
   bestTier = 1;
   unlockedCells: number = GEAR.baseCells;
@@ -1501,6 +1521,8 @@ export class GameState {
       ownedSkins: [...this.ownedSkins],
       activeSkin: this.activeSkin,
       swordSkin: this.swordSkin,
+      deviceId: this.deviceId,
+      boardName: this.boardName,
       ownedPremiumSwords: [...this.ownedPremiumSwords],
       bestTier: this.bestTier,
       unlockedCells: this.unlockedCells,
@@ -1562,6 +1584,8 @@ export class GameState {
     gs.totalGoldEarned = data.totalGoldEarned;
     gs.ownedSkins = [...data.ownedSkins];
     gs.swordSkin = data.swordSkin;
+    gs.deviceId = data.deviceId ?? newDeviceId();
+    gs.boardName = data.boardName ?? null;
     gs.ownedPremiumSwords = [...data.ownedPremiumSwords];
     gs.bestTier = data.bestTier;
     gs.activeSkin = data.activeSkin;
