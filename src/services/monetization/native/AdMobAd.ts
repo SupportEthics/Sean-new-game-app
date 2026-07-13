@@ -43,7 +43,8 @@ export class AdMobAd implements AdService {
         }
       }
       // Test devices/test mode until real ad units arrive
-      await AdMob.initialize({ initializeForTesting: true });
+      // Real ads: the app is live on the App Store (test mode was for review)
+      await AdMob.initialize({ initializeForTesting: false });
       this.initialized = true;
     } catch (e) {
       console.warn('AdMob init failed; rewarded features stay hidden', e);
