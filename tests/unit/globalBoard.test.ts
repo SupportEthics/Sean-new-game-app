@@ -76,3 +76,14 @@ describe('GlobalBoard service', () => {
     expect(await globalBoard.submit('id', 'GRIM WOLF 47', 10, 0, 'squire')).toBe(false);
   });
 });
+
+describe('cloudRestoreAdvice', () => {
+  it('offers a restore only when the cloud is ahead', async () => {
+    const { cloudRestoreAdvice } = await import('../../src/services/CloudSave');
+    const snap = { save: {}, stage: 50, updatedAt: '2026-07-13T00:00:00Z' };
+    expect(cloudRestoreAdvice(10, snap)).toBe('offer-restore');
+    expect(cloudRestoreAdvice(50, snap)).toBe('push-local');
+    expect(cloudRestoreAdvice(90, snap)).toBe('push-local');
+    expect(cloudRestoreAdvice(10, null)).toBe('nothing-there');
+  });
+});
