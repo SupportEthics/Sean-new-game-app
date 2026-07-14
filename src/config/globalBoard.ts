@@ -6,9 +6,10 @@
 export const GLOBAL_BOARD = {
   /** Supabase project URL, e.g. https://abcdefgh.supabase.co — empty
    * string keeps the global board dormant (local rivals only). */
-  url: '',
+  url: 'https://qfvpysmxzafdyfxudidr.supabase.co',
   /** The project's anon/public API key. */
-  anonKey: '',
+  anonKey:
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmdnB5c214emFmZHlmeHVkaWRyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwNTQxMzEsImV4cCI6MjA5OTYzMDEzMX0.K2upj5YbpOeywIyIS7fL8pKDHNrT-vR1zSBWLvoQNow',
 } as const;
 
 export function globalBoardConfigured(): boolean {

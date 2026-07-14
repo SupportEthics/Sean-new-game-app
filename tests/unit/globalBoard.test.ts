@@ -69,11 +69,22 @@ describe('buildGlobalBoard', () => {
 describe('GlobalBoard service', () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it('quietly does nothing while unconfigured', async () => {
+  it('is configured now that the Supabase keys are wired in', async () => {
     const { globalBoard } = await import('../../src/services/GlobalBoard');
-    expect(globalBoard.isConfigured).toBe(false);
+    expect(globalBoard.isConfigured).toBe(true);
+  });
+
+  it('rejects an invalid call sign before hitting the network', async () => {
+    const { globalBoard } = await import('../../src/services/GlobalBoard');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    expect(await globalBoard.submit('id', 'bad name!', 10, 0, 'squire')).toBe(false);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('fails soft (null) when the network throws', async () => {
+    const { globalBoard } = await import('../../src/services/GlobalBoard');
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('offline'));
     expect(await globalBoard.fetchTop()).toBeNull();
-    expect(await globalBoard.submit('id', 'GRIM WOLF 47', 10, 0, 'squire')).toBe(false);
   });
 });
 
