@@ -42,7 +42,6 @@ export class AdMobAd implements AdService {
           console.warn('ATT prompt failed; serving non-personalised ads', e);
         }
       }
-      // Test devices/test mode until real ad units arrive
       // Real ads: the app is live on the App Store (test mode was for review)
       await AdMob.initialize({ initializeForTesting: false });
       this.initialized = true;
