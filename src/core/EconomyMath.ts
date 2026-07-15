@@ -85,6 +85,20 @@ export function formatNumber(n: number): string {
   return `${scaled.toFixed(digits)}${first}${second}`;
 }
 
+// ---- Rival duels ----
+
+/** A board rival's estimated DPS: what it takes to fight at their stage. */
+export function rivalDps(stage: number): number {
+  return enemyHp(Math.max(1, stage), 5);
+}
+
+/** Win probability by DPS ratio — 50/50 against an equal, hard but never
+ * hopeless punching up (Bradley-Terry). */
+export function duelWinChance(myDps: number, theirStage: number): number {
+  const theirs = rivalDps(theirStage);
+  return myDps / (myDps + theirs);
+}
+
 // ---- Hero level (lifetime kills badge that also pays a DPS bonus) ----
 
 export function heroLevel(totalKills: number): number {

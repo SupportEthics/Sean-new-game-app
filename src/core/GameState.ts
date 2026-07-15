@@ -49,6 +49,7 @@ import {
 import { CodexEntry, codexEntries } from '../config/codex';
 import { enchantById, enchantCost } from '../config/enchants';
 import { expeditionById } from '../config/expeditions';
+import { DUELS } from '../config/duels';
 import { soulUpgradeById, soulUpgradeCost } from '../config/soulsTree';
 import { buildingById, buildingCost, TOWN } from '../config/town';
 import { RAIDS, raidClearKills, raidGems, raidGoldPerKill, raidKillCap, raidMonsterHp } from '../config/raids';
@@ -59,6 +60,7 @@ import { GEAR, unlockedSlots } from '../config/gear';
 import {
   buyTierUpgradeCost,
   cellCost,
+  duelWinChance,
   enemyHp,
   gearCost,
   goldDrop,
@@ -118,6 +120,7 @@ export interface GameEvents {
   'codex:changed': undefined;
   'enchants:changed': undefined;
   'expedition:changed': undefined;
+  'duel:done': boolean;
   'fairy:changed': number;
   'login:changed': undefined;
   'town:changed': undefined;
@@ -229,6 +232,8 @@ export interface SerializedState {
   codexClaimed?: string[];
   enchants?: Record<string, number>;
   expedition?: { petId: string; defId: string; endsAt: number } | null;
+  duelDay?: string;
+  duelsUsed?: number;
   fairyLevel: number;
   dmgBoostUntil: number;
   speedBoostUntil: number;
@@ -328,6 +333,9 @@ export class GameState {
   enchants: Record<string, number> = {};
   /** The pet currently away on an expedition (null = everyone's home). */
   expedition: { petId: string; defId: string; endsAt: number } | null = null;
+  /** Duel allowance: the UTC day + how many were fought that day. */
+  duelDay = '';
+  duelsUsed = 0;
   /** Fairy helper level; 0 = not recruited yet. */
   fairyLevel = 0;
   /** Rewarded-ad boosts: epoch ms the x2 damage / x2 speed windows end. */
@@ -954,6 +962,37 @@ export class GameState {
   private enchantBonus(id: string): number {
     const def = enchantById(id);
     return 1 + (def ? this.enchantLevel(id) * def.perLevel : 0);
+  }
+
+  // ---- Rival duels ----
+
+  duelsLeft(now: number = this.clock()): number {
+    return this.duelDay === utcDay(now) ? Math.max(0, DUELS.perDay - this.duelsUsed) : DUELS.perDay;
+  }
+
+  /** Fight a board rival: instant DPS-ratio showdown. Pass a fixed roll
+   * for tests; runtime uses Math.random. Returns null when out of duels. */
+  duel(
+    theirStage: number,
+    now: number = this.clock(),
+    roll: number = Math.random(),
+  ): { won: boolean; gold: number; chance: number } | null {
+    if (this.duelsLeft(now) <= 0) return null;
+    const today = utcDay(now);
+    if (this.duelDay !== today) {
+      this.duelDay = today;
+      this.duelsUsed = 0;
+    }
+    this.duelsUsed += 1;
+    const chance = duelWinChance(this.heroDps, theirStage);
+    const won = roll < chance;
+    let gold = 0;
+    if (won) {
+      gold = this.goldForHours(DUELS.goldHours);
+      this.addGold(gold);
+    }
+    this.emit('duel:done', won);
+    return { won, gold, chance };
   }
 
   // ---- Codex ----
@@ -1830,6 +1869,8 @@ export class GameState {
       codexClaimed: [...this.codexClaimed],
       enchants: { ...this.enchants },
       expedition: this.expedition ? { ...this.expedition } : null,
+      duelDay: this.duelDay,
+      duelsUsed: this.duelsUsed,
       fairyLevel: this.fairyLevel,
       dmgBoostUntil: this.dmgBoostUntil,
       speedBoostUntil: this.speedBoostUntil,
@@ -1900,6 +1941,8 @@ export class GameState {
     gs.codexClaimed = [...(data.codexClaimed ?? [])];
     gs.enchants = { ...(data.enchants ?? {}) };
     gs.expedition = data.expedition ? { ...data.expedition } : null;
+    gs.duelDay = data.duelDay ?? '';
+    gs.duelsUsed = data.duelsUsed ?? 0;
     gs.fairyLevel = data.fairyLevel;
     gs.dmgBoostUntil = data.dmgBoostUntil;
     gs.speedBoostUntil = data.speedBoostUntil;

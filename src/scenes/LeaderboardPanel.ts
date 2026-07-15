@@ -8,6 +8,7 @@ import {
   seasonNumber,
 } from '../config/globalBoard';
 import { GameState } from '../core/GameState';
+import { duelWinChance, formatNumber } from '../core/EconomyMath';
 import { globalBoard } from '../services/GlobalBoard';
 import { audio } from '../services/AudioService';
 import { addBackdrop, addCloseButton, addDragScroll } from '../ui/panelInput';
@@ -282,7 +283,7 @@ export class LeaderboardPanel extends Phaser.Scene {
 
     // The season's royalty: top ranks on the LIVE board wear a crown
     if (this.liveBoard && row.rank <= CROWNED_RANKS) {
-      const cx = PANEL_X + PANEL_W - 44;
+      const cx = PANEL_X + PANEL_W - 24;
       const crown = this.add.graphics();
       crown.fillStyle(0xffd166);
       crown.fillTriangle(cx - 10, y + 4, cx - 10, y - 6, cx - 4, y + 0);
@@ -292,6 +293,87 @@ export class LeaderboardPanel extends Phaser.Scene {
       crown.lineStyle(1, 0x8a5a2e);
       crown.strokeRect(cx - 10, y + 2, 20, 5);
       this.rows.add(crown);
+    }
+
+    // Rival duels: challenge anyone (but yourself) on the LIVE board
+    if (this.liveBoard && !row.isPlayer) {
+      const dx = PANEL_X + PANEL_W - 66;
+      const btn = this.add
+        .rectangle(dx, y, 48, 22, 0x6a1e1e)
+        .setStrokeStyle(2, 0xb03a2e)
+        .setInteractive({ useHandCursor: true });
+      const lbl = this.add.bitmapText(dx, y, 'pix', 'DUEL', 8).setOrigin(0.5).setTint(0xffb4b4);
+      btn.on('pointerup', (ptr: Phaser.Input.Pointer) => {
+        if (Math.abs(ptr.downY - ptr.upY) > 10) return; // scrolling, not a tap
+        if (ptr.upY < LIST_TOP || ptr.upY > LIST_TOP + LIST_H) return;
+        this.showDuel(row);
+      });
+      this.rows.add([btn, lbl]);
+    }
+  }
+
+  /** Challenge modal → instant showdown result. */
+  private showDuel(rival: BoardRow): void {
+    const cy = PANEL_Y + PANEL_H / 2;
+    const layer = this.add.container(0, 0).setDepth(55);
+    const cover = this.add
+      .rectangle(THEME.width / 2, cy, PANEL_W, PANEL_H, 0x14101c, 0.75)
+      .setInteractive();
+    const card = this.add
+      .rectangle(THEME.width / 2, cy, PANEL_W - 48, 210, THEME.panelBg)
+      .setStrokeStyle(3, 0xb03a2e);
+    const title = this.add
+      .bitmapText(THEME.width / 2, cy - 84, 'pix', `DUEL ${rival.name}?`, 8)
+      .setTint(0xffb4b4)
+      .setOrigin(0.5, 0);
+    const left = this.gs.duelsLeft();
+    const chance = Math.round(duelWinChance(this.gs.heroDps, rival.stage) * 100);
+    const info = this.add
+      .bitmapText(
+        THEME.width / 2,
+        cy - 56,
+        'pix',
+        `WIN CHANCE ${chance}%\n${left} DUEL${left === 1 ? '' : 'S'} LEFT TODAY`,
+        8,
+      )
+      .setTint(0x8a5a2e)
+      .setCenterAlign()
+      .setOrigin(0.5, 0);
+    layer.add([cover, card, title, info]);
+
+    const close = (): void => layer.destroy();
+    const mkButton = (x: number, label: string, tint: number, onTap: () => void): void => {
+      const bg = this.add
+        .rectangle(x, cy + 24, 130, 38, THEME.cardBg)
+        .setStrokeStyle(2, tint)
+        .setInteractive({ useHandCursor: true });
+      const txt = this.add.bitmapText(x, cy + 24, 'pix', label, 8).setTint(tint).setOrigin(0.5);
+      bg.on('pointerdown', onTap);
+      layer.add([bg, txt]);
+    };
+    if (left > 0) {
+      mkButton(THEME.width / 2 - 72, 'FIGHT!', 0xb03a2e, () => {
+        const result = this.gs.duel(rival.stage);
+        if (!result) return close();
+        audio.bossWarn();
+        title.setText(result.won ? 'VICTORY!' : 'DEFEATED!');
+        title.setTint(result.won ? 0x7ac74f : 0xffb4b4);
+        info.setText(
+          result.won
+            ? `YOU OUT-FOUGHT ${rival.name}\n+${formatNumber(result.gold).toUpperCase()} GOLD`
+            : `${rival.name} STANDS TALL\nTRAIN AND TRY AGAIN`,
+        );
+        layer.each((child: Phaser.GameObjects.GameObject) => {
+          if (child !== cover && child !== card && child !== title && child !== info) {
+            child.destroy();
+          }
+        });
+        mkButton(THEME.width / 2, 'CLOSE', 0x8a5a2e, close);
+      });
+      mkButton(THEME.width / 2 + 72, 'CANCEL', 0x8a5a2e, close);
+    } else {
+      info.setText('NO DUELS LEFT TODAY\nCOME BACK TOMORROW');
+      mkButton(THEME.width / 2, 'CLOSE', 0x8a5a2e, close);
     }
   }
 }

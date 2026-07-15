@@ -174,6 +174,12 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.expedition = null;
     return save;
   },
+  // v26 -> v27: rival duels
+  (save) => {
+    save.state.duelDay = '';
+    save.state.duelsUsed = 0;
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;
