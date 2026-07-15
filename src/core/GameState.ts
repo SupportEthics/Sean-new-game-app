@@ -941,7 +941,9 @@ export class GameState {
       goldEarned: 0,
       duration,
       clearKills: dungeonQuota(mod),
-      killCap: dungeonQuota(mod) * 2,
+      // One life: the moment its last HP segment falls the dragon is DEAD
+      // and the run ends — no respawn farming (Sean's spec)
+      killCap: dungeonQuota(mod),
       goldPerKill: goldDrop(stage, 5) * mod.goldMult,
       dungeon: mod.id,
     };

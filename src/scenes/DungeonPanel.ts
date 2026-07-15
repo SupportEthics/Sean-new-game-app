@@ -4,7 +4,6 @@ import {
   dungeonDuration,
   dungeonGems,
   dungeonModifier,
-  dungeonQuota,
 } from '../config/dungeon';
 import { formatNumber } from '../core/EconomyMath';
 import { GameState } from '../core/GameState';
@@ -63,11 +62,10 @@ export class DungeonPanel extends Phaser.Scene {
       .setTint(0x8a5a2e)
       .setOrigin(0.5, 0);
 
-    // The deal
-    const quota = dungeonQuota(mod);
+    // The deal: one dragon, one life, one clock
     const secs = dungeonDuration(mod);
     this.add
-      .bitmapText(cx, PANEL_Y + 130, 'pix', `KILL ${quota} IN ${secs} SECONDS`, 8)
+      .bitmapText(cx, PANEL_Y + 130, 'pix', `SLAY THE DRAGON IN ${secs} SECONDS`, 8)
       .setTint(0xb03a2e)
       .setOrigin(0.5, 0);
 

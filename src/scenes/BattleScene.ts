@@ -533,11 +533,20 @@ export class BattleScene extends Phaser.Scene {
 
   private syncHpBar(): void {
     const raid = this.gs.raid;
-    const frac = raid
-      ? raid.monsterHp / raid.monsterMaxHp
-      : this.gs.battle.currentEnemyMaxHp > 0
-        ? this.gs.battle.currentEnemyHp / this.gs.battle.currentEnemyMaxHp
-        : 0;
+    let frac: number;
+    if (raid?.dungeon) {
+      // The dragon has ONE life bar: its whole health drains across the
+      // fight instead of resetting per internal segment
+      const chewed = raid.kills + (1 - raid.monsterHp / raid.monsterMaxHp);
+      frac = 1 - chewed / raid.killCap;
+    } else if (raid) {
+      frac = raid.monsterHp / raid.monsterMaxHp;
+    } else {
+      frac =
+        this.gs.battle.currentEnemyMaxHp > 0
+          ? this.gs.battle.currentEnemyHp / this.gs.battle.currentEnemyMaxHp
+          : 0;
+    }
     this.hpBar.width = 42 * Phaser.Math.Clamp(frac, 0, 1);
   }
 
@@ -614,8 +623,8 @@ export class BattleScene extends Phaser.Scene {
     audio.stageUp();
     const msg = r.dungeon
       ? r.cleared
-        ? `DUNGEON CLEARED! +${r.gems} GEMS + GOLD HOARD`
-        : `DUNGEON FAILED - ${r.kills}/${r.quota ?? 0} KILLS. FREE RETRY!`
+        ? `DRAGON SLAIN! +${r.gems} GEMS + A GOLD HOARD`
+        : 'THE DRAGON ENDURES - FREE RETRY!'
       : r.cleared
         ? `RAID CLEARED! +${formatNumber(r.gold).toUpperCase()} GOLD +${r.gems} GEMS`
         : `RAID OVER - ${r.kills}/${raidClearKills(r.level)} KILLS +${r.gems} GEMS`;

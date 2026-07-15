@@ -22,7 +22,10 @@ export interface DungeonModifier {
 
 export const DUNGEON = {
   unlockStage: 15,
-  baseQuota: 15,
+  /** The dragon's life, measured in frontier-monster HP units. Tuned so a
+   * well-geared knight needs ~75-90% of the clock — hard but achievable
+   * (Sean's spec). It dies ONCE: no respawns, back tomorrow. */
+  baseQuota: 22,
   durationSeconds: 30,
   /** First clear of the day: gems + hours of current gold income. */
   gemsBase: 15,
@@ -38,7 +41,7 @@ export const DUNGEON_MODIFIERS: DungeonModifier[] = [
     name: 'THE EMERALD WYRM',
     desc: 'WEAK SCALES - TWICE THE KILLS TO SLAY IT',
     hpMult: 0.4,
-    quotaMult: 2,
+    quotaMult: 2.5,
     timeMult: 1,
     goldMult: 1,
   },
@@ -48,7 +51,7 @@ export const DUNGEON_MODIFIERS: DungeonModifier[] = [
     name: 'THE CRIMSON TYRANT',
     desc: 'TRIPLE HEALTH - DOUBLE THE GOLD',
     hpMult: 3,
-    quotaMult: 0.5,
+    quotaMult: 0.4,
     timeMult: 1,
     goldMult: 2,
   },
@@ -58,7 +61,7 @@ export const DUNGEON_MODIFIERS: DungeonModifier[] = [
     name: 'THE AZURE STORMWING',
     desc: 'HALF THE TIME ON THE CLOCK',
     hpMult: 1,
-    quotaMult: 1,
+    quotaMult: 0.5,
     timeMult: 0.5,
     goldMult: 1,
   },
