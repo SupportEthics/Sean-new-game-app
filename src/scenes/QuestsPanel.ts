@@ -231,7 +231,9 @@ export class QuestsPanel extends Phaser.Scene {
       )
       .setTint(0x9a8d6e);
     this.rows.add([head, lvl, barBg, bar, xpLbl]);
-    if (!premium) {
+    if (!premium && !PASS.premiumEnabled) {
+      // Premium lane not on sale: the pass is free-lane only, no button
+    } else if (!premium) {
       const btn = this.add
         .image(PANEL_X + PANEL_W - 76, hy, 'btn-sm')
         .setDisplaySize(104, 34)
@@ -284,8 +286,13 @@ export class QuestsPanel extends Phaser.Scene {
         .setOrigin(0, 0.5)
         .setTint(reached ? 0xc9961e : 0x8a7d60);
       this.rows.add([bg, lvLbl]);
-      this.passLane(y - 13, lv, 'free', freeRewardFor(lv), reached);
-      this.passLane(y + 14, lv, 'premium', premiumRewardFor(lv), reached && premium);
+      if (premium || PASS.premiumEnabled) {
+        this.passLane(y - 13, lv, 'free', freeRewardFor(lv), reached);
+        this.passLane(y + 14, lv, 'premium', premiumRewardFor(lv), reached && premium);
+      } else {
+        // Free-lane only while the premium product isn't on sale
+        this.passLane(y, lv, 'free', freeRewardFor(lv), reached);
+      }
     }
     this.maxScroll = Math.max(0, 76 + PASS.maxLevel * ROW_PITCH + 12 - LIST_H);
   }
