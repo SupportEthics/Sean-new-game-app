@@ -11,9 +11,11 @@ export const GEAR = {
   cellCostBase: 2500,
   cellCostGrowth: 1.75,
 
-  /** Highest merge tier available (tiers are 1-based). Doubled from 40 at
-   * Sean's request — late-game merging needs the headroom. */
-  maxTier: 80,
+  /** Highest merge tier available (tiers are 1-based). Raised 40 -> 80 -> 160
+   * (Sean hit stage 200 in days and the old cap walled progress near 250):
+   * at 1.9x DPS/tier vs 1.27x monster HP/stage, a tier is ~2.7 stages, so
+   * 160 puts the ceiling for a maxed knight around stage 450. */
+  maxTier: 160,
 
   /** Distinct sword sprites in the gear sheet; tiers past this keep the
    * final design (no cycling back to tier-1 art). */

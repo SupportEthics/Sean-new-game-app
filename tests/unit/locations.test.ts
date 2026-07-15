@@ -78,7 +78,7 @@ describe('weapon art', () => {
   });
 
   it('the merge ceiling is tier 80 and its numbers still display', () => {
-    expect(GEAR.maxTier).toBe(80);
+    expect(GEAR.maxTier).toBe(160);
     expect(tierName(80)).toBe('Godsteel Blade +55');
     expect(formatNumber(gearDps(80))).not.toContain('∞'); // huge but finite
     expect(formatNumber(gearDps(80)).length).toBeLessThan(10); // readable suffix
