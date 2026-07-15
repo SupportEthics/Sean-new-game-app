@@ -73,20 +73,22 @@ describe('weapon art', () => {
   });
 
   it('tiers past the art count keep the final blade, never cycling back', () => {
-    expect(weaponFrame(26)).toBe(24);
-    expect(weaponFrame(GEAR.maxTier)).toBe(24);
+    expect(weaponFrame(76)).toBe(74);
+    expect(weaponFrame(GEAR.maxTier)).toBe(74);
   });
 
-  it('the merge ceiling is tier 80 and its numbers still display', () => {
-    expect(GEAR.maxTier).toBe(160);
-    expect(tierName(80)).toBe('Godsteel Blade +55');
-    expect(formatNumber(gearDps(80))).not.toContain('∞'); // huge but finite
-    expect(formatNumber(gearDps(80)).length).toBeLessThan(10); // readable suffix
+  it('the merge ceiling is tier 200 and its numbers still display', () => {
+    expect(GEAR.maxTier).toBe(200);
+    expect(tierName(75)).toBe('Eternity Blade');
+    expect(tierName(200)).toBe('Eternity Blade +125');
+    expect(formatNumber(gearDps(200))).not.toContain('∞'); // huge but finite
+    expect(formatNumber(gearDps(200)).length).toBeLessThan(10); // readable suffix
   });
 
-  it('has a name for all 25 sword designs', () => {
+  it('has a name for all 75 weapon designs', () => {
     expect(TIER_NAMES.length).toBe(GEAR.weaponArtCount);
     expect(tierName(25)).toBe('Godsteel Blade');
-    expect(tierName(27)).toBe('Godsteel Blade +2');
+    expect(tierName(27)).toBe('Obsidian Spear');
+    expect(tierName(77)).toBe('Eternity Blade +2');
   });
 });

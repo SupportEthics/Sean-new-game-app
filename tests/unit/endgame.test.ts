@@ -23,7 +23,7 @@ describe('the endgame ceiling', () => {
   it('but bare swords alone cannot coast to the ceiling (grind stays real)', () => {
     const swordsOnly = heroDps(Array(FULL_GRID).fill(GEAR.maxTier), 4);
     const need =
-      (enemyHp(460, STAGES.wavesPerStage) * enemyHpScale(10)) / STAGES.bossTimeLimit;
+      (enemyHp(560, STAGES.wavesPerStage) * enemyHpScale(10)) / STAGES.bossTimeLimit;
     expect(swordsOnly).toBeLessThan(need);
   });
 });

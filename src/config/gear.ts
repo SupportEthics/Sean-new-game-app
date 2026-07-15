@@ -11,15 +11,17 @@ export const GEAR = {
   cellCostBase: 2500,
   cellCostGrowth: 1.75,
 
-  /** Highest merge tier available (tiers are 1-based). Raised 40 -> 80 -> 160
+  /** Highest merge tier available (tiers are 1-based). Raised 40 -> 80 -> 200
    * (Sean hit stage 200 in days and the old cap walled progress near 250):
    * at 1.9x DPS/tier vs 1.27x monster HP/stage, a tier is ~2.7 stages, so
-   * 160 puts the ceiling for a maxed knight around stage 450. */
-  maxTier: 160,
+   * 200 puts the ceiling for a maxed knight around stage 550. */
+  maxTier: 200,
 
-  /** Distinct sword sprites in the gear sheet; tiers past this keep the
-   * final design (no cycling back to tier-1 art). */
-  weaponArtCount: 25,
+  /** Distinct weapon sprites in the gear sheet; tiers past this keep the
+   * final design (no cycling back to tier-1 art). Tripled at Sean's request:
+   * tiers 26-75 are ten material bands of maces, spears, axes, lances,
+   * greatswords, flails, tridents, halberds, glaives and warhammers. */
+  weaponArtCount: 75,
 
   /** DPS of a tier-1 weapon */
   baseDps: 2,
@@ -76,6 +78,58 @@ export const TIER_NAMES: readonly string[] = [
   'Soul Cleaver',
   'Doom Talon',
   'Godsteel Blade',
+  // Tiers 26-75: the arsenal bands (order must match ARSENAL in
+  // scripts/generate-assets.mjs — band of five per material)
+  'Obsidian Mace',
+  'Obsidian Spear',
+  'Obsidian Axe',
+  'Obsidian Lance',
+  'Obsidian Greatblade',
+  'Moonsteel Flail',
+  'Moonsteel Trident',
+  'Moonsteel Halberd',
+  'Moonsteel Glaive',
+  'Moonsteel Warhammer',
+  'Ember Mace',
+  'Ember Spear',
+  'Ember Axe',
+  'Ember Lance',
+  'Ember Greatblade',
+  'Verdant Flail',
+  'Verdant Trident',
+  'Verdant Halberd',
+  'Verdant Glaive',
+  'Verdant Warhammer',
+  'Storm Mace',
+  'Storm Spear',
+  'Storm Axe',
+  'Storm Lance',
+  'Storm Greatblade',
+  'Frost Flail',
+  'Frost Trident',
+  'Frost Halberd',
+  'Frost Glaive',
+  'Frost Warhammer',
+  'Blood Mace',
+  'Blood Spear',
+  'Blood Axe',
+  'Blood Lance',
+  'Blood Greatblade',
+  'Void Flail',
+  'Void Trident',
+  'Void Halberd',
+  'Void Glaive',
+  'Void Warhammer',
+  'Dragonbone Mace',
+  'Dragonbone Spear',
+  'Dragonbone Axe',
+  'Dragonbone Lance',
+  'Dragonbone Greatblade',
+  'Astral Flail',
+  'Astral Trident',
+  'Astral Halberd',
+  'Astral Glaive',
+  'Eternity Blade',
 ];
 
 export function tierName(tier: number): string {

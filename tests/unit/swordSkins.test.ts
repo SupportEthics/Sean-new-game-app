@@ -24,7 +24,8 @@ class MemStorage {
 describe('sword skins', () => {
   it('auto shows each tier its own art', () => {
     expect(swordSkinFrame('auto', 7)).toBe(weaponFrame(7));
-    expect(swordSkinFrame('auto', 30)).toBe(GEAR.weaponArtCount - 1);
+    expect(swordSkinFrame('auto', 30)).toBe(weaponFrame(30)); // own arsenal art now
+    expect(swordSkinFrame('auto', 100)).toBe(GEAR.weaponArtCount - 1);
   });
 
   it('tier skins map to their frame; premium skins to theirs', () => {

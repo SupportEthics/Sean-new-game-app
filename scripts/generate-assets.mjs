@@ -1060,6 +1060,210 @@ function dragonCleaver() {
   return out;
 }
 
+// ---------- Tier 26-75 arsenal (Sean: triple the weapon art) ----------
+// Ten material bands of five weapons each, alternating two class sets so
+// maces, spears, axes, lances, greatswords, flails, tridents, halberds,
+// glaives and warhammers all appear. Same 24x28 canvas + pad/outline/halo
+// finish as the tier blades, so they sit seamlessly in gear.png.
+
+const ARSENAL_BANDS = [
+  { name: 'obsidian', metal: '#3a3440', edge: '#6a5e78', gem: '#ff7a3c', glow: null },
+  { name: 'moonsteel', metal: '#cfd8ea', edge: '#f4f8ff', gem: '#8ab4ff', glow: '#cfd8ea80' },
+  { name: 'emberforge', metal: '#c2482e', edge: '#ff9a3c', gem: '#ffd166', glow: '#ff9a3c88' },
+  { name: 'verdant', metal: '#4e8a3c', edge: '#8ee87a', gem: '#ffd166', glow: '#8ee87a88' },
+  { name: 'stormforged', metal: '#6b4fd0', edge: '#b39dff', gem: '#fff36b', glow: '#b39dff90' },
+  { name: 'frostbound', metal: '#7ac8e8', edge: '#d8f4ff', gem: '#ffffff', glow: '#a8e8ff90' },
+  { name: 'bloodforged', metal: '#8a1c2e', edge: '#ff3c5c', gem: '#ffb4b4', glow: '#ff3c5c90' },
+  { name: 'voidtouched', metal: '#4a3468', edge: '#e86aff', gem: '#8aff8a', glow: '#e86aff90' },
+  { name: 'dragonbone', metal: '#e8dcc0', edge: '#fff6e0', gem: '#ff4a4a', glow: '#ff9a3c90' },
+  { name: 'astral', metal: '#fff2c8', edge: '#ffffff', gem: '#4ec3e8', glow: '#ffffff98' },
+];
+
+/** Vertical wooden haft with light/shadow edges, x is the left column. */
+function haft(p, x, top, bottom) {
+  p.rect(x, top, 1, bottom - top, '#6b4423');
+  p.rect(x + 1, top, 1, bottom - top, '#3a2a1e');
+}
+
+function gripWrap(p, x, y, h) {
+  for (let i = 0; i < h; i++) p.rect(x, y + i, 2, 1, i % 2 ? '#3a2a1e' : '#5c3a1c');
+}
+
+function armMace(b) {
+  const p = new Pix(24, 28);
+  haft(p, 11, 11, 23);
+  gripWrap(p, 11, 23, 4);
+  p.rect(10, 26, 4, 1, b.metal);
+  // Heavy flanged ball
+  p.domeEllipse(12, 6, 4.5, 4.5, [b.edge, b.metal, shade(b.metal, 0.65)]);
+  // Spikes at the compass points
+  p.tri(12, -1, 10, 3, 14, 3, b.edge);
+  p.tri(5, 6, 8, 4, 8, 8, b.edge);
+  p.tri(19, 6, 16, 4, 16, 8, b.edge);
+  p.set(12, 6, b.gem);
+  p.set(11, 5, '#ffffff');
+  return finishArm(p, b);
+}
+
+function armSpear(b) {
+  const p = new Pix(24, 28);
+  haft(p, 11, 9, 26);
+  gripWrap(p, 11, 18, 3);
+  // Leaf-shaped head
+  p.tri(11.5, 0, 8.5, 6, 14.5, 6, b.metal);
+  p.tri(8.5, 6, 14.5, 6, 11.5, 10, b.metal);
+  p.line(11, 1, 11, 8, b.edge);
+  p.set(11, 0, '#ffffff');
+  // Binding collar + gem
+  p.rect(10, 9, 4, 2, shade(b.metal, 0.7));
+  p.set(11, 9, b.gem);
+  return finishArm(p, b);
+}
+
+function armAxe(b) {
+  const p = new Pix(24, 28);
+  haft(p, 11, 3, 24);
+  gripWrap(p, 11, 21, 4);
+  // Twin crescent blades
+  p.tri(10, 4, 3, 3, 4, 12, b.metal);
+  p.tri(10, 4, 4, 12, 10, 11, shade(b.metal, 0.8));
+  p.tri(13, 4, 20, 3, 19, 12, b.metal);
+  p.tri(13, 4, 19, 12, 13, 11, shade(b.metal, 0.8));
+  p.line(3, 4, 4, 11, b.edge);
+  p.line(20, 4, 19, 11, b.edge);
+  // Crown spike + eye gem
+  p.tri(12, 0, 10, 3, 14, 3, b.edge);
+  p.rect(11, 6, 2, 2, b.gem);
+  p.set(11, 6, '#ffffff');
+  return finishArm(p, b);
+}
+
+function armLance(b) {
+  const p = new Pix(24, 28);
+  // Jousting cone from broad base to needle tip
+  p.tri(12, 0, 8, 16, 16, 16, b.metal);
+  p.line(12, 0, 9, 15, b.edge);
+  p.set(12, 0, '#ffffff');
+  // Spiral fluting
+  p.set(11, 5, shade(b.metal, 0.7));
+  p.set(13, 8, shade(b.metal, 0.7));
+  p.set(10, 11, shade(b.metal, 0.7));
+  p.set(14, 14, shade(b.metal, 0.7));
+  // Guard bell + gem
+  p.domeEllipse(12, 17, 5, 2.5, [b.edge, b.metal, shade(b.metal, 0.65)]);
+  p.set(12, 16, b.gem);
+  gripWrap(p, 11, 20, 5);
+  p.rect(10, 25, 4, 2, b.metal);
+  return finishArm(p, b);
+}
+
+function armGreatsword(b) {
+  // The band finale rides the proven sword renderer, supersized.
+  // len 18 keeps the tip on canvas (24 would run off the top edge).
+  return weapon({ blade: b.metal, len: 18, w: 7, guard: shade(b.metal, 0.6), gem: b.gem, glow: b.glow ?? undefined, name: `${b.name}-greatblade` });
+}
+
+function armFlail(b) {
+  const p = new Pix(24, 28);
+  haft(p, 8, 16, 26);
+  gripWrap(p, 8, 22, 4);
+  // Chain climbing to the ball
+  p.set(10, 15, '#8a8f96');
+  p.set(12, 13, '#6f7378');
+  p.set(13, 11, '#8a8f96');
+  // Spiked ball high right
+  p.domeEllipse(16, 7, 3.5, 3.5, [b.edge, b.metal, shade(b.metal, 0.65)]);
+  p.tri(16, 1, 14.5, 4, 17.5, 4, b.edge);
+  p.tri(11, 7, 13, 5.5, 13, 8.5, b.edge);
+  p.tri(21, 7, 19, 5.5, 19, 8.5, b.edge);
+  p.set(16, 7, b.gem);
+  return finishArm(p, b);
+}
+
+function armTrident(b) {
+  const p = new Pix(24, 28);
+  haft(p, 11, 10, 26);
+  gripWrap(p, 11, 19, 3);
+  // Crossbar
+  p.rect(7, 9, 10, 2, b.metal);
+  p.rect(7, 9, 10, 1, b.edge);
+  // Three prongs
+  p.rect(7, 3, 2, 6, b.metal);
+  p.tri(8, 0, 7, 3, 9, 3, b.edge);
+  p.rect(15, 3, 2, 6, b.metal);
+  p.tri(16, 0, 15, 3, 17, 3, b.edge);
+  p.rect(11, 1, 2, 8, b.metal);
+  p.tri(12, -2, 11, 1, 13, 1, b.edge);
+  p.set(11, 10, b.gem);
+  return finishArm(p, b);
+}
+
+function armHalberd(b) {
+  const p = new Pix(24, 28);
+  haft(p, 11, 2, 26);
+  gripWrap(p, 11, 20, 4);
+  // Top spike
+  p.tri(12, -1, 10, 3, 14, 3, b.edge);
+  // Axe face on the right
+  p.tri(13, 4, 20, 5, 19, 13, b.metal);
+  p.tri(13, 4, 19, 13, 13, 12, shade(b.metal, 0.8));
+  p.line(20, 5, 19, 12, b.edge);
+  // Back hook
+  p.tri(10, 6, 5, 8, 10, 10, b.metal);
+  p.set(11, 7, b.gem);
+  return finishArm(p, b);
+}
+
+function armGlaive(b) {
+  const p = new Pix(24, 28);
+  haft(p, 10, 12, 26);
+  gripWrap(p, 10, 20, 3);
+  // Sweeping single-edged blade
+  p.tri(11, 12, 9, 2, 17, 5, b.metal);
+  p.tri(9, 2, 17, 5, 15, 11, shade(b.metal, 0.85));
+  p.line(9, 2, 16, 11, b.edge);
+  p.set(9, 1, '#ffffff');
+  // Collar + gem
+  p.rect(9, 11, 4, 2, shade(b.metal, 0.7));
+  p.set(10, 11, b.gem);
+  return finishArm(p, b);
+}
+
+function armWarhammer(b) {
+  const p = new Pix(24, 28);
+  haft(p, 11, 8, 24);
+  gripWrap(p, 11, 21, 4);
+  // Massive bevelled head
+  p.cylRect(5, 2, 14, 6, [b.edge, b.metal, shade(b.metal, 0.65)]);
+  p.rect(5, 2, 14, 1, b.edge);
+  // Striking faces
+  p.rect(4, 3, 1, 4, b.edge);
+  p.rect(19, 3, 1, 4, b.edge);
+  // Crown spike + gem
+  p.tri(12, -1, 10, 2, 14, 2, b.edge);
+  p.rect(11, 4, 2, 2, b.gem);
+  p.set(11, 4, '#ffffff');
+  return finishArm(p, b);
+}
+
+function finishArm(p, b) {
+  const out = pad(p, 2);
+  out.outline();
+  if (b.glow) out.halo(b.glow);
+  return out;
+}
+
+// Even bands get set A, odd bands set B; the final astral weapon is the
+// Eternity Blade — the last thing anyone ever merges deserves to be a sword.
+const ARSENAL_SET_A = [armMace, armSpear, armAxe, armLance, armGreatsword];
+const ARSENAL_SET_B = [armFlail, armTrident, armHalberd, armGlaive, armWarhammer];
+const ARSENAL = ARSENAL_BANDS.flatMap((band, i) => {
+  const set = i % 2 === 0 ? ARSENAL_SET_A : ARSENAL_SET_B;
+  return set.map((draw) => () => draw(band));
+});
+ARSENAL[ARSENAL.length - 1] = () =>
+  weapon({ blade: '#ffffff', len: 18, w: 7, guard: '#ffd166', gem: '#ff9adc', glow: '#ffffff98', name: 'eternity' });
+
 // ---------- Tiles (32x32 logical; floor/wall grayscale for biome tint) ----------
 
 function floorTile(variant) {
@@ -1424,8 +1628,9 @@ for (const [name, pal] of Object.entries(DRAGON_PALETTES)) {
   writeSheet(`${OUT}/dragon-${name}.png`, [dungeonDragon(0, pal), dungeonDragon(1, pal)], 1);
 }
 writeSheet(`${OUT}/gift.png`, [gift(0), gift(1)], 1);
-// 25 tier blades + the 3 premium IAP weapons (frames 25-27)
-writeSheet(`${OUT}/gear.png`, [...WEAPONS.map(weapon), scythe(), voidKatana(), dragonCleaver()], 2);
+// 25 tier blades + 50 arsenal weapons (tiers 26-75) + the 3 premium IAP
+// weapons (frames 75-77 — swordSkins.ts derives them from weaponArtCount)
+writeSheet(`${OUT}/gear.png`, [...WEAPONS.map(weapon), ...ARSENAL.map((f) => f()), scythe(), voidKatana(), dragonCleaver()], 2);
 writeSheet(
   `${OUT}/deco.png`,
   [deadTree(), skullProp(), rockProp(), stuckSword(), boneProp(), bushProp(), crateProp()],
