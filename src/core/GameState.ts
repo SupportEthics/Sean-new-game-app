@@ -4,6 +4,7 @@ import { FAIRY, fairyLevelCost } from '../config/fairy';
 import { GiftDef } from '../config/gifts';
 import { LOGIN_REWARDS, LoginReward } from '../config/loginRewards';
 import {
+  BATTLE_PASS,
   bundleBySku,
   FREE_CHEST,
   gemPackBySku,
@@ -50,6 +51,14 @@ import { CodexEntry, codexEntries } from '../config/codex';
 import { enchantById, enchantCost } from '../config/enchants';
 import { expeditionById } from '../config/expeditions';
 import { DUELS } from '../config/duels';
+import {
+  freeRewardFor,
+  PASS,
+  passLevel,
+  PassReward,
+  passSeason,
+  premiumRewardFor,
+} from '../config/pass';
 import { soulUpgradeById, soulUpgradeCost } from '../config/soulsTree';
 import { buildingById, buildingCost, TOWN } from '../config/town';
 import { RAIDS, raidClearKills, raidGems, raidGoldPerKill, raidKillCap, raidMonsterHp } from '../config/raids';
@@ -121,6 +130,7 @@ export interface GameEvents {
   'enchants:changed': undefined;
   'expedition:changed': undefined;
   'duel:done': boolean;
+  'pass:changed': undefined;
   'fairy:changed': number;
   'login:changed': undefined;
   'town:changed': undefined;
@@ -234,6 +244,11 @@ export interface SerializedState {
   expedition?: { petId: string; defId: string; endsAt: number } | null;
   duelDay?: string;
   duelsUsed?: number;
+  passSeasonNum?: number;
+  passXp?: number;
+  passClaimedFree?: number[];
+  passClaimedPremium?: number[];
+  passPremiumSeason?: number;
   fairyLevel: number;
   dmgBoostUntil: number;
   speedBoostUntil: number;
@@ -336,6 +351,13 @@ export class GameState {
   /** Duel allowance: the UTC day + how many were fought that day. */
   duelDay = '';
   duelsUsed = 0;
+  /** Knight's Pass: season number, XP within it, claimed levels per lane,
+   * and which season the premium lane was bought for. */
+  passSeasonNum = 0;
+  passXp = 0;
+  passClaimedFree: number[] = [];
+  passClaimedPremium: number[] = [];
+  passPremiumSeason = 0;
   /** Fairy helper level; 0 = not recruited yet. */
   fairyLevel = 0;
   /** Rewarded-ad boosts: epoch ms the x2 damage / x2 speed windows end. */
@@ -964,6 +986,76 @@ export class GameState {
     return 1 + (def ? this.enchantLevel(id) * def.perLevel : 0);
   }
 
+  // ---- The Knight's Pass ----
+
+  /** Season rollover: a new season wipes XP and claims (premium stays
+   * bound to the season it was bought for). */
+  private syncPassSeason(now: number = this.clock()): void {
+    const season = passSeason(now);
+    if (this.passSeasonNum === season) return;
+    this.passSeasonNum = season;
+    this.passXp = 0;
+    this.passClaimedFree = [];
+    this.passClaimedPremium = [];
+    this.emit('pass:changed', undefined);
+  }
+
+  addPassXp(amount: number, now: number = this.clock()): void {
+    this.syncPassSeason(now);
+    const cap = PASS.maxLevel * PASS.xpPerLevel;
+    const next = Math.min(cap, this.passXp + amount);
+    if (next === this.passXp) return;
+    this.passXp = next;
+    this.emit('pass:changed', undefined);
+  }
+
+  get passLevelNow(): number {
+    return passLevel(this.passXp);
+  }
+
+  passPremiumOwned(now: number = this.clock()): boolean {
+    this.syncPassSeason(now);
+    return this.passPremiumSeason === this.passSeasonNum;
+  }
+
+  passClaimed(level: number, lane: 'free' | 'premium'): boolean {
+    return (lane === 'free' ? this.passClaimedFree : this.passClaimedPremium).includes(level);
+  }
+
+  canClaimPass(level: number, lane: 'free' | 'premium', now: number = this.clock()): boolean {
+    this.syncPassSeason(now);
+    if (level < 1 || level > PASS.maxLevel) return false;
+    if (this.passLevelNow < level || this.passClaimed(level, lane)) return false;
+    return lane === 'free' || this.passPremiumOwned(now);
+  }
+
+  claimPass(level: number, lane: 'free' | 'premium', now: number = this.clock()): PassReward | null {
+    if (!this.canClaimPass(level, lane, now)) return null;
+    const reward = lane === 'free' ? freeRewardFor(level) : premiumRewardFor(level);
+    (lane === 'free' ? this.passClaimedFree : this.passClaimedPremium).push(level);
+    if (reward.gems) this.addGems(reward.gems);
+    if (reward.goldHours) this.addGold(this.goldForHours(reward.goldHours));
+    if (reward.goldEgg) {
+      const pet = rollPet(Math.random(), eggPool('gold'));
+      if (this.petLevel(pet.id) >= PET_MAX_LEVEL) this.addGems(PET_DUP_GEMS);
+      else this.pets[pet.id] = this.petLevel(pet.id) + 1;
+      this.emit('pets:changed', this.pets);
+    }
+    this.emit('pass:changed', undefined);
+    return reward;
+  }
+
+  /** Unclaimed-but-earned pass rewards (badge fodder). */
+  get passClaimable(): number {
+    this.syncPassSeason();
+    let n = 0;
+    for (let lv = 1; lv <= this.passLevelNow; lv++) {
+      if (!this.passClaimed(lv, 'free')) n++;
+      if (this.passPremiumOwned() && !this.passClaimed(lv, 'premium')) n++;
+    }
+    return n;
+  }
+
   // ---- Rival duels ----
 
   duelsLeft(now: number = this.clock()): number {
@@ -1423,6 +1515,14 @@ export class GameState {
       this.emit('shop:changed', undefined);
       return true;
     }
+    if (sku === BATTLE_PASS.sku) {
+      this.syncPassSeason();
+      if (this.passPremiumOwned()) return false; // already own this season
+      this.passPremiumSeason = this.passSeasonNum;
+      this.emit('pass:changed', undefined);
+      this.emit('shop:changed', undefined);
+      return true;
+    }
     if (sku === PIGGY.product.sku) {
       if (!this.canCrackPiggy) return false;
       this.addGems(this.piggyGems);
@@ -1604,6 +1704,9 @@ export class GameState {
   /** Progress counts toward every period's sheet at once. */
   trackQuest(id: QuestMetric, amount = 1, now: number = Date.now()): void {
     this.rollDaily(now);
+    // The same actions feed the Knight's Pass (kills excluded — too hot)
+    const xp = PASS.xp[id];
+    if (xp) this.addPassXp(xp * amount, now);
     let changed = false;
     for (const period of ['daily', 'weekly', 'monthly'] as QuestPeriod[]) {
       const sheet = this.questSheet(period);
@@ -1871,6 +1974,11 @@ export class GameState {
       expedition: this.expedition ? { ...this.expedition } : null,
       duelDay: this.duelDay,
       duelsUsed: this.duelsUsed,
+      passSeasonNum: this.passSeasonNum,
+      passXp: this.passXp,
+      passClaimedFree: [...this.passClaimedFree],
+      passClaimedPremium: [...this.passClaimedPremium],
+      passPremiumSeason: this.passPremiumSeason,
       fairyLevel: this.fairyLevel,
       dmgBoostUntil: this.dmgBoostUntil,
       speedBoostUntil: this.speedBoostUntil,
@@ -1943,6 +2051,11 @@ export class GameState {
     gs.expedition = data.expedition ? { ...data.expedition } : null;
     gs.duelDay = data.duelDay ?? '';
     gs.duelsUsed = data.duelsUsed ?? 0;
+    gs.passSeasonNum = data.passSeasonNum ?? 0;
+    gs.passXp = data.passXp ?? 0;
+    gs.passClaimedFree = [...(data.passClaimedFree ?? [])];
+    gs.passClaimedPremium = [...(data.passClaimedPremium ?? [])];
+    gs.passPremiumSeason = data.passPremiumSeason ?? 0;
     gs.fairyLevel = data.fairyLevel;
     gs.dmgBoostUntil = data.dmgBoostUntil;
     gs.speedBoostUntil = data.speedBoostUntil;

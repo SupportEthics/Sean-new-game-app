@@ -180,6 +180,15 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.duelsUsed = 0;
     return save;
   },
+  // v27 -> v28: the Knight's Pass
+  (save) => {
+    save.state.passSeasonNum = 0;
+    save.state.passXp = 0;
+    save.state.passClaimedFree = [];
+    save.state.passClaimedPremium = [];
+    save.state.passPremiumSeason = 0;
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

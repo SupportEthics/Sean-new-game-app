@@ -100,6 +100,15 @@ export const PIGGY = {
   minToCrack: 30,
 };
 
+/** The Knight's Pass premium lane — one purchase per 30-day season
+ * (consumable, so next season is a fresh buy). */
+export const BATTLE_PASS: IapProduct = {
+  sku: 'knights_pass',
+  priceUsd: 4.99,
+  title: 'THE KNIGHTS PASS',
+  kind: 'consumable',
+};
+
 /** Free chest: rewarded ad -> small gem drop, on a cooldown. */
 export const FREE_CHEST = {
   gems: 5,
@@ -126,6 +135,7 @@ export const ALL_PRODUCTS: IapProduct[] = [
   STARTER_PACK,
   REMOVE_ADS,
   PIGGY.product,
+  BATTLE_PASS,
 ];
 
 export function productBySku(sku: string): IapProduct | undefined {
