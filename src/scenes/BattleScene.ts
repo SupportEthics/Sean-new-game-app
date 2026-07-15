@@ -3,8 +3,7 @@ import { GEAR, weaponFrame } from '../config/gear';
 import { GIFTS, rollGift } from '../config/gifts';
 import { isLocationEntrance, locationForStage, locationIndex, speciesForWave } from '../config/locations';
 import { raidClearKills } from '../config/raids';
-import { skinById } from '../config/skins';
-import { swordSkinFrame } from '../config/swordSkins';
+import { premiumSwordById, swordSkinFrame } from '../config/swordSkins';
 import { EVOLUTION } from '../config/pets';
 import { FAIRY_EVOLUTION } from '../config/fairy';
 import { DUNGEON_MODIFIERS } from '../config/dungeon';
@@ -38,7 +37,6 @@ export class BattleScene extends Phaser.Scene {
   private blades: { img: Phaser.GameObjects.Image; glow: Phaser.GameObjects.Image }[] = [];
   private slotIcons: Phaser.GameObjects.Image[] = [];
   private slotLocks: Phaser.GameObjects.BitmapText[] = [];
-  private auraTint: number = THEME.gold;
   private lastSlots = 0;
   private enemy!: Phaser.GameObjects.Sprite;
   private extraEnemies: Phaser.GameObjects.Sprite[] = [];
@@ -259,12 +257,20 @@ export class BattleScene extends Phaser.Scene {
   private applySkin(id: string): void {
     this.hero.setTexture(`hero-${id}`);
     this.hero.play(`hero-${id}-idle`);
-    // Legendary auras color the orbiting blades' glow
-    const aura = skinById(id)?.art.aura;
-    this.auraTint = aura
-      ? Phaser.Display.Color.HexStringToColor(aura.slice(0, 7)).color
-      : THEME.gold;
-    this.blades.forEach((b) => b.glow.setTint(this.auraTint));
+    // Hero skins never touch the blades (Sean: switching knight skin made
+    // the worn sword look like a different weapon — that was the old
+    // legendary-aura tint washing over the blade glow)
+  }
+
+  /** Blade glow follows the WORN SWORD: premium swords bring their own
+   * aura color, everything else glows the standard gold. */
+  private bladeGlowTint(): number {
+    const key = this.gs.swordSkin;
+    if (key.startsWith('premium-')) {
+      const sword = premiumSwordById(key.slice('premium-'.length));
+      if (sword) return sword.aura;
+    }
+    return THEME.gold;
   }
 
   /** Companions flanking the hero, one per active pet, on the reserved spots. */
@@ -449,7 +455,7 @@ export class BattleScene extends Phaser.Scene {
         .image(this.heroX, this.heroY, 'spark')
         .setScale(2.4)
         .setAlpha(0.3)
-        .setTint(this.auraTint)
+        .setTint(this.bladeGlowTint())
         .setDepth(7);
       const img = this.add
         .image(this.heroX, this.heroY, 'gear', 0)
@@ -464,11 +470,12 @@ export class BattleScene extends Phaser.Scene {
       b.glow.destroy();
     }
 
+    const glowTint = this.bladeGlowTint();
     this.blades.forEach((blade, i) => {
       const tier = equipped[i] ?? 1;
       blade.img.setFrame(swordSkinFrame(this.gs.swordSkin, tier));
       const band = Math.min((tier - 1) / GEAR.weaponArtCount, 1);
-      blade.glow.setAlpha(0.18 + band * 0.35);
+      blade.glow.setAlpha(0.18 + band * 0.35).setTint(glowTint);
     });
   }
 

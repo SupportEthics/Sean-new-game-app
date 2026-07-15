@@ -184,17 +184,19 @@ export class PetsPanel extends Phaser.Scene {
       .setOrigin(0, 0.5)
       .setTint(0x7db8d8);
     this.expeditionCard.add(lbl);
+    // Trip buttons ride the title row so they never cover the text line
+    // (Sean: the 1H/4H/12H boxes were sitting on top of the pet's name)
     EXPEDITIONS.forEach((def, i) => {
       const x = PANEL_X + PANEL_W - 160 + i * 52;
       const btn = this.add
-        .rectangle(x, y, 46, 26, 0x2884a8)
+        .rectangle(x, y - 10, 46, 20, 0x2884a8)
         .setStrokeStyle(2, 0x7db8d8)
         .setInteractive({ useHandCursor: true })
         .on('pointerdown', () => {
           if (this.gs.startExpedition(def.id)) audio.buy();
         });
       const blbl = this.add
-        .bitmapText(x, y, 'pix', `${def.hours}H`, 8)
+        .bitmapText(x, y - 10, 'pix', `${def.hours}H`, 8)
         .setOrigin(0.5);
       this.expeditionCard.add([btn, blbl]);
     });
