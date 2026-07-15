@@ -24,6 +24,8 @@ export const LOCATIONS: readonly GameLocation[] = [
   { name: 'EMBER FORGE', floor: 0xa85c38, wall: 0x92492c, species: ['imp', 'golem', 'ogre'] },
   { name: 'DRAGONS LAIR', floor: 0xc09a3c, wall: 0xa8842e, species: ['serpent', 'imp', 'golem'] },
   { name: 'VOID CITADEL', floor: 0x6e5c72, wall: 0x5c4c60, species: ['cultist', 'wraith', 'lich'] },
+  { name: 'THE ABYSS', floor: 0x3e5258, wall: 0x32444a, species: ['ghoul', 'cultist', 'spider'] },
+  { name: 'CELESTIAL REALM', floor: 0xd8c890, wall: 0xc4b47c, species: ['gargoyle', 'lich', 'golem'] },
 ] as const;
 
 /** Stages per location = one full stage set. */

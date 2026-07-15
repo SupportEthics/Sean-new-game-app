@@ -17,9 +17,13 @@ describe('locations', () => {
     expect(locationIndex(10)).toBe(0);
     expect(locationIndex(11)).toBe(1);
     expect(locationIndex(80)).toBe(7);
-    expect(locationIndex(81)).toBe(0); // wraps back around
+    expect(locationIndex(81)).toBe(8); // the deep-endgame realms
+    expect(locationIndex(91)).toBe(9);
+    expect(locationIndex(101)).toBe(0); // wraps back around
     expect(locationForStage(21).name).toBe('THE CASTLE');
     expect(locationForStage(61).name).toBe('DRAGONS LAIR');
+    expect(locationForStage(85).name).toBe('THE ABYSS');
+    expect(locationForStage(95).name).toBe('CELESTIAL REALM');
   });
 
   it('flags the first stage of each set as an entrance', () => {
