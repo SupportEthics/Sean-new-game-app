@@ -7,6 +7,7 @@ import { skinById } from '../config/skins';
 import { swordSkinFrame } from '../config/swordSkins';
 import { EVOLUTION } from '../config/pets';
 import { FAIRY_EVOLUTION } from '../config/fairy';
+import { DUNGEON_MODIFIERS } from '../config/dungeon';
 import { ENEMY_SPECIES, STAGES } from '../config/stages';
 import { isBossWave } from '../core/BattleSim';
 import { formatNumber, rivalDps } from '../core/EconomyMath';
@@ -542,17 +543,41 @@ export class BattleScene extends Phaser.Scene {
 
   private onRaidStarted(level: number): void {
     const dungeon = this.gs.raid?.dungeon;
-    const seed = dungeon ? this.gs.highestStage : level * 3;
-    const species = ENEMY_SPECIES[seed % ENEMY_SPECIES.length];
+    this.extraEnemies.forEach((e) => e.setVisible(false));
+    if (dungeon) {
+      // The day's dragon looms over the right flank, breathing
+      const color = DUNGEON_MODIFIERS.find((m) => m.id === dungeon)?.dragon ?? 'emerald';
+      this.enemy.setVisible(false);
+      this.enemyShadow.setVisible(false);
+      this.dragonSprite?.destroy();
+      this.dragonSprite = this.add
+        .sprite(282, 226, `dragon-${color}`, 0)
+        .setScale(2)
+        .setDepth(9);
+      this.tweens.add({
+        targets: this.dragonSprite,
+        scaleY: 2.05,
+        y: 230,
+        duration: 1400,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.inOut',
+      });
+      this.enemyName.setText('DAILY DUNGEON').setVisible(true);
+      this.bossBarBg.setVisible(true);
+      this.bossBar.setVisible(true).setFillStyle(0x2884a8);
+      this.lastWaveKey = '';
+      return;
+    }
+    const species = ENEMY_SPECIES[(level * 3) % ENEMY_SPECIES.length];
     const tex = `enemy-${species.key}`;
     this.enemy.setTexture(tex);
     this.enemy.play(`${tex}-idle`);
-    this.enemy.setScale(1.4).setTint(dungeon ? 0xb0e0ff : 0xffb0b0);
+    this.enemy.setScale(1.4).setTint(0xffb0b0);
     this.enemyShadow.setScale(1.5);
-    this.extraEnemies.forEach((e) => e.setVisible(false));
-    this.enemyName.setText(dungeon ? 'DAILY DUNGEON' : `RAID LV ${level}`).setVisible(true);
+    this.enemyName.setText(`RAID LV ${level}`).setVisible(true);
     this.bossBarBg.setVisible(true);
-    this.bossBar.setVisible(true).setFillStyle(dungeon ? 0x2884a8 : 0x9b7ede);
+    this.bossBar.setVisible(true).setFillStyle(0x9b7ede);
     this.lastWaveKey = ''; // force resync after the raid
   }
 
@@ -565,7 +590,21 @@ export class BattleScene extends Phaser.Scene {
     dungeon?: string;
     quota?: number;
   }): void {
-    this.enemy.clearTint();
+    this.enemy.clearTint().setVisible(true);
+    this.enemyShadow.setVisible(true);
+    if (this.dragonSprite) {
+      // The beaten dragon sinks away (or slinks off if it won)
+      const d = this.dragonSprite;
+      this.dragonSprite = null;
+      this.tweens.add({
+        targets: d,
+        y: d.y + 40,
+        alpha: 0,
+        angle: r.cleared ? 12 : 0,
+        duration: 600,
+        onComplete: () => d.destroy(),
+      });
+    }
     this.bossBar.setFillStyle(THEME.bossTimer);
     this.enemyName.setVisible(false);
     this.syncWave(true);
@@ -597,6 +636,8 @@ export class BattleScene extends Phaser.Scene {
   // ---- Duels ----
 
   private duelActive = false;
+  private dragonSprite: Phaser.GameObjects.Sprite | null = null;
+  private dragonBusy = false;
 
   /** Stage a rival-knight showdown in the arena: three lunging exchanges
    * with damage pops, then the pre-rolled loser topples. The battle sim
@@ -744,6 +785,20 @@ export class BattleScene extends Phaser.Scene {
   private onKill(kills: number): void {
     audio.coin();
     this.coinEmitter.emitParticleAt(this.enemyX, this.enemyY - 10, Math.min(3 * kills, 12));
+    // Dungeon dragon reacts to every landed kill: jaw snaps open, a white
+    // flash, and a little recoil
+    if (this.dragonSprite && !this.dragonBusy) {
+      const d = this.dragonSprite;
+      this.dragonBusy = true;
+      d.setFrame(1);
+      d.setTintFill(0xffffff);
+      this.tweens.add({ targets: d, x: d.x + 6, duration: 70, yoyo: true });
+      this.time.delayedCall(90, () => d.clearTint());
+      this.time.delayedCall(200, () => {
+        if (d.active) d.setFrame(0);
+        this.dragonBusy = false;
+      });
+    }
   }
 
   private onStageCleared(): void {

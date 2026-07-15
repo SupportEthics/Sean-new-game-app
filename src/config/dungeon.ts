@@ -16,6 +16,8 @@ export interface DungeonModifier {
   timeMult: number;
   /** Gold per kill relative to a frontier drop. */
   goldMult: number;
+  /** The dragon head's colourway for the day (sprite dragon-<id>.png). */
+  dragon: 'emerald' | 'crimson' | 'azure' | 'gold';
 }
 
 export const DUNGEON = {
@@ -32,6 +34,7 @@ export const DUNGEON = {
 export const DUNGEON_MODIFIERS: DungeonModifier[] = [
   {
     id: 'horde',
+    dragon: 'emerald',
     name: 'HORDE DAY',
     desc: 'FRAIL MONSTERS - TWICE AS MANY',
     hpMult: 0.4,
@@ -41,6 +44,7 @@ export const DUNGEON_MODIFIERS: DungeonModifier[] = [
   },
   {
     id: 'titan',
+    dragon: 'crimson',
     name: 'TITAN DAY',
     desc: 'GIANTS WITH TRIPLE HEALTH',
     hpMult: 3,
@@ -50,6 +54,7 @@ export const DUNGEON_MODIFIERS: DungeonModifier[] = [
   },
   {
     id: 'blitz',
+    dragon: 'azure',
     name: 'BLITZ DAY',
     desc: 'HALF THE TIME ON THE CLOCK',
     hpMult: 1,
@@ -59,6 +64,7 @@ export const DUNGEON_MODIFIERS: DungeonModifier[] = [
   },
   {
     id: 'plunder',
+    dragon: 'gold',
     name: 'PLUNDER DAY',
     desc: 'MONSTERS DROP X3 GOLD',
     hpMult: 1,

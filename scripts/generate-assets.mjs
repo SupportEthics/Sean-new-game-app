@@ -800,6 +800,98 @@ function fairy(frame, stage = 0) {
   return out;
 }
 
+// ---------- Daily Dungeon dragon head (100x76 logical, Sean-approved v3) ----
+// One palette per daily modifier; frame 1 snaps the jaw open (hit react).
+
+const DRAGON_PALETTES = {
+  emerald: { hi: '#a8e07c', mid: '#5c9a3a', lo: '#35682a', dk: '#1c3a14', belly: '#d8e4a4', eye: '#ffd166', horn: '#e8dcc0', horn2: '#c9b890', tongue: '#b03a2e' },
+  crimson: { hi: '#ff8a6b', mid: '#b03a2e', lo: '#7a1c18', dk: '#400a08', belly: '#e8c49a', eye: '#ffe86b', horn: '#3a3244', horn2: '#5c5470', tongue: '#5c1210' },
+  azure: { hi: '#8ee8ff', mid: '#2884a8', lo: '#1c4a6a', dk: '#0c2438', belly: '#d0ecf8', eye: '#ff5e5e', horn: '#e8f0f8', horn2: '#aab4c0', tongue: '#b03a5e' },
+  gold: { hi: '#ffe8a0', mid: '#c99a2e', lo: '#8a5a1e', dk: '#4a2c0c', belly: '#fff2c8', eye: '#4ec3e8', horn: '#f3ecd8', horn2: '#d8c8a0', tongue: '#b03a2e' },
+};
+
+function dungeonDragon(frame, pal) {
+  const p = new Pix(100, 76);
+  const { hi: HI, mid: MID, lo: LO, dk: DK } = pal;
+  const jaw = frame === 1 ? 5 : 0; // frame 1: jaw snaps open
+  // Neck sweeping in from the right, spikes riding its back edge
+  p.ellipse(88, 50, 22, 24, MID);
+  p.ellipse(93, 48, 17, 18, LO);
+  for (let i = 0, sy = 28; sy < 70; sy += 9, i++) p.tri(92, sy, 99, sy - 4, 99, sy + 6, LO);
+  // Skull dome
+  p.ellipse(56, 34, 26, 20, MID);
+  p.ellipse(60, 28, 22, 14, HI);
+  // Snout wedge with ridge bumps
+  p.tri(8, 34, 38, 20, 40, 44, MID);
+  p.rect(8, 30, 34, 12, MID);
+  p.ellipse(12, 36, 6, 6, MID);
+  p.rect(8, 27, 32, 4, HI);
+  for (const bx of [16, 24, 32]) p.tri(bx, 27, bx + 5, 27, bx + 2, 23, MID);
+  // Lower jaw (drops on frame 1)
+  p.tri(10, 50 + jaw, 44, 44 + jaw, 46, 58 + jaw, LO);
+  p.rect(12, 48 + jaw, 32, 6, LO);
+  p.tri(9, 53 + jaw, 15, 50 + jaw, 14, 58 + jaw, LO);
+  // Mouth cavity + tongue
+  p.tri(12, 42, 42, 42, 42, 48 + jaw, DK);
+  p.rect(12, 41, 30, 5 + jaw, DK);
+  p.rect(20, 45 + jaw, 16, 2, pal.tongue);
+  // Teeth, varied
+  for (let i = 0, tx = 13; tx < 42; tx += 5, i++) {
+    const th = i % 2 === 0 ? 6 : 4;
+    p.tri(tx, 41, tx + 4, 41, tx + 2, 41 + th, '#f3ecd8');
+    p.tri(tx + 2, 48 + jaw, tx + 6, 48 + jaw, tx + 4, 44 + jaw, '#ded2b4');
+  }
+  // Nostril + smoke wisps (bigger puff mid-roar)
+  p.ellipse(14, 31, 2, 2, DK);
+  p.set(13, 30, '#3a3244');
+  for (const [sx, sy] of [[11, 25], [9, 22], [10, 19], [7, 16]]) p.set(sx, sy, '#9a94a8');
+  p.set(8, 17, '#c4bece');
+  p.set(11, 24, '#c4bece');
+  if (frame === 1) { p.set(6, 14, '#c4bece'); p.set(9, 13, '#9a94a8'); }
+  // Brow plates + slit-pupil eye
+  p.tri(46, 20, 74, 13, 66, 27, LO);
+  p.tri(48, 21, 66, 17, 60, 25, MID);
+  p.ellipse(58, 27, 5, 4, DK);
+  p.ellipse(58, 27, 3.4, 2.6, pal.eye);
+  p.line(58, 25, 58, 29, DK);
+  p.set(56, 25, '#ffffff');
+  // Horns with ridge lines
+  p.tri(66, 12, 96, 2, 78, 22, pal.horn);
+  p.tri(72, 20, 99, 12, 84, 28, pal.horn2);
+  p.line(72, 14, 90, 5, pal.horn2);
+  p.line(78, 22, 94, 13, pal.horn);
+  // Crest spikes
+  for (let i = 0, sx = 44; sx < 64; sx += 7, i++) p.tri(sx, 17 - i, sx + 6, 15 - i, sx + 3, 9 - i, MID);
+  // Ear fin with membrane ribs
+  p.tri(74, 30, 94, 26, 84, 46, MID);
+  p.line(78, 32, 90, 29, LO);
+  p.line(79, 36, 91, 33, LO);
+  p.line(80, 40, 90, 38, LO);
+  // Cheek plate
+  p.ellipse(64, 44, 9, 7, MID);
+  p.ellipse(63, 43, 6, 4, HI);
+  // Scale texture: staggered darker dots
+  for (let y = 26; y < 62; y += 4) {
+    for (let x = 46 + ((y / 4) % 2 === 0 ? 0 : 2); x < 96; x += 5) {
+      const cur = p.get(x, y);
+      if (cur === MID) p.set(x, y, LO);
+      else if (cur === LO) p.set(x, y, DK);
+    }
+  }
+  for (const [sx, sy] of [[52, 24], [60, 22], [68, 26], [56, 32], [66, 34]]) p.set(sx, sy, '#ffffff');
+  // Throat: crescent plates hugging the jaw curve
+  for (const [cx, cy, rx] of [[52, 50, 14], [58, 55, 16], [64, 60, 17], [70, 65, 17]]) {
+    for (let y = cy + 1; y <= cy + 7; y++) {
+      for (let x = cx - rx; x <= cx + rx; x++) {
+        if (((x - cx) / rx) ** 2 + ((y - cy) / 7) ** 2 <= 1) {
+          p.set(x, y + jaw / 2, y >= cy + 5 ? '#fffef0' : pal.belly);
+        }
+      }
+    }
+  }
+  return finish(p);
+}
+
 // ---------- Gift (20x20 logical, drifting rewarded-ad parcel) ----------
 
 function gift(frame) {
@@ -1328,6 +1420,9 @@ for (const [id, fn] of [
 writeSheet(`${OUT}/fairy.png`, [fairy(0), fairy(1)], 1);
 writeSheet(`${OUT}/fairy-s1.png`, [fairy(0, 1), fairy(1, 1)], 1);
 writeSheet(`${OUT}/fairy-s2.png`, [fairy(0, 2), fairy(1, 2)], 1);
+for (const [name, pal] of Object.entries(DRAGON_PALETTES)) {
+  writeSheet(`${OUT}/dragon-${name}.png`, [dungeonDragon(0, pal), dungeonDragon(1, pal)], 1);
+}
 writeSheet(`${OUT}/gift.png`, [gift(0), gift(1)], 1);
 // 25 tier blades + the 3 premium IAP weapons (frames 25-27)
 writeSheet(`${OUT}/gear.png`, [...WEAPONS.map(weapon), scythe(), voidKatana(), dragonCleaver()], 2);

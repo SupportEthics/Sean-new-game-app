@@ -73,7 +73,7 @@ UTC rotation, arena-top banner only while live; GameState.clock is
 injectable and frozen to a Wednesday under vitest); Daily Dungeon
 (config/dungeon.ts, rides the generalized RaidState — duration/
 clearKills/killCap/goldPerKill fields + dungeon flag — daily modifier,
-free retries, once-a-day reward); Codex collection book
+free retries, once-a-day reward; the arena boss is a huge animated dragon head, one colourway per modifier — assets/dragon-<color>.png, jaw-snap frame on kills); Codex collection book
 (config/codex.ts, beasts derive from location pools + bestTier blades +
 hatched pets, one-time gem bounties, CodexPanel); Forge enchantments
 (config/enchants.ts, gem-bought permanent Sharpness/Greed/Soulbind,

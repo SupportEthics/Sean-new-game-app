@@ -69,6 +69,12 @@ export class PreloadScene extends Phaser.Scene {
       frameWidth: 24,
       frameHeight: 24,
     });
+    for (const c of ['emerald', 'crimson', 'azure', 'gold']) {
+      this.load.spritesheet(`dragon-${c}`, assetUrl(`assets/dragon-${c}.png`), {
+        frameWidth: 104,
+        frameHeight: 80,
+      });
+    }
     this.load.spritesheet('gear', assetUrl('assets/gear.png'), { frameWidth: 56, frameHeight: 64 });
     this.load.spritesheet('deco', assetUrl('assets/deco.png'), { frameWidth: 28, frameHeight: 28 });
     this.load.spritesheet('torch', assetUrl('assets/torch.png'), { frameWidth: 20, frameHeight: 34 });
@@ -93,6 +99,10 @@ export class PreloadScene extends Phaser.Scene {
       'fairy-s1',
       'fairy-s2',
       'gift',
+      'dragon-emerald',
+      'dragon-crimson',
+      'dragon-azure',
+      'dragon-gold',
     ];
     keys.forEach((k) => this.textures.get(k).setFilter(Phaser.Textures.FilterMode.NEAREST));
 
