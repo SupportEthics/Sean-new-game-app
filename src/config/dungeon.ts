@@ -35,8 +35,8 @@ export const DUNGEON_MODIFIERS: DungeonModifier[] = [
   {
     id: 'horde',
     dragon: 'emerald',
-    name: 'HORDE DAY',
-    desc: 'FRAIL MONSTERS - TWICE AS MANY',
+    name: 'THE EMERALD WYRM',
+    desc: 'WEAK SCALES - TWICE THE KILLS TO SLAY IT',
     hpMult: 0.4,
     quotaMult: 2,
     timeMult: 1,
@@ -45,8 +45,8 @@ export const DUNGEON_MODIFIERS: DungeonModifier[] = [
   {
     id: 'titan',
     dragon: 'crimson',
-    name: 'TITAN DAY',
-    desc: 'GIANTS WITH TRIPLE HEALTH',
+    name: 'THE CRIMSON TYRANT',
+    desc: 'TRIPLE HEALTH - DOUBLE THE GOLD',
     hpMult: 3,
     quotaMult: 0.5,
     timeMult: 1,
@@ -55,7 +55,7 @@ export const DUNGEON_MODIFIERS: DungeonModifier[] = [
   {
     id: 'blitz',
     dragon: 'azure',
-    name: 'BLITZ DAY',
+    name: 'THE AZURE STORMWING',
     desc: 'HALF THE TIME ON THE CLOCK',
     hpMult: 1,
     quotaMult: 1,
@@ -65,8 +65,8 @@ export const DUNGEON_MODIFIERS: DungeonModifier[] = [
   {
     id: 'plunder',
     dragon: 'gold',
-    name: 'PLUNDER DAY',
-    desc: 'MONSTERS DROP X3 GOLD',
+    name: 'THE GOLDEN HOARDLORD',
+    desc: 'EVERY BITE OF IT DROPS X3 GOLD',
     hpMult: 1,
     quotaMult: 1,
     timeMult: 1,
