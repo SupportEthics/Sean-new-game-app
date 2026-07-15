@@ -87,16 +87,20 @@ export function formatNumber(n: number): string {
 
 // ---- Rival duels ----
 
-/** A board rival's estimated DPS: what it takes to fight at their stage. */
+/** A board rival's estimated DPS: to hold stage S a knight needs roughly
+ * that stage's boss HP inside the boss clock. (It used to be one wave
+ * monster's HP, which lowballed real players so badly the top of the
+ * board was easy pickings.) */
 export function rivalDps(stage: number): number {
-  return enemyHp(Math.max(1, stage), 5);
+  return enemyHp(Math.max(1, stage), STAGES.wavesPerStage) / STAGES.bossTimeLimit;
 }
 
-/** Win probability by DPS ratio — 50/50 against an equal, hard but never
- * hopeless punching up (Bradley-Terry). */
+/** Win probability by DPS ratio — 50/50 against an equal (Bradley-Terry).
+ * With HP growing 1.27x per stage, every 10 stages of gap is ~11x power,
+ * so the crown is a long shot; the clamp keeps upsets possible. */
 export function duelWinChance(myDps: number, theirStage: number): number {
   const theirs = rivalDps(theirStage);
-  return myDps / (myDps + theirs);
+  return Math.min(0.99, Math.max(0.01, myDps / (myDps + theirs)));
 }
 
 // ---- Hero level (lifetime kills badge that also pays a DPS bonus) ----

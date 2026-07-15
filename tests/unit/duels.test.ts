@@ -13,6 +13,16 @@ describe('duel math', () => {
     const down = duelWinChance(rivalDps(60), 40);
     expect(down).toBeGreaterThan(0.8);
   });
+
+  it('the crown is a long shot, not easy pickings (Sean bug)', () => {
+    // A knight geared for stage 100 challenging the stage-150 leader:
+    // 50 stages of 1.27x HP growth should make this a ~1% upset roll
+    const vsCrown = duelWinChance(rivalDps(100), 150);
+    expect(vsCrown).toBeLessThanOrEqual(0.01);
+    expect(vsCrown).toBeGreaterThan(0); // never a literal zero
+    // And a rival's power tracks their stage: +10 stages ~ 11x DPS
+    expect(rivalDps(60) / rivalDps(50)).toBeCloseTo(Math.pow(1.27, 10), 1);
+  });
 });
 
 describe('duels in GameState', () => {
