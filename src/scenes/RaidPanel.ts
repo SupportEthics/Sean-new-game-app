@@ -25,6 +25,8 @@ export class RaidPanel extends Phaser.Scene {
   private scrollY = 0;
   private maxScroll = 0;
   private cooldownText!: Phaser.GameObjects.BitmapText;
+  /** Tracks the cooldown→ready transition so the rows rebuild once. */
+  private wasCooling = false;
 
   constructor() {
     super('Raids');
@@ -81,7 +83,16 @@ export class RaidPanel extends Phaser.Scene {
       .setOrigin(0.5)
       .setVisible(false)
       .setDepth(6);
-    this.adBtn.on('pointerdown', () => this.watchAd());
+    // Ready: one tap starts the current raid (no scrolling to find it).
+    // Cooling down: the same button becomes the rewarded-ad reset.
+    this.adBtn.on('pointerdown', () => {
+      if (this.gs.raidCooldownLeft(Date.now()) > 0) {
+        this.watchAd();
+      } else if (this.gs.startRaid(this.gs.raidNextLevel, Date.now())) {
+        audio.bossWarn();
+        this.scene.stop();
+      }
+    });
 
     this.rows = this.add.container(0, 0);
     const maskShape = this.make.graphics();
@@ -94,6 +105,8 @@ export class RaidPanel extends Phaser.Scene {
     addCloseButton(this, PANEL_X + PANEL_W - 22, PANEL_Y + 12, () => this.scene.stop());
     // The list must scroll far enough that the LAST row clears the footer
     this.maxScroll = Math.max(0, RAIDS.maxLevel * ROW_PITCH + 16 - (PANEL_H - 44 - 112));
+    // Open on the player's current level instead of the top of the ladder
+    this.setScroll((this.gs.raidNextLevel - 2) * ROW_PITCH);
 
     addDragScroll(
       this,
@@ -129,6 +142,7 @@ export class RaidPanel extends Phaser.Scene {
 
   private refreshCooldown(): void {
     const left = this.gs.raidCooldownLeft(Date.now());
+    const next = this.gs.raidNextLevel;
     if (left > 0) {
       const m = Math.floor(left / 60000);
       const sec = Math.floor((left % 60000) / 1000);
@@ -137,11 +151,13 @@ export class RaidPanel extends Phaser.Scene {
       this.adBtn.setVisible(true).setTint(canAd ? 0x2884a8 : THEME.buttonBgDisabled);
       this.adLabel.setVisible(true).setText(this.adPlaying ? 'AD PLAYING...' : 'WATCH AD - RAID NOW!');
     } else {
-      if (this.cooldownText.text !== '') this.buildRows();
-      this.cooldownText.setText('');
-      this.adBtn.setVisible(false);
-      this.adLabel.setVisible(false);
+      if (this.wasCooling) this.buildRows();
+      const done = this.gs.raidHighest >= RAIDS.maxLevel;
+      this.cooldownText.setText(done ? `ALL ${RAIDS.maxLevel} CLEARED - FARM THE TOP!` : 'RAID READY!');
+      this.adBtn.setVisible(true).setTint(THEME.buttonBg);
+      this.adLabel.setVisible(true).setText(`FIGHT RAID LV ${next}`);
     }
+    this.wasCooling = left > 0;
   }
 
   private watchAd(): void {

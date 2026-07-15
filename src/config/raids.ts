@@ -4,7 +4,7 @@
 // level; higher levels need real account power (monster HP grows 4x/level).
 
 export const RAIDS = {
-  maxLevel: 50,
+  maxLevel: 75,
   /** Raid duration in sim-seconds. */
   durationSeconds: 25,
   /** Cooldown between raids, in minutes (rewarded-ad reset arrives at M4). */

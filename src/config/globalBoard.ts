@@ -60,9 +60,10 @@ export function isValidCallSign(name: string): boolean {
 import { BoardRow, RIVALS } from './leaderboard';
 
 /** Build the Hall of Legends from real global rows plus the seeded rivals
- * (which keep the board lively while the player base grows). The local
- * player is always shown from local state — their server row (matched by
- * device id) is dropped so they never appear twice. */
+ * (which keep the board lively while the player base grows — pass
+ * includeRivals=false for a live-players-only view). The local player is
+ * always shown from local state — their server row (matched by device id)
+ * is dropped so they never appear twice. */
 export function buildGlobalBoard(
   real: GlobalRow[],
   playerDeviceId: string,
@@ -71,6 +72,7 @@ export function buildGlobalBoard(
   playerPrestiges: number,
   playerSkin: string,
   maxRows = 60,
+  includeRivals = true,
 ): BoardRow[] {
   const entries: Omit<BoardRow, 'rank'>[] = [];
   for (const r of real) {
@@ -83,7 +85,7 @@ export function buildGlobalBoard(
       isPlayer: false,
     });
   }
-  for (const r of RIVALS) entries.push({ ...r, isPlayer: false });
+  if (includeRivals) for (const r of RIVALS) entries.push({ ...r, isPlayer: false });
   entries.push({
     name: playerName ?? 'YOU',
     stage: playerStage,

@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { BoardRow, buildBoard } from '../config/leaderboard';
-import { buildGlobalBoard, rollCallSign } from '../config/globalBoard';
+import { buildGlobalBoard, GlobalRow, rollCallSign } from '../config/globalBoard';
 import { GameState } from '../core/GameState';
 import { globalBoard } from '../services/GlobalBoard';
 import { audio } from '../services/AudioService';
@@ -26,6 +26,10 @@ export class LeaderboardPanel extends Phaser.Scene {
   private scrollY = 0;
   private maxScroll = 0;
   private footer!: Phaser.GameObjects.BitmapText;
+  /** Last live rows fetched, so the rivals toggle re-renders instantly. */
+  private lastReal: GlobalRow[] | null = null;
+  private viewToggle!: Phaser.GameObjects.Container;
+  private subtitle!: Phaser.GameObjects.BitmapText;
 
   constructor() {
     super('Ranks');
@@ -52,7 +56,7 @@ export class LeaderboardPanel extends Phaser.Scene {
       .bitmapText(THEME.width / 2, PANEL_Y + 12, 'pix', 'HALL OF LEGENDS', 16)
       .setTint(THEME.gold)
       .setOrigin(0.5, 0);
-    this.add
+    this.subtitle = this.add
       .bitmapText(THEME.width / 2, PANEL_Y + 48, 'pix', 'CLIMB THE RANKS - BEAT YOUR NEXT RIVAL', 8)
       .setTint(0x8a5a2e)
       .setOrigin(0.5, 0);
@@ -72,6 +76,7 @@ export class LeaderboardPanel extends Phaser.Scene {
       .bitmapText(THEME.width / 2, PANEL_Y + PANEL_H - 24, 'pix', '', 8)
       .setOrigin(0.5, 0)
       .setTint(0x9a8d6e);
+    this.viewToggle = this.add.container(0, 0);
 
     // Local board immediately; the live one replaces it when it arrives
     this.renderBoard(buildBoard(this.gs.highestStage, this.gs.prestigeCount, this.gs.activeSkin));
@@ -114,17 +119,52 @@ export class LeaderboardPanel extends Phaser.Scene {
       this.footer.setText('OFFLINE - SHOWING LOCAL RANKINGS');
       return;
     }
+    this.lastReal = real;
+    this.renderGlobal();
+    this.buildViewToggle();
+  }
+
+  /** Render the live board honouring the rivals filter. */
+  private renderGlobal(): void {
+    if (!this.lastReal) return;
     this.renderBoard(
       buildGlobalBoard(
-        real,
+        this.lastReal,
         this.gs.deviceId,
         this.gs.boardName,
         this.gs.highestStage,
         this.gs.prestigeCount,
         this.gs.activeSkin,
+        60,
+        !this.gs.boardRealOnly,
       ),
     );
-    this.footer.setText('GLOBAL RANKINGS - LIVE');
+    this.footer.setText(
+      this.gs.boardRealOnly ? 'LIVE PLAYERS ONLY - WORLDWIDE' : 'GLOBAL RANKINGS - LIVE',
+    );
+  }
+
+  /** Small switch under the header: show or hide the seeded rivals. */
+  private buildViewToggle(): void {
+    this.viewToggle.removeAll(true);
+    // Make room on the subtitle line for the switch
+    this.subtitle.setText('CLIMB THE RANKS').setOrigin(0, 0).setPosition(PANEL_X + 16, PANEL_Y + 48);
+    const realOnly = this.gs.boardRealOnly;
+    const bg = this.add
+      .rectangle(PANEL_X + PANEL_W - 70, PANEL_Y + 52, 108, 18, THEME.cardBg)
+      .setStrokeStyle(2, realOnly ? 0x2e7a1e : 0x8a5a2e)
+      .setInteractive({ useHandCursor: true });
+    const lbl = this.add
+      .bitmapText(PANEL_X + PANEL_W - 70, PANEL_Y + 52, 'pix', realOnly ? 'LIVE ONLY' : 'ALL', 8)
+      .setOrigin(0.5)
+      .setTint(realOnly ? 0x7ac74f : 0x8a5a2e);
+    bg.on('pointerdown', () => {
+      this.gs.toggleBoardRealOnly();
+      audio.buy();
+      this.renderGlobal();
+      this.buildViewToggle();
+    });
+    this.viewToggle.add([bg, lbl]);
   }
 
   /** First visit: roll a call sign to join the global board. */

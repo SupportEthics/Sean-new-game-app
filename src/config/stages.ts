@@ -22,6 +22,11 @@ export const STAGES = {
   goldDropGrowth: 1.15,
   lateGoldStage: 40,
   goldDropGrowthLate: 1.22,
+  /** Second knee: deep-endgame stages (Sean hit the wall at ~120) pay out
+   * closer to the 1.27 HP growth so each stage slows progress by ~2.4%
+   * instead of ~8% — still a grind, no longer a cliff. */
+  lateGoldStage2: 100,
+  goldDropGrowthLate2: 1.245,
 
   /** Enemies alive per wave (visual + pacing) */
   enemiesPerWave: 3,

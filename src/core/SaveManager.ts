@@ -148,6 +148,12 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.adLootReadyAt = 0;
     return save;
   },
+  // v21 -> v22: auto-cast skills toggle + real-players-only leaderboard view
+  (save) => {
+    save.state.autoSkills = false;
+    save.state.boardRealOnly = false;
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

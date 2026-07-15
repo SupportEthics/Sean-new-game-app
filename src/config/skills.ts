@@ -57,7 +57,38 @@ export const SKILLS: SkillDef[] = [
     dpsMult: 2,
     goldMult: 2,
   },
+  {
+    id: 'stormcall',
+    name: 'STORM CALL',
+    desc: 'X5 DPS FOR 10S',
+    unlockStage: 35,
+    durationSeconds: 10,
+    cooldownSeconds: 900,
+    dpsMult: 5,
+  },
+  {
+    id: 'midas',
+    name: 'MIDAS RUSH',
+    desc: 'X5 GOLD FOR 12S',
+    unlockStage: 50,
+    durationSeconds: 12,
+    cooldownSeconds: 900,
+    goldMult: 5,
+  },
+  {
+    id: 'chrono',
+    name: 'CHRONO SURGE',
+    desc: 'BATTLE 90S INSTANTLY',
+    unlockStage: 70,
+    durationSeconds: 0,
+    cooldownSeconds: 1200,
+    warpSeconds: 90,
+  },
 ];
+
+/** AUTO CAST unlocks here: skills fire themselves as they come off
+ * cooldown once the player flips the toggle in the SKILLS tab. */
+export const AUTO_SKILLS_UNLOCK_STAGE = 25;
 
 export function skillDefById(id: string): SkillDef | undefined {
   return SKILLS.find((s) => s.id === id);

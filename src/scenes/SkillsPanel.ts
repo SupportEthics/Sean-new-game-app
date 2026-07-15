@@ -1,17 +1,19 @@
 import Phaser from 'phaser';
-import { addBackdrop, addCloseButton } from '../ui/panelInput';
-import { SKILLS } from '../config/skills';
+import { addBackdrop, addCloseButton, addDragScroll } from '../ui/panelInput';
+import { AUTO_SKILLS_UNLOCK_STAGE, SKILLS } from '../config/skills';
 import { GameState } from '../core/GameState';
 import { AdService } from '../services/monetization/AdService';
 import { audio } from '../services/AudioService';
 import { THEME } from '../ui/theme';
 
 const PANEL_X = 12;
-const PANEL_Y = 150;
+const PANEL_Y = 116;
 const PANEL_W = THEME.width - 24;
-const PANEL_H = 520;
+const PANEL_H = 600;
 const ROW_H = 74;
 const ROW_PITCH = 84;
+const LIST_TOP = PANEL_Y + 108;
+const LIST_H = PANEL_H - 108 - 12;
 
 function clock(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -19,12 +21,16 @@ function clock(seconds: number): string {
   return `${m}:${String(s === 60 ? 0 : s).padStart(2, '0')}`;
 }
 
-/** Active hero skills: cast timed buffs, watch their cooldowns tick. */
+/** Active hero skills: cast timed buffs, watch their cooldowns tick, or
+ * flip AUTO CAST and let them fire themselves. */
 export class SkillsPanel extends Phaser.Scene {
   private gs!: GameState;
   private ads!: AdService;
   private rows!: Phaser.GameObjects.Container;
+  private autoRow!: Phaser.GameObjects.Container;
   private adBusy = false;
+  private scrollY = 0;
+  private maxScroll = 0;
 
   constructor() {
     super('Skills');
@@ -33,6 +39,7 @@ export class SkillsPanel extends Phaser.Scene {
   create(): void {
     this.gs = this.registry.get('gs') as GameState;
     this.ads = this.registry.get('ads') as AdService;
+    this.scrollY = 0;
 
     addBackdrop(
       this,
@@ -55,14 +62,36 @@ export class SkillsPanel extends Phaser.Scene {
     addCloseButton(this, PANEL_X + PANEL_W - 22, PANEL_Y + 12, () => this.scene.stop());
 
     this.add
-      .bitmapText(THEME.width / 2, PANEL_Y + 52, 'pix', 'CAST IN BATTLE - TIMERS RUN ON FIGHT TIME', 8)
+      .bitmapText(THEME.width / 2, PANEL_Y + 48, 'pix', 'CAST IN BATTLE - TIMERS RUN ON FIGHT TIME', 8)
       .setTint(0x8a5a2e)
       .setOrigin(0.5, 0);
 
+    this.autoRow = this.add.container(0, 0);
+
     this.rows = this.add.container(0, 0);
+    const maskShape = this.make.graphics();
+    maskShape.fillRect(PANEL_X + 2, LIST_TOP, PANEL_W - 4, LIST_H);
+    this.rows.setMask(maskShape.createGeometryMask());
+    this.maxScroll = Math.max(0, SKILLS.length * ROW_PITCH + 12 - LIST_H);
+
+    addDragScroll(
+      this,
+      new Phaser.Geom.Rectangle(PANEL_X, LIST_TOP, PANEL_W, LIST_H),
+      (delta) => this.setScroll(this.scrollY + delta),
+    );
+    this.input.on(
+      'wheel',
+      (_p: unknown, _o: unknown, _dx: number, dy: number) =>
+        this.setScroll(this.scrollY + dy * 0.6),
+    );
+
+    this.buildAutoRow();
     this.buildRows();
     this.gs.on('skills:changed', () => {
-      if (this.scene.isActive()) this.buildRows();
+      if (this.scene.isActive()) {
+        this.buildAutoRow();
+        this.buildRows();
+      }
     });
     // Cooldowns tick every sim second — keep the labels honest
     this.time.addEvent({ delay: 1000, loop: true, callback: () => this.buildRows() });
@@ -75,11 +104,45 @@ export class SkillsPanel extends Phaser.Scene {
     }
   }
 
+  private setScroll(v: number): void {
+    this.scrollY = Phaser.Math.Clamp(v, 0, this.maxScroll);
+    this.rows.setY(-this.scrollY);
+  }
+
+  /** The AUTO CAST toggle: skills fire themselves as they come ready. */
+  private buildAutoRow(): void {
+    this.autoRow.removeAll(true);
+    const y = PANEL_Y + 80;
+    const unlocked = this.gs.autoSkillsUnlocked;
+    const on = this.gs.autoSkills;
+    const bg = this.add
+      .rectangle(THEME.width / 2, y, PANEL_W - 20, 28, on ? 0x1e3a14 : THEME.cardBg)
+      .setStrokeStyle(2, unlocked ? (on ? 0x2e7a1e : 0xb03a2e) : THEME.cardBorder);
+    const lbl = this.add
+      .bitmapText(
+        THEME.width / 2,
+        y,
+        'pix',
+        unlocked
+          ? `AUTO CAST: ${on ? 'ON' : 'OFF'}`
+          : `AUTO CAST - UNLOCKS AT STAGE ${AUTO_SKILLS_UNLOCK_STAGE}`,
+        8,
+      )
+      .setOrigin(0.5)
+      .setTint(unlocked ? (on ? 0x7ac74f : 0xb03a2e) : 0x9a8d6e);
+    if (unlocked) {
+      bg.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
+        if (this.gs.toggleAutoSkills()) audio.buy();
+      });
+    }
+    this.autoRow.add([bg, lbl]);
+  }
+
   private buildRows(): void {
     this.rows.removeAll(true);
 
     SKILLS.forEach((def, i) => {
-      const y = PANEL_Y + 76 + i * ROW_PITCH + ROW_H / 2;
+      const y = LIST_TOP + 8 + i * ROW_PITCH + ROW_H / 2;
       const unlocked = this.gs.skillUnlocked(def.id);
       const activeLeft = this.gs.skillActiveLeft(def.id);
       const cooldownLeft = this.gs.skillCooldownLeft(def.id);
@@ -144,5 +207,6 @@ export class SkillsPanel extends Phaser.Scene {
       row.add([bg, name, desc, status, btn, lbl]);
       this.rows.add(row);
     });
+    this.rows.setY(-this.scrollY);
   }
 }

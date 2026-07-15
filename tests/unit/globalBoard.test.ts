@@ -98,3 +98,17 @@ describe('cloudRestoreAdvice', () => {
     expect(cloudRestoreAdvice(10, null)).toBe('nothing-there');
   });
 });
+
+describe('real-players-only view', () => {
+  const real: GlobalRow[] = [
+    { device_id: 'aaa', name: 'GRIM WOLF 47', stage: 120, prestiges: 4, skin: 'ember' },
+  ];
+
+  it('drops the seeded rivals but keeps live players and me', () => {
+    const board = buildGlobalBoard(real, 'me', 'IRON KNIGHT 90', 33, 0, 'squire', 60, false);
+    expect(board.some((r) => r.name === 'THE FIRST FORGED')).toBe(false); // rival gone
+    expect(board.some((r) => r.name === 'GRIM WOLF 47')).toBe(true);
+    expect(board.some((r) => r.isPlayer)).toBe(true);
+    expect(board).toHaveLength(2);
+  });
+});

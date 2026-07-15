@@ -9,7 +9,7 @@ const DAY = 86_400_000;
 function townState(): GameState {
   const gs = new GameState();
   gs.prestigeCount = TOWN.unlockPrestiges;
-  gs.gold = 1e12;
+  gs.gold = 1e16; // enough to max every building at the raised caps
   return gs;
 }
 

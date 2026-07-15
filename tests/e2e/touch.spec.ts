@@ -63,8 +63,9 @@ test('SKILLS and PET tabs open from touch taps', async ({ page }) => {
   await page.touchscreen.tap(97, 812);
   await page.waitForFunction(() => window.__skillsOpen === true);
 
-  // Close via the enlarged X hit zone, then open the pet den
-  await page.touchscreen.tap(356, 172);
+  // Close via the enlarged X hit zone (panel header now at y=116), then
+  // open the pet den
+  await page.touchscreen.tap(356, 136);
   await page.waitForFunction(() => window.__skillsOpen === false);
   await page.touchscreen.tap(162, 812);
   await page.waitForFunction(() => window.__petsOpen === true);

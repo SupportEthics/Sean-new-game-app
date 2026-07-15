@@ -112,3 +112,49 @@ describe('skill persistence', () => {
     );
   });
 });
+
+describe('auto cast', () => {
+  it('is gated behind its unlock stage', () => {
+    const gs = new GameState();
+    expect(gs.autoSkillsUnlocked).toBe(false);
+    expect(gs.toggleAutoSkills()).toBe(false);
+    expect(gs.autoSkills).toBe(false);
+    gs.highestStage = 25;
+    expect(gs.toggleAutoSkills()).toBe(true);
+    expect(gs.autoSkills).toBe(true);
+  });
+
+  it('fires every ready skill as the sim ticks', () => {
+    const gs = unlockedState();
+    gs.toggleAutoSkills();
+    gs.update(1);
+    // Auto-cast warps fast-forward the sim, so short buffs may already have
+    // run their course — the cooldown is the proof each skill fired.
+    for (const def of SKILLS) {
+      expect(gs.skillCooldownLeft(def.id), def.id).toBeGreaterThan(0);
+    }
+  });
+
+  it('does nothing while switched off', () => {
+    const gs = unlockedState();
+    gs.update(5);
+    expect(Object.keys(gs.skillTimers)).toHaveLength(0);
+  });
+
+  it('recasts after the cooldown elapses', () => {
+    const gs = unlockedState();
+    gs.toggleAutoSkills();
+    gs.update(1);
+    // Run well past the first cooldown: without a recast the timer would sit
+    // at zero; a live cooldown proves auto-cast fired it again.
+    gs.update(WHIRLWIND.cooldownSeconds + 2);
+    expect(gs.skillCooldownLeft('whirlwind')).toBeGreaterThan(0);
+  });
+
+  it('the toggle survives a serialize round-trip', () => {
+    const gs = unlockedState();
+    gs.toggleAutoSkills();
+    const revived = GameState.deserialize(gs.serialize());
+    expect(revived.autoSkills).toBe(true);
+  });
+});

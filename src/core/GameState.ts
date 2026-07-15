@@ -37,7 +37,7 @@ import {
   petById,
   rollPet,
 } from '../config/pets';
-import { SKILLS, skillDefById } from '../config/skills';
+import { AUTO_SKILLS_UNLOCK_STAGE, SKILLS, skillDefById } from '../config/skills';
 import { soulUpgradeById, soulUpgradeCost } from '../config/soulsTree';
 import { buildingById, buildingCost, TOWN } from '../config/town';
 import { RAIDS, raidClearKills, raidGems, raidGoldPerKill, raidKillCap, raidMonsterHp } from '../config/raids';
@@ -196,6 +196,8 @@ export interface SerializedState {
   piggyGems: number;
   freeChestReadyAt: number;
   skillTimers: Record<string, SkillTimer>;
+  autoSkills?: boolean;
+  boardRealOnly?: boolean;
   fairyLevel: number;
   dmgBoostUntil: number;
   speedBoostUntil: number;
@@ -270,6 +272,10 @@ export class GameState {
   freeChestReadyAt = 0;
   /** Buff/cooldown seconds by skill id; ticks down on sim time. */
   skillTimers: Record<string, SkillTimer> = {};
+  /** AUTO CAST: skills fire themselves as they come off cooldown. */
+  autoSkills = false;
+  /** Hall of Legends filter: hide the seeded rivals, real players only. */
+  boardRealOnly = false;
   /** Fairy helper level; 0 = not recruited yet. */
   fairyLevel = 0;
   /** Rewarded-ad boosts: epoch ms the x2 damage / x2 speed windows end. */
@@ -544,6 +550,7 @@ export class GameState {
 
   private step(dt: number): void {
     this.tickSkillTimers(dt);
+    this.autoCastReadySkills();
     if (this.raid) {
       this.raidStep(dt);
       return;
@@ -970,6 +977,41 @@ export class GameState {
       if (t.active === 0 && t.cooldown === 0) delete this.skillTimers[id];
     }
     if (changed) this.emit('skills:changed', undefined);
+  }
+
+  // ---- Auto cast ----
+
+  get autoSkillsUnlocked(): boolean {
+    return this.highestStage >= AUTO_SKILLS_UNLOCK_STAGE;
+  }
+
+  toggleAutoSkills(): boolean {
+    if (!this.autoSkillsUnlocked) return false;
+    this.autoSkills = !this.autoSkills;
+    this.emit('skills:changed', undefined);
+    return true;
+  }
+
+  /** Hall of Legends view: flip between rivals-included and live-only. */
+  toggleBoardRealOnly(): void {
+    this.boardRealOnly = !this.boardRealOnly;
+  }
+
+  /** Warp skills call update() from castSkill — time really passes — so a
+   * depth guard keeps auto-cast from chaining warps inside warps. */
+  private autoCasting = false;
+
+  private autoCastReadySkills(): void {
+    if (!this.autoSkills || !this.autoSkillsUnlocked || this.autoCasting) return;
+    for (const def of SKILLS) {
+      if (!this.canCastSkill(def.id)) continue;
+      this.autoCasting = true;
+      try {
+        this.castSkill(def.id);
+      } finally {
+        this.autoCasting = false;
+      }
+    }
   }
 
   // ---- Fairy ----
@@ -1539,6 +1581,8 @@ export class GameState {
       skillTimers: Object.fromEntries(
         Object.entries(this.skillTimers).map(([id, t]) => [id, { ...t }]),
       ),
+      autoSkills: this.autoSkills,
+      boardRealOnly: this.boardRealOnly,
       fairyLevel: this.fairyLevel,
       dmgBoostUntil: this.dmgBoostUntil,
       speedBoostUntil: this.speedBoostUntil,
@@ -1603,6 +1647,8 @@ export class GameState {
     gs.skillTimers = Object.fromEntries(
       Object.entries(data.skillTimers).map(([id, t]) => [id, { ...t }]),
     );
+    gs.autoSkills = data.autoSkills ?? false;
+    gs.boardRealOnly = data.boardRealOnly ?? false;
     gs.fairyLevel = data.fairyLevel;
     gs.dmgBoostUntil = data.dmgBoostUntil;
     gs.speedBoostUntil = data.speedBoostUntil;
