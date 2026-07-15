@@ -563,7 +563,9 @@ export class BattleScene extends Phaser.Scene {
         repeat: -1,
         ease: 'Sine.inOut',
       });
-      this.enemyName.setText('DAILY DUNGEON').setVisible(true);
+      // No name tag — it's clearly a dragon (Sean's call); the timer bar
+      // is all the chrome the fight needs
+      this.enemyName.setVisible(false);
       this.bossBarBg.setVisible(true);
       this.bossBar.setVisible(true).setFillStyle(0x2884a8);
       this.lastWaveKey = '';
