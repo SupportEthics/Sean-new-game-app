@@ -159,6 +159,11 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.dungeonClearedDay = '';
     return save;
   },
+  // v23 -> v24: the Codex collection book
+  (save) => {
+    save.state.codexClaimed = [];
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

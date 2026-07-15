@@ -511,6 +511,23 @@ export class UIScene extends Phaser.Scene {
     door.fillRoundedRect(bx + 56 - 5, rowC - 10, 10, 14, { tl: 5, tr: 5, bl: 0, br: 0 });
     this.sideMenu.add(door);
 
+    // CODEX: the collection book (third column, top row)
+    this.sideButton(this.sideMenu, bx + 112, rowA, 'CODEX', () => {
+      this.toggleMenu(false);
+      if (!this.scene.isActive('Codex')) {
+        audio.buy();
+        this.scene.launch('Codex');
+      }
+    });
+    // Book mark: two page leaves
+    const book = this.add.graphics();
+    book.fillStyle(0xf5e3b8);
+    book.fillRect(bx + 112 - 11, rowA - 13, 10, 15);
+    book.fillRect(bx + 112 + 1, rowA - 13, 10, 15);
+    book.lineStyle(2, 0x8a5a2e);
+    book.strokeRect(bx + 112 - 11, rowA - 13, 22, 15);
+    this.sideMenu.add(book);
+
     // Red counters for finished-but-unclaimed quests/awards: one on the
     // MENU toggle, and a twin on the QUESTS button so an open menu shows
     // exactly where the notification lives

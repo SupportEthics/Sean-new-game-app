@@ -46,6 +46,7 @@ import {
   dungeonModifier,
   dungeonQuota,
 } from '../config/dungeon';
+import { CodexEntry, codexEntries } from '../config/codex';
 import { soulUpgradeById, soulUpgradeCost } from '../config/soulsTree';
 import { buildingById, buildingCost, TOWN } from '../config/town';
 import { RAIDS, raidClearKills, raidGems, raidGoldPerKill, raidKillCap, raidMonsterHp } from '../config/raids';
@@ -112,6 +113,7 @@ export interface GameEvents {
   'pets:changed': Record<string, number>;
   'shop:changed': undefined;
   'skills:changed': undefined;
+  'codex:changed': undefined;
   'fairy:changed': number;
   'login:changed': undefined;
   'town:changed': undefined;
@@ -220,6 +222,7 @@ export interface SerializedState {
   autoSkills?: boolean;
   boardRealOnly?: boolean;
   dungeonClearedDay?: string;
+  codexClaimed?: string[];
   fairyLevel: number;
   dmgBoostUntil: number;
   speedBoostUntil: number;
@@ -313,6 +316,8 @@ export class GameState {
   boardRealOnly = false;
   /** UTC day the Daily Dungeon reward was last collected. */
   dungeonClearedDay = '';
+  /** Codex entries whose gem bounty has been collected. */
+  codexClaimed: string[] = [];
   /** Fairy helper level; 0 = not recruited yet. */
   fairyLevel = 0;
   /** Rewarded-ad boosts: epoch ms the x2 damage / x2 speed windows end. */
@@ -904,6 +909,31 @@ export class GameState {
       dungeon: raid.dungeon,
       quota: raid.clearKills,
     });
+  }
+
+  // ---- Codex ----
+
+  /** Live codex with claim states baked in. */
+  codexList(): (CodexEntry & { claimed: boolean })[] {
+    return codexEntries(this.highestStage, this.bestTier, this.pets).map((e) => ({
+      ...e,
+      claimed: this.codexClaimed.includes(e.id),
+    }));
+  }
+
+  /** Unlocked-but-unclaimed bounties (drives badges). */
+  get codexClaimable(): number {
+    return this.codexList().filter((e) => e.unlocked && !e.claimed).length;
+  }
+
+  /** Collect a codex entry's one-time gem bounty. */
+  claimCodex(id: string): boolean {
+    const entry = this.codexList().find((e) => e.id === id);
+    if (!entry || !entry.unlocked || entry.claimed) return false;
+    this.codexClaimed.push(id);
+    this.addGems(entry.gems);
+    this.emit('codex:changed', undefined);
+    return true;
   }
 
   // ---- Pets ----
@@ -1695,6 +1725,7 @@ export class GameState {
       autoSkills: this.autoSkills,
       boardRealOnly: this.boardRealOnly,
       dungeonClearedDay: this.dungeonClearedDay,
+      codexClaimed: [...this.codexClaimed],
       fairyLevel: this.fairyLevel,
       dmgBoostUntil: this.dmgBoostUntil,
       speedBoostUntil: this.speedBoostUntil,
@@ -1762,6 +1793,7 @@ export class GameState {
     gs.autoSkills = data.autoSkills ?? false;
     gs.boardRealOnly = data.boardRealOnly ?? false;
     gs.dungeonClearedDay = data.dungeonClearedDay ?? '';
+    gs.codexClaimed = [...(data.codexClaimed ?? [])];
     gs.fairyLevel = data.fairyLevel;
     gs.dmgBoostUntil = data.dmgBoostUntil;
     gs.speedBoostUntil = data.speedBoostUntil;
