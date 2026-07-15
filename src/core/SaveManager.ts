@@ -164,6 +164,11 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.codexClaimed = [];
     return save;
   },
+  // v24 -> v25: forge enchantments
+  (save) => {
+    save.state.enchants = {};
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

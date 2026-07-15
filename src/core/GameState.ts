@@ -47,6 +47,7 @@ import {
   dungeonQuota,
 } from '../config/dungeon';
 import { CodexEntry, codexEntries } from '../config/codex';
+import { enchantById, enchantCost } from '../config/enchants';
 import { soulUpgradeById, soulUpgradeCost } from '../config/soulsTree';
 import { buildingById, buildingCost, TOWN } from '../config/town';
 import { RAIDS, raidClearKills, raidGems, raidGoldPerKill, raidKillCap, raidMonsterHp } from '../config/raids';
@@ -114,6 +115,7 @@ export interface GameEvents {
   'shop:changed': undefined;
   'skills:changed': undefined;
   'codex:changed': undefined;
+  'enchants:changed': undefined;
   'fairy:changed': number;
   'login:changed': undefined;
   'town:changed': undefined;
@@ -223,6 +225,7 @@ export interface SerializedState {
   boardRealOnly?: boolean;
   dungeonClearedDay?: string;
   codexClaimed?: string[];
+  enchants?: Record<string, number>;
   fairyLevel: number;
   dmgBoostUntil: number;
   speedBoostUntil: number;
@@ -318,6 +321,8 @@ export class GameState {
   dungeonClearedDay = '';
   /** Codex entries whose gem bounty has been collected. */
   codexClaimed: string[] = [];
+  /** Forge enchantment levels by id — gem-bought, survives rebirth. */
+  enchants: Record<string, number> = {};
   /** Fairy helper level; 0 = not recruited yet. */
   fairyLevel = 0;
   /** Rewarded-ad boosts: epoch ms the x2 damage / x2 speed windows end. */
@@ -383,6 +388,7 @@ export class GameState {
       (1 + this.soulLevel('might') * 0.1) *
       levelDpsMultiplier(this.heroLevel) *
       this.swordSkinDpsMultiplier *
+      this.enchantBonus('sharpness') *
       (this.currentEvent?.dpsMult ?? 1)
     );
   }
@@ -401,6 +407,7 @@ export class GameState {
       this.townGoldMultiplier *
       this.skinGoldMultiplier *
       this.swordSkinGoldMultiplier *
+      this.enchantBonus('greed') *
       (this.currentEvent?.goldMult ?? 1)
     );
   }
@@ -715,7 +722,11 @@ export class GameState {
   /** Souls this rebirth would bank right now (Soul Harvest weekends pay
    * double — the boosted number is what the confirm dialog shows). */
   get prestigeReward(): number {
-    return Math.round(soulsFor(this.battle.stage) * (this.currentEvent?.soulsMult ?? 1));
+    return Math.round(
+      soulsFor(this.battle.stage) *
+        this.enchantBonus('soulbind') *
+        (this.currentEvent?.soulsMult ?? 1),
+    );
   }
 
   /**
@@ -909,6 +920,35 @@ export class GameState {
       dungeon: raid.dungeon,
       quota: raid.clearKills,
     });
+  }
+
+  // ---- Forge enchantments ----
+
+  enchantLevel(id: string): number {
+    return this.enchants[id] ?? 0;
+  }
+
+  /** Gem price of the next level, or null at the cap. */
+  enchantPrice(id: string): number | null {
+    const def = enchantById(id);
+    if (!def) return null;
+    const level = this.enchantLevel(id);
+    return level >= def.maxLevel ? null : enchantCost(def, level);
+  }
+
+  buyEnchant(id: string): boolean {
+    const price = this.enchantPrice(id);
+    if (price === null || this.gems < price) return false;
+    this.gems -= price;
+    this.enchants[id] = this.enchantLevel(id) + 1;
+    this.emit('gems:changed', this.gems);
+    this.emit('enchants:changed', undefined);
+    return true;
+  }
+
+  private enchantBonus(id: string): number {
+    const def = enchantById(id);
+    return 1 + (def ? this.enchantLevel(id) * def.perLevel : 0);
   }
 
   // ---- Codex ----
@@ -1726,6 +1766,7 @@ export class GameState {
       boardRealOnly: this.boardRealOnly,
       dungeonClearedDay: this.dungeonClearedDay,
       codexClaimed: [...this.codexClaimed],
+      enchants: { ...this.enchants },
       fairyLevel: this.fairyLevel,
       dmgBoostUntil: this.dmgBoostUntil,
       speedBoostUntil: this.speedBoostUntil,
@@ -1794,6 +1835,7 @@ export class GameState {
     gs.boardRealOnly = data.boardRealOnly ?? false;
     gs.dungeonClearedDay = data.dungeonClearedDay ?? '';
     gs.codexClaimed = [...(data.codexClaimed ?? [])];
+    gs.enchants = { ...(data.enchants ?? {}) };
     gs.fairyLevel = data.fairyLevel;
     gs.dmgBoostUntil = data.dmgBoostUntil;
     gs.speedBoostUntil = data.speedBoostUntil;
