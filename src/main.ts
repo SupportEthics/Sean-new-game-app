@@ -4,7 +4,7 @@ import Phaser from 'phaser';
 import { newBattleState } from './core/BattleSim';
 import { GameState } from './core/GameState';
 import { computeOffline } from './core/OfflineEarnings';
-import { SaveManager } from './core/SaveManager';
+import { SAVE_KEY, SaveManager } from './core/SaveManager';
 import { BattleScene } from './scenes/BattleScene';
 import { BootScene } from './scenes/BootScene';
 import { FairyPanel } from './scenes/FairyPanel';
@@ -33,6 +33,24 @@ import { THEME } from './ui/theme';
 async function boot(): Promise<void> {
   // On native, restore a durable save copy before anything reads storage
   await hydrateSaveFromPreferences();
+
+  // Tester lever (web only): play.html?resetdaily=1 wipes today's
+  // dungeon/duel/deal locks so the daily content can be re-tested at will
+  if (!Capacitor.isNativePlatform() && new URLSearchParams(location.search).has('resetdaily')) {
+    try {
+      const raw = localStorage.getItem(SAVE_KEY);
+      if (raw) {
+        const file = JSON.parse(raw) as { state: Record<string, unknown> };
+        file.state.dungeonClearedDay = '';
+        file.state.duelDay = '';
+        file.state.duelsUsed = 0;
+        file.state.dealClaimedDay = '';
+        localStorage.setItem(SAVE_KEY, JSON.stringify(file));
+      }
+    } catch {
+      /* malformed save: leave it alone */
+    }
+  }
 
   const saveManager = new SaveManager(new MirroredStorage());
   const loaded = saveManager.load();
