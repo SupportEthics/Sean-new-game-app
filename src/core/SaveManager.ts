@@ -169,6 +169,11 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.enchants = {};
     return save;
   },
+  // v25 -> v26: pet expeditions
+  (save) => {
+    save.state.expedition = null;
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

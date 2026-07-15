@@ -48,6 +48,7 @@ import {
 } from '../config/dungeon';
 import { CodexEntry, codexEntries } from '../config/codex';
 import { enchantById, enchantCost } from '../config/enchants';
+import { expeditionById } from '../config/expeditions';
 import { soulUpgradeById, soulUpgradeCost } from '../config/soulsTree';
 import { buildingById, buildingCost, TOWN } from '../config/town';
 import { RAIDS, raidClearKills, raidGems, raidGoldPerKill, raidKillCap, raidMonsterHp } from '../config/raids';
@@ -116,6 +117,7 @@ export interface GameEvents {
   'skills:changed': undefined;
   'codex:changed': undefined;
   'enchants:changed': undefined;
+  'expedition:changed': undefined;
   'fairy:changed': number;
   'login:changed': undefined;
   'town:changed': undefined;
@@ -226,6 +228,7 @@ export interface SerializedState {
   dungeonClearedDay?: string;
   codexClaimed?: string[];
   enchants?: Record<string, number>;
+  expedition?: { petId: string; defId: string; endsAt: number } | null;
   fairyLevel: number;
   dmgBoostUntil: number;
   speedBoostUntil: number;
@@ -323,6 +326,8 @@ export class GameState {
   codexClaimed: string[] = [];
   /** Forge enchantment levels by id — gem-bought, survives rebirth. */
   enchants: Record<string, number> = {};
+  /** The pet currently away on an expedition (null = everyone's home). */
+  expedition: { petId: string; defId: string; endsAt: number } | null = null;
   /** Fairy helper level; 0 = not recruited yet. */
   fairyLevel = 0;
   /** Rewarded-ad boosts: epoch ms the x2 damage / x2 speed windows end. */
@@ -982,16 +987,19 @@ export class GameState {
     return this.pets[id] ?? 0;
   }
 
-  /** Every pet level ever hatched keeps helping (collection incentive). */
+  /** Every pet level ever hatched keeps helping (collection incentive) —
+   * except a pet away on an expedition, whose help travels with it. */
   get petDpsMultiplier(): number {
     return (
       1 +
       Object.entries(this.pets).reduce(
         (sum, [id, level]) =>
-          sum +
-          level *
-            (petById(id)?.dpsPerLevel ?? 0) *
-            EVOLUTION.stageMultipliers[this.petStage(id)],
+          this.petHome(id)
+            ? sum +
+              level *
+                (petById(id)?.dpsPerLevel ?? 0) *
+                EVOLUTION.stageMultipliers[this.petStage(id)]
+            : sum,
         0,
       )
     );
@@ -1028,10 +1036,64 @@ export class GameState {
   /** Pets shown fighting in the arena: highest level first, ties by roster order. */
   get activePets(): string[] {
     return Object.entries(this.pets)
-      .filter(([, level]) => level > 0)
+      .filter(([id, level]) => level > 0 && id !== this.expedition?.petId)
       .sort((a, b) => b[1] - a[1])
       .slice(0, ACTIVE_PET_SLOTS)
       .map(([id]) => id);
+  }
+
+  // ---- Pet expeditions ----
+
+  /** A travelling pet neither fights nor pays its DPS bonus. */
+  private petHome(id: string): boolean {
+    return this.expedition?.petId !== id;
+  }
+
+  /** The least-powerful hatched pet — "the reserve" gets the job. */
+  get reservePetId(): string | null {
+    const hatched = Object.entries(this.pets).filter(([, lv]) => lv > 0);
+    if (hatched.length === 0) return null;
+    hatched.sort(
+      (a, b) =>
+        a[1] * (petById(a[0])?.dpsPerLevel ?? 0) * EVOLUTION.stageMultipliers[this.petStage(a[0])] -
+        b[1] * (petById(b[0])?.dpsPerLevel ?? 0) * EVOLUTION.stageMultipliers[this.petStage(b[0])],
+    );
+    return hatched[0][0];
+  }
+
+  canStartExpedition(): boolean {
+    return this.expedition === null && this.reservePetId !== null;
+  }
+
+  startExpedition(defId: string, now: number = Date.now()): boolean {
+    const def = expeditionById(defId);
+    const petId = this.reservePetId;
+    if (!def || !petId || this.expedition !== null) return false;
+    this.expedition = { petId, defId, endsAt: now + def.hours * 3_600_000 };
+    this.emit('expedition:changed', undefined);
+    this.emit('pets:changed', this.pets); // arena drops the traveller
+    return true;
+  }
+
+  expeditionTimeLeft(now: number = Date.now()): number {
+    return this.expedition ? Math.max(0, this.expedition.endsAt - now) : 0;
+  }
+
+  expeditionReady(now: number = Date.now()): boolean {
+    return this.expedition !== null && now >= this.expedition.endsAt;
+  }
+
+  /** Welcome the pet home and bank the loot. */
+  collectExpedition(now: number = Date.now()): { gems: number; gold: number } | null {
+    if (!this.expeditionReady(now)) return null;
+    const def = expeditionById(this.expedition!.defId)!;
+    this.expedition = null;
+    const gold = this.goldForHours(def.goldHours);
+    this.addGems(def.gems);
+    this.addGold(gold);
+    this.emit('expedition:changed', undefined);
+    this.emit('pets:changed', this.pets); // the traveller rejoins the arena
+    return { gems: def.gems, gold };
   }
 
   /** Current gold-egg price (escalates with every gold egg bought). */
@@ -1767,6 +1829,7 @@ export class GameState {
       dungeonClearedDay: this.dungeonClearedDay,
       codexClaimed: [...this.codexClaimed],
       enchants: { ...this.enchants },
+      expedition: this.expedition ? { ...this.expedition } : null,
       fairyLevel: this.fairyLevel,
       dmgBoostUntil: this.dmgBoostUntil,
       speedBoostUntil: this.speedBoostUntil,
@@ -1836,6 +1899,7 @@ export class GameState {
     gs.dungeonClearedDay = data.dungeonClearedDay ?? '';
     gs.codexClaimed = [...(data.codexClaimed ?? [])];
     gs.enchants = { ...(data.enchants ?? {}) };
+    gs.expedition = data.expedition ? { ...data.expedition } : null;
     gs.fairyLevel = data.fairyLevel;
     gs.dmgBoostUntil = data.dmgBoostUntil;
     gs.speedBoostUntil = data.speedBoostUntil;

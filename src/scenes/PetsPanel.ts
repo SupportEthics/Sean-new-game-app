@@ -6,9 +6,11 @@ import {
   EVOLUTION,
   formatOddsPct,
   PET_MAX_LEVEL,
+  petById,
   PETS,
   stageName,
 } from '../config/pets';
+import { EXPEDITIONS, expeditionById } from '../config/expeditions';
 import { formatNumber } from '../core/EconomyMath';
 import { EggKind, GameState } from '../core/GameState';
 import { AdService } from '../services/monetization/AdService';
@@ -37,6 +39,7 @@ export class PetsPanel extends Phaser.Scene {
   private eggs!: Phaser.GameObjects.Container;
   private reveal!: Phaser.GameObjects.BitmapText;
   private oddsLayer: Phaser.GameObjects.Container | null = null;
+  private expeditionCard!: Phaser.GameObjects.Container;
   private adBusy = false;
 
   constructor() {
@@ -96,12 +99,101 @@ export class PetsPanel extends Phaser.Scene {
       }
     });
 
+    this.expeditionCard = this.add.container(0, 0);
+    this.buildExpedition();
+    this.gs.on('expedition:changed', () => {
+      if (this.scene.isActive()) this.buildExpedition();
+    });
+    this.time.addEvent({ delay: 1000, loop: true, callback: () => this.buildExpedition() });
+
     if (import.meta.env.DEV) {
       (window as unknown as { __petsOpen?: boolean }).__petsOpen = true;
       this.events.once('shutdown', () => {
         (window as unknown as { __petsOpen?: boolean }).__petsOpen = false;
       });
     }
+  }
+
+  /** Expedition strip along the panel's foot: send the reserve pet away,
+   * watch the clock, collect the loot. */
+  private buildExpedition(): void {
+    this.expeditionCard.removeAll(true);
+    const y = PANEL_Y + PANEL_H - 30;
+    const exp = this.gs.expedition;
+    const reserve = this.gs.reservePetId;
+    if (!exp && !reserve) return; // nothing hatched yet
+
+    const bg = this.add
+      .rectangle(THEME.width / 2, y, PANEL_W - 20, 40, 0x1c2a38)
+      .setStrokeStyle(2, 0x2884a8);
+    this.expeditionCard.add(bg);
+
+    if (exp) {
+      const def = expeditionById(exp.defId)!;
+      const pet = petById(exp.petId)!;
+      if (this.gs.expeditionReady()) {
+        const lbl = this.add
+          .bitmapText(PANEL_X + 18, y, 'pix', `${pet.name} IS BACK!`, 8)
+          .setOrigin(0, 0.5)
+          .setTint(0x7ac74f);
+        const btn = this.add
+          .image(PANEL_X + PANEL_W - 62, y, 'btn-sm')
+          .setTint(0x2e7a1e)
+          .setInteractive({ useHandCursor: true })
+          .on('pointerdown', () => {
+            const loot = this.gs.collectExpedition();
+            if (loot) {
+              audio.coin();
+              this.reveal.setText(
+                `+${loot.gems} GEMS +${formatNumber(loot.gold).toUpperCase()} GOLD`,
+              );
+            }
+          });
+        const blbl = this.add
+          .bitmapText(PANEL_X + PANEL_W - 62, y, 'pix', 'COLLECT', 8)
+          .setOrigin(0.5);
+        this.expeditionCard.add([lbl, btn, blbl]);
+      } else {
+        const left = this.gs.expeditionTimeLeft();
+        const h = Math.floor(left / 3_600_000);
+        const m = Math.floor((left % 3_600_000) / 60_000);
+        const s = Math.floor((left % 60_000) / 1000);
+        const lbl = this.add
+          .bitmapText(
+            PANEL_X + 18,
+            y,
+            'pix',
+            `${pet.name} - ${def.name} - ${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`,
+            8,
+          )
+          .setOrigin(0, 0.5)
+          .setTint(0x7db8d8);
+        this.expeditionCard.add(lbl);
+      }
+      return;
+    }
+
+    // Idle: offer the three trips for the reserve pet
+    const pet = petById(reserve!)!;
+    const lbl = this.add
+      .bitmapText(PANEL_X + 18, y, 'pix', `SEND ${pet.name}:`, 8)
+      .setOrigin(0, 0.5)
+      .setTint(0x7db8d8);
+    this.expeditionCard.add(lbl);
+    EXPEDITIONS.forEach((def, i) => {
+      const x = PANEL_X + PANEL_W - 160 + i * 52;
+      const btn = this.add
+        .rectangle(x, y, 46, 26, 0x2884a8)
+        .setStrokeStyle(2, 0x7db8d8)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', () => {
+          if (this.gs.startExpedition(def.id)) audio.buy();
+        });
+      const blbl = this.add
+        .bitmapText(x, y, 'pix', `${def.hours}H`, 8)
+        .setOrigin(0.5);
+      this.expeditionCard.add([btn, blbl]);
+    });
   }
 
   /** HATCH ODDS modal: every pet's drop chance per egg type, straight from
