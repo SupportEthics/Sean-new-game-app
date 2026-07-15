@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { BOOSTS, ECONOMY } from '../config/economy';
+import { DUNGEON } from '../config/dungeon';
 import { GEAR, tierName, weaponFrame } from '../config/gear';
 import { formatNumber, gearDps, heroLevel, killsForLevel, levelDpsMultiplier } from '../core/EconomyMath';
 import { GameState } from '../core/GameState';
@@ -52,6 +53,7 @@ export class UIScene extends Phaser.Scene {
   private lastHud = '';
   private raidLock!: Phaser.GameObjects.Text;
   private townLock!: Phaser.GameObjects.Text;
+  private dungeonLock!: Phaser.GameObjects.Text;
   private sideMenu!: Phaser.GameObjects.Container;
   private menuOpen = false;
   private menuLabel!: Phaser.GameObjects.BitmapText;
@@ -185,6 +187,7 @@ export class UIScene extends Phaser.Scene {
     this.raidLock.setVisible(!this.gs.raidsUnlocked);
     this.raidIcon.setAlpha(this.gs.raidsUnlocked ? 1 : 0.35);
     this.townLock.setVisible(!this.gs.townUnlocked);
+    this.dungeonLock.setVisible(!this.gs.dungeonUnlocked);
     this.rebirthButton.setVisible(this.gs.canPrestige);
     this.menuBadge.setVisible(this.gs.canPrestige);
 
@@ -482,6 +485,31 @@ export class UIScene extends Phaser.Scene {
     house.fillStyle(0xb03a2e);
     house.fillTriangle(bx + 56 - 11, rowB - 6, bx + 56 + 11, rowB - 6, bx + 56, rowB - 15);
     this.sideMenu.add(house);
+
+    // DUNGEON: the daily challenge (second column, third row)
+    const dungeon = this.sideButton(this.sideMenu, bx + 56, rowC, 'DUNGEON', () => {
+      if (!this.gs.dungeonUnlocked) {
+        this.toast(`UNLOCKS AT STAGE ${DUNGEON.unlockStage}`);
+        return;
+      }
+      if (this.gs.raid) {
+        this.toast('FINISH THE CURRENT FIGHT FIRST');
+        return;
+      }
+      this.toggleMenu(false);
+      if (!this.scene.isActive('Dungeon')) {
+        audio.buy();
+        this.scene.launch('Dungeon');
+      }
+    });
+    this.dungeonLock = dungeon.lock;
+    // Door mark: an arched doorway
+    const door = this.add.graphics();
+    door.fillStyle(0x2884a8);
+    door.fillRoundedRect(bx + 56 - 9, rowC - 16, 18, 20, { tl: 9, tr: 9, bl: 0, br: 0 });
+    door.fillStyle(0x14101c);
+    door.fillRoundedRect(bx + 56 - 5, rowC - 10, 10, 14, { tl: 5, tr: 5, bl: 0, br: 0 });
+    this.sideMenu.add(door);
 
     // Red counters for finished-but-unclaimed quests/awards: one on the
     // MENU toggle, and a twin on the QUESTS button so an open menu shows

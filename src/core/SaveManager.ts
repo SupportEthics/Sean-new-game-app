@@ -154,6 +154,11 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.boardRealOnly = false;
     return save;
   },
+  // v22 -> v23: the Daily Dungeon
+  (save) => {
+    save.state.dungeonClearedDay = '';
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

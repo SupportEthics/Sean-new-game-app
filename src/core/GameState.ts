@@ -39,6 +39,13 @@ import {
 } from '../config/pets';
 import { AUTO_SKILLS_UNLOCK_STAGE, SKILLS, skillDefById } from '../config/skills';
 import { activeEvent, EventDef } from '../config/events';
+import {
+  DUNGEON,
+  dungeonDuration,
+  dungeonGems,
+  dungeonModifier,
+  dungeonQuota,
+} from '../config/dungeon';
 import { soulUpgradeById, soulUpgradeCost } from '../config/soulsTree';
 import { buildingById, buildingCost, TOWN } from '../config/town';
 import { RAIDS, raidClearKills, raidGems, raidGoldPerKill, raidKillCap, raidMonsterHp } from '../config/raids';
@@ -158,6 +165,16 @@ export interface RaidState {
   monsterMaxHp: number;
   kills: number;
   goldEarned: number;
+  /** Full timer length (drives the countdown bar). */
+  duration: number;
+  /** Kills needed to clear. */
+  clearKills: number;
+  /** Kills after which the run ends early (anti-farm). */
+  killCap: number;
+  /** Base bounty per kill (events multiply on top). */
+  goldPerKill: number;
+  /** Set on Daily Dungeon runs: the modifier id in play. */
+  dungeon?: string;
 }
 
 export interface RaidResult {
@@ -166,6 +183,9 @@ export interface RaidResult {
   gold: number;
   gems: number;
   cleared: boolean;
+  /** Daily Dungeon runs: the modifier id + the kill quota that was set. */
+  dungeon?: string;
+  quota?: number;
 }
 
 /** Serializable snapshot of everything that must survive a restart. */
@@ -199,6 +219,7 @@ export interface SerializedState {
   skillTimers: Record<string, SkillTimer>;
   autoSkills?: boolean;
   boardRealOnly?: boolean;
+  dungeonClearedDay?: string;
   fairyLevel: number;
   dmgBoostUntil: number;
   speedBoostUntil: number;
@@ -290,6 +311,8 @@ export class GameState {
   clock: () => number = defaultClock;
   /** Hall of Legends filter: hide the seeded rivals, real players only. */
   boardRealOnly = false;
+  /** UTC day the Daily Dungeon reward was last collected. */
+  dungeonClearedDay = '';
   /** Fairy helper level; 0 = not recruited yet. */
   fairyLevel = 0;
   /** Rewarded-ad boosts: epoch ms the x2 damage / x2 speed windows end. */
@@ -754,6 +777,10 @@ export class GameState {
       monsterMaxHp: hp,
       kills: 0,
       goldEarned: 0,
+      duration: RAIDS.durationSeconds,
+      clearKills: raidClearKills(level),
+      killCap: raidKillCap(level),
+      goldPerKill: raidGoldPerKill(level),
     };
     this.raidReadyAt = now + RAIDS.cooldownMinutes * 60_000;
     this.trackQuest('raids', 1, now);
@@ -772,9 +799,8 @@ export class GameState {
       bossFailed: false,
     };
 
-    const cap = raidKillCap(raid.level);
     let budget = this.heroDps * dt;
-    while (budget > 0 && raid.kills < cap) {
+    while (budget > 0 && raid.kills < raid.killCap) {
       const dealt = Math.min(budget, raid.monsterHp);
       raid.monsterHp -= dealt;
       result.damageDealt += dealt;
@@ -782,7 +808,7 @@ export class GameState {
       if (raid.monsterHp > 0) break;
       raid.kills += 1;
       result.kills += 1;
-      const gold = raidGoldPerKill(raid.level) * (this.currentEvent?.raidGoldMult ?? 1);
+      const gold = raid.goldPerKill * (this.currentEvent?.raidGoldMult ?? 1);
       raid.goldEarned += gold;
       result.goldEarned += gold;
       raid.monsterHp = raid.monsterMaxHp;
@@ -794,13 +820,17 @@ export class GameState {
 
     raid.timeLeft -= dt;
     // Cap harvested: no reason to sit out the clock
-    if (raid.timeLeft <= 0 || raid.kills >= cap) this.endRaid();
+    if (raid.timeLeft <= 0 || raid.kills >= raid.killCap) this.endRaid();
   }
 
   private endRaid(): void {
     const raid = this.raid!;
     this.raid = null;
-    const cleared = raid.kills >= raidClearKills(raid.level);
+    const cleared = raid.kills >= raid.clearKills;
+    if (raid.dungeon) {
+      this.endDungeon(raid, cleared);
+      return;
+    }
     const gems =
       raidGems(raid.level, raid.kills) + (raid.kills > 0 ? this.soulLevel('raider') : 0);
     if (gems > 0) this.addGems(gems);
@@ -814,6 +844,65 @@ export class GameState {
       gold: raid.goldEarned,
       gems,
       cleared,
+    });
+  }
+
+  // ---- Daily Dungeon (rides the raid machinery) ----
+
+  get dungeonUnlocked(): boolean {
+    return this.highestStage >= DUNGEON.unlockStage;
+  }
+
+  /** The one-per-day reward: already collected today? */
+  dungeonClearedToday(now: number = this.clock()): boolean {
+    return this.dungeonClearedDay === utcDay(now);
+  }
+
+  canStartDungeon(now: number = this.clock()): boolean {
+    return this.dungeonUnlocked && !this.raid && !this.dungeonClearedToday(now);
+  }
+
+  /** Kick off today's dungeon: a kill quota against monsters tuned to the
+   * player's own frontier, twisted by the daily modifier. Free retries
+   * until it's cleared; the reward pays once per day. */
+  startDungeon(now: number = this.clock()): boolean {
+    if (!this.canStartDungeon(now)) return false;
+    const mod = dungeonModifier(now);
+    const hp = enemyHp(this.highestStage, 5) * this.enemyHpMultiplier * mod.hpMult;
+    const duration = dungeonDuration(mod);
+    this.raid = {
+      level: 0,
+      timeLeft: duration,
+      monsterHp: hp,
+      monsterMaxHp: hp,
+      kills: 0,
+      goldEarned: 0,
+      duration,
+      clearKills: dungeonQuota(mod),
+      killCap: dungeonQuota(mod) * 2,
+      goldPerKill: goldDrop(this.highestStage, 5) * mod.goldMult,
+      dungeon: mod.id,
+    };
+    this.emit('raid:started', 0);
+    return true;
+  }
+
+  private endDungeon(raid: RaidState, cleared: boolean): void {
+    let gems = 0;
+    if (cleared) {
+      this.dungeonClearedDay = utcDay(this.clock());
+      gems = dungeonGems(this.highestStage);
+      this.addGems(gems);
+      this.addGold(this.goldForHours(DUNGEON.goldHours));
+    }
+    this.emit('raid:ended', {
+      level: 0,
+      kills: raid.kills,
+      gold: raid.goldEarned,
+      gems,
+      cleared,
+      dungeon: raid.dungeon,
+      quota: raid.clearKills,
     });
   }
 
@@ -1605,6 +1694,7 @@ export class GameState {
       ),
       autoSkills: this.autoSkills,
       boardRealOnly: this.boardRealOnly,
+      dungeonClearedDay: this.dungeonClearedDay,
       fairyLevel: this.fairyLevel,
       dmgBoostUntil: this.dmgBoostUntil,
       speedBoostUntil: this.speedBoostUntil,
@@ -1671,6 +1761,7 @@ export class GameState {
     );
     gs.autoSkills = data.autoSkills ?? false;
     gs.boardRealOnly = data.boardRealOnly ?? false;
+    gs.dungeonClearedDay = data.dungeonClearedDay ?? '';
     gs.fairyLevel = data.fairyLevel;
     gs.dmgBoostUntil = data.dmgBoostUntil;
     gs.speedBoostUntil = data.speedBoostUntil;
