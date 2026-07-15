@@ -6,6 +6,7 @@ import {
   GEM_PACKS,
   GOLD_PACKS,
   PIGGY,
+  GOLDEN_KNIGHT,
   REMOVE_ADS,
   STARTER_PACK,
 } from '../config/monetization';
@@ -288,6 +289,34 @@ export class ShopPanel extends Phaser.Scene {
       } else {
         this.priceButton(y + h / 2, REMOVE_ADS.sku, () =>
           this.gs.fulfillProduct(REMOVE_ADS.sku),
+        );
+      }
+      y += h + 10;
+    }
+
+    // Golden Knight VIP — hidden until the store product goes on sale
+    // (owners always see their card)
+    if (GOLDEN_KNIGHT.onSale || this.gs.goldenKnight) {
+      const h = 66;
+      this.card(y, h, this.gs.goldenKnight ? 0x6fae4e : 0xc9961e);
+      this.text(24, y + 12, 'GOLDEN KNIGHT', 0xc9961e);
+      this.text(24, y + 28, 'EVERY AD REWARD - INSTANT, FOREVER', 0x4a3520);
+      this.text(
+        24,
+        y + 44,
+        this.gs.goldenKnight ? 'YOURS FOREVER' : 'RAID RESETS, LOOT, SKILLS + MORE',
+        0x8a5a2e,
+      );
+      if (this.gs.goldenKnight) {
+        this.rows.add(
+          this.add
+            .bitmapText(PANEL_X + PANEL_W - 24, y + h / 2, 'pix', 'OWNED', 8)
+            .setOrigin(1, 0.5)
+            .setTint(0x2e7a1e),
+        );
+      } else {
+        this.priceButton(y + h / 2, GOLDEN_KNIGHT.sku, () =>
+          this.gs.fulfillProduct(GOLDEN_KNIGHT.sku),
         );
       }
       y += h + 10;

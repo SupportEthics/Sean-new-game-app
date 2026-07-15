@@ -10,6 +10,7 @@ import {
   gemPackBySku,
   goldPackBySku,
   PIGGY,
+  GOLDEN_KNIGHT,
   REMOVE_ADS,
   STARTER_PACK,
 } from '../config/monetization';
@@ -234,6 +235,7 @@ export interface SerializedState {
   goldEggsBought: number;
   lastFreeEggDay: string;
   removeAds: boolean;
+  goldenKnight: boolean;
   starterPackOwned: boolean;
   piggyGems: number;
   freeChestReadyAt: number;
@@ -328,6 +330,9 @@ export class GameState {
   lastFreeEggDay = '';
   /** True once the remove_ads IAP is owned — kills interstitial breaks. */
   removeAds = false;
+  /** Golden Knight VIP: every rewarded-ad gate opens instantly, forever
+   * (the AdService wrapper checks this), and interstitials stay off. */
+  goldenKnight = false;
   /** The one-time starter bundle can only be bought once. */
   starterPackOwned = false;
   /** Gems banked in the piggy; grows as bosses fall, cashed out via IAP. */
@@ -1605,6 +1610,13 @@ export class GameState {
       this.emit('shop:changed', undefined);
       return true;
     }
+    if (sku === GOLDEN_KNIGHT.sku) {
+      if (this.goldenKnight) return false;
+      this.goldenKnight = true;
+      this.removeAds = true; // VIP includes the interstitial-free life
+      this.emit('shop:changed', undefined);
+      return true;
+    }
     if (sku === BATTLE_PASS.sku) {
       this.syncPassSeason();
       if (this.passPremiumOwned()) return false; // already own this season
@@ -1996,6 +2008,12 @@ export class GameState {
         recognised++;
         continue;
       }
+      if (sku === GOLDEN_KNIGHT.sku) {
+        this.goldenKnight = true;
+        this.removeAds = true;
+        recognised++;
+        continue;
+      }
       if (sku === STARTER_PACK.sku) {
         this.starterPackOwned = true;
         recognised++;
@@ -2050,6 +2068,7 @@ export class GameState {
       goldEggsBought: this.goldEggsBought,
       lastFreeEggDay: this.lastFreeEggDay,
       removeAds: this.removeAds,
+      goldenKnight: this.goldenKnight,
       starterPackOwned: this.starterPackOwned,
       piggyGems: this.piggyGems,
       freeChestReadyAt: this.freeChestReadyAt,
@@ -2129,6 +2148,7 @@ export class GameState {
     gs.goldEggsBought = data.goldEggsBought;
     gs.lastFreeEggDay = data.lastFreeEggDay;
     gs.removeAds = data.removeAds;
+    gs.goldenKnight = data.goldenKnight;
     gs.starterPackOwned = data.starterPackOwned;
     gs.piggyGems = data.piggyGems;
     gs.freeChestReadyAt = data.freeChestReadyAt;

@@ -28,6 +28,7 @@ import { makeCloudSave } from './services/CloudSave';
 import { LeaderboardService, WebMockLeaderboard } from './services/LeaderboardService';
 import { hydrateSaveFromPreferences, MirroredStorage } from './services/NativeSave';
 import { createMonetization } from './services/monetization/factory';
+import { wrapWithGoldenKnight } from './services/monetization/GoldenAdService';
 import { THEME } from './ui/theme';
 
 async function boot(): Promise<void> {
@@ -58,8 +59,10 @@ async function boot(): Promise<void> {
   const offline = loaded ? computeOffline(gs, loaded.awaySeconds) : null;
   gs.rollDaily();
 
-  // Real AdMob/RevenueCat inside the Capacitor shells, web mocks elsewhere
-  const { iap, ads } = createMonetization();
+  // Real AdMob/RevenueCat inside the Capacitor shells, web mocks elsewhere.
+  // Golden Knight owners skip every ad, so the service gets wrapped once here.
+  const { iap, ads: platformAds } = createMonetization();
+  const ads = wrapWithGoldenKnight(platformAds, gs);
   // Platform leaderboards stay mocked until store setup (see the service)
   const leaderboard: LeaderboardService = new WebMockLeaderboard();
   // Apple-account cloud saves on configured iOS builds, quiet mock elsewhere

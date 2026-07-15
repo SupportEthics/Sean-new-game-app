@@ -199,6 +199,11 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.fairyStage = 0;
     return save;
   },
+  // v30 -> v31: the Golden Knight VIP purchase
+  (save) => {
+    save.state.goldenKnight = false;
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;
