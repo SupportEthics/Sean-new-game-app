@@ -354,10 +354,9 @@ export class UIScene extends Phaser.Scene {
     };
   }
 
-  /** SKINS/RAID/QUESTS/REBIRTH live in a collapsible menu so they don't sit
-   * over the pets fighting on the left flank. Tap MENU to fan them out,
-   * tap again (or pick one) to tuck them away. TOWN sits under MENU as its
-   * own front-door button (unlocks after the second rebirth). */
+  /** RAID/QUESTS/TOWN/CLOUD/REBIRTH live in a collapsible menu so they
+   * don't sit over the pets fighting on the left flank. Tap MENU to fan
+   * them out (two columns), tap again (or pick one) to tuck them away. */
   private createSideButtons(): void {
     const bx = 30;
     const ty = L.arenaTop + 48;
@@ -461,40 +460,27 @@ export class UIScene extends Phaser.Scene {
       .setTint(0xffffff)
       .setOrigin(0.5);
     this.menuBadge.add([beacon, beaconMark]);
-    // TOWN: its own always-visible button under MENU
-    const townBtn = this.add.container(0, 0).setDepth(31);
-    const tg2 = this.add.graphics();
-    tg2.fillStyle(0x2e4a1e, 0.92);
-    tg2.fillRoundedRect(bx - 24, ty + 58 - 24, 48, 48, 8);
-    tg2.lineStyle(2, 0x6fae4e);
-    tg2.strokeRoundedRect(bx - 24, ty + 58 - 24, 48, 48, 8);
+    // TOWN: inside the menu (second column, beside QUESTS) so the arena
+    // edge stays clean — Sean's call
+    const town = this.sideButton(this.sideMenu, bx + 56, rowB, 'TOWN', () => {
+      if (!this.gs.townUnlocked) {
+        this.toast('UNLOCKS AFTER YOUR 2ND REBIRTH');
+        return;
+      }
+      this.toggleMenu(false);
+      if (!this.scene.isActive('Town')) {
+        audio.buy();
+        this.scene.launch('Town');
+      }
+    });
+    this.townLock = town.lock;
     // Little house mark
     const house = this.add.graphics();
     house.fillStyle(0xd8e4c4);
-    house.fillRect(bx - 8, ty + 52, 16, 10);
+    house.fillRect(bx + 56 - 8, rowB - 6, 16, 10);
     house.fillStyle(0xb03a2e);
-    house.fillTriangle(bx - 11, ty + 52, bx + 11, ty + 52, bx, ty + 43);
-    const townLbl = this.add
-      .bitmapText(bx, ty + 58 + 20, 'pix', 'TOWN', 8)
-      .setTint(0xd8e4c4)
-      .setOrigin(0.5, 1);
-    this.townLock = this.add
-      .text(bx + 14, ty + 46, '🔒', { fontSize: '13px' })
-      .setOrigin(0.5);
-    const townHit = this.add
-      .rectangle(bx, ty + 58, 48, 48, 0xffffff, 0.001)
-      .setInteractive({ useHandCursor: true })
-      .on('pointerdown', () => {
-        if (!this.gs.townUnlocked) {
-          this.toast('UNLOCKS AFTER YOUR 2ND REBIRTH');
-          return;
-        }
-        if (!this.scene.isActive('Town')) {
-          audio.buy();
-          this.scene.launch('Town');
-        }
-      });
-    townBtn.add([tg2, house, townLbl, this.townLock, townHit]);
+    house.fillTriangle(bx + 56 - 11, rowB - 6, bx + 56 + 11, rowB - 6, bx + 56, rowB - 15);
+    this.sideMenu.add(house);
 
     // Red counters for finished-but-unclaimed quests/awards: one on the
     // MENU toggle, and a twin on the QUESTS button so an open menu shows
