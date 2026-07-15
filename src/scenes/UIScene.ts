@@ -142,6 +142,7 @@ export class UIScene extends Phaser.Scene {
     });
 
     this.createSideButtons();
+    this.createEventBanner();
     this.createBoostButtons();
     this.createBin();
     this.maybeShowOffline();
@@ -513,6 +514,38 @@ export class UIScene extends Phaser.Scene {
     this.menuLabel.setText(open ? 'CLOSE' : 'MENU');
     this.refreshQuestBadge();
     audio.buy();
+  }
+
+  /** Weekend-event strip across the arena top: exists only while an event
+   * runs, so the battle screen stays clean the rest of the week. */
+  private createEventBanner(): void {
+    const banner = this.add.container(0, 0).setDepth(29).setVisible(false);
+    const y = L.arenaTop + 12;
+    const bg = this.add
+      .rectangle(THEME.width / 2 + 14, y, 264, 20, 0x000000, 0.9)
+      .setStrokeStyle(2, 0xffd166)
+      .setInteractive({ useHandCursor: true });
+    const label = this.add
+      .bitmapText(THEME.width / 2 + 14, y, 'pix', '', 8)
+      .setOrigin(0.5)
+      .setTint(0xffffff);
+    banner.add([bg, label]);
+
+    let shownId = '';
+    const refresh = (): void => {
+      const ev = this.gs.currentEvent;
+      banner.setVisible(ev !== null);
+      if (!ev || ev.id === shownId) return;
+      shownId = ev.id;
+      bg.setFillStyle(ev.color, 0.92);
+      label.setText(`${ev.name} - ${ev.desc}`);
+    };
+    bg.on('pointerdown', () => {
+      const ev = this.gs.currentEvent;
+      if (ev) this.toast(`${ev.desc} ALL WEEKEND!`);
+    });
+    refresh();
+    this.time.addEvent({ delay: 60_000, loop: true, callback: refresh });
   }
 
   /** Small red circle with a count (quest/achievement notifications). */

@@ -38,6 +38,7 @@ import {
   rollPet,
 } from '../config/pets';
 import { AUTO_SKILLS_UNLOCK_STAGE, SKILLS, skillDefById } from '../config/skills';
+import { activeEvent, EventDef } from '../config/events';
 import { soulUpgradeById, soulUpgradeCost } from '../config/soulsTree';
 import { buildingById, buildingCost, TOWN } from '../config/town';
 import { RAIDS, raidClearKills, raidGems, raidGoldPerKill, raidKillCap, raidMonsterHp } from '../config/raids';
@@ -220,6 +221,15 @@ export interface SerializedState {
 
 const TICK_SECONDS = 0.1;
 
+// Vitest runs on any day of the week; a real-time weekend event switching
+// itself on mid-suite would make every economy assertion flaky. Freeze the
+// default clock to a Wednesday under test — event tests inject their own.
+const TEST_WEDNESDAY = Date.UTC(2026, 0, 7);
+const defaultClock: () => number =
+  typeof process !== 'undefined' && process.env?.VITEST
+    ? () => TEST_WEDNESDAY
+    : () => Date.now();
+
 /**
  * Single source of truth. Scenes subscribe to events and call methods;
  * they never mutate fields directly. Pure TS — no Phaser imports.
@@ -274,6 +284,10 @@ export class GameState {
   skillTimers: Record<string, SkillTimer> = {};
   /** AUTO CAST: skills fire themselves as they come off cooldown. */
   autoSkills = false;
+  /** Wall clock for the weekend-event schedule. Injectable so the sim
+   * stays deterministic: under vitest it freezes to a Wednesday (no
+   * event) unless a test sets its own time. */
+  clock: () => number = defaultClock;
   /** Hall of Legends filter: hide the seeded rivals, real players only. */
   boardRealOnly = false;
   /** Fairy helper level; 0 = not recruited yet. */
@@ -324,6 +338,11 @@ export class GameState {
 
   // ---- Derived values ----
 
+  /** The weekend event in effect right now (null on weekdays). */
+  get currentEvent(): EventDef | null {
+    return activeEvent(this.clock());
+  }
+
   get heroDps(): number {
     return (
       heroDps(gridTiers(this.grid), this.equipSlots) *
@@ -335,7 +354,8 @@ export class GameState {
       (this.dmgBoostActive() ? BOOSTS.dmgMult : 1) *
       (1 + this.soulLevel('might') * 0.1) *
       levelDpsMultiplier(this.heroLevel) *
-      this.swordSkinDpsMultiplier
+      this.swordSkinDpsMultiplier *
+      (this.currentEvent?.dpsMult ?? 1)
     );
   }
 
@@ -352,7 +372,8 @@ export class GameState {
       this.fairyGoldMultiplier *
       this.townGoldMultiplier *
       this.skinGoldMultiplier *
-      this.swordSkinGoldMultiplier
+      this.swordSkinGoldMultiplier *
+      (this.currentEvent?.goldMult ?? 1)
     );
   }
 
@@ -663,9 +684,10 @@ export class GameState {
     return this.battle.stage >= PRESTIGE.minStage && !this.raid;
   }
 
-  /** Souls this rebirth would bank right now. */
+  /** Souls this rebirth would bank right now (Soul Harvest weekends pay
+   * double — the boosted number is what the confirm dialog shows). */
   get prestigeReward(): number {
-    return soulsFor(this.battle.stage);
+    return Math.round(soulsFor(this.battle.stage) * (this.currentEvent?.soulsMult ?? 1));
   }
 
   /**
@@ -760,7 +782,7 @@ export class GameState {
       if (raid.monsterHp > 0) break;
       raid.kills += 1;
       result.kills += 1;
-      const gold = raidGoldPerKill(raid.level);
+      const gold = raidGoldPerKill(raid.level) * (this.currentEvent?.raidGoldMult ?? 1);
       raid.goldEarned += gold;
       result.goldEarned += gold;
       raid.monsterHp = raid.monsterMaxHp;
