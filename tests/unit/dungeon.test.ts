@@ -91,3 +91,18 @@ describe('dungeon runs', () => {
     expect(revived.dungeonClearedToday()).toBe(true);
   });
 });
+
+describe('dungeon after a rebirth (Sean bug)', () => {
+  it('tunes to the CURRENT run, so a fresh-run knight still lands kills and gold', () => {
+    const gs = new GameState();
+    gs.highestStage = 190; // lifetime legend...
+    gs.battle.stage = 8; // ...freshly reborn
+    gs.prestigeCount = 4;
+    gs.grid[0] = 8; // stage-8-appropriate sword
+    const gold = gs.gold;
+    expect(gs.startDungeon()).toBe(true);
+    for (let i = 0; i < 700 && gs.raid; i++) gs.update(0.1);
+    // Kills landed and paid out — the old highestStage tuning paid zero
+    expect(gs.gold).toBeGreaterThan(gold);
+  });
+});

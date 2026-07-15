@@ -922,12 +922,15 @@ export class GameState {
   }
 
   /** Kick off today's dungeon: a kill quota against monsters tuned to the
-   * player's own frontier, twisted by the daily modifier. Free retries
-   * until it's cleared; the reward pays once per day. */
+   * CURRENT run's stage (not the lifetime best — after a rebirth that
+   * would be an unkillable wall paying nothing, the bug Sean hit),
+   * twisted by the daily modifier. Free retries until it's cleared; the
+   * reward pays once per day. */
   startDungeon(now: number = this.clock()): boolean {
     if (!this.canStartDungeon(now)) return false;
     const mod = dungeonModifier(now);
-    const hp = enemyHp(this.highestStage, 5) * this.enemyHpMultiplier * mod.hpMult;
+    const stage = this.battle.stage;
+    const hp = enemyHp(stage, 5) * this.enemyHpMultiplier * mod.hpMult;
     const duration = dungeonDuration(mod);
     this.raid = {
       level: 0,
@@ -939,7 +942,7 @@ export class GameState {
       duration,
       clearKills: dungeonQuota(mod),
       killCap: dungeonQuota(mod) * 2,
-      goldPerKill: goldDrop(this.highestStage, 5) * mod.goldMult,
+      goldPerKill: goldDrop(stage, 5) * mod.goldMult,
       dungeon: mod.id,
     };
     this.emit('raid:started', 0);
