@@ -59,6 +59,7 @@ import {
   passSeason,
   premiumRewardFor,
 } from '../config/pass';
+import { DailyDeal, dailyDeal } from '../config/dailyDeal';
 import { soulUpgradeById, soulUpgradeCost } from '../config/soulsTree';
 import { buildingById, buildingCost, TOWN } from '../config/town';
 import { RAIDS, raidClearKills, raidGems, raidGoldPerKill, raidKillCap, raidMonsterHp } from '../config/raids';
@@ -71,6 +72,7 @@ import {
   cellCost,
   duelWinChance,
   enemyHp,
+  formatNumber,
   gearCost,
   goldDrop,
   heroDps,
@@ -249,6 +251,7 @@ export interface SerializedState {
   passClaimedFree?: number[];
   passClaimedPremium?: number[];
   passPremiumSeason?: number;
+  dealClaimedDay?: string;
   fairyLevel: number;
   dmgBoostUntil: number;
   speedBoostUntil: number;
@@ -358,6 +361,8 @@ export class GameState {
   passClaimedFree: number[] = [];
   passClaimedPremium: number[] = [];
   passPremiumSeason = 0;
+  /** UTC day the shop's daily deal was last claimed. */
+  dealClaimedDay = '';
   /** Fairy helper level; 0 = not recruited yet. */
   fairyLevel = 0;
   /** Rewarded-ad boosts: epoch ms the x2 damage / x2 speed windows end. */
@@ -984,6 +989,56 @@ export class GameState {
   private enchantBonus(id: string): number {
     const def = enchantById(id);
     return 1 + (def ? this.enchantLevel(id) * def.perLevel : 0);
+  }
+
+  // ---- The daily deal ----
+
+  dealClaimedToday(now: number = this.clock()): boolean {
+    return this.dealClaimedDay === utcDay(now);
+  }
+
+  /** What today's deal would cost/pay right now (for the shop card). */
+  dealTerms(now: number = this.clock()): { deal: DailyDeal; cost: string; affordable: boolean } {
+    const deal = dailyDeal(now);
+    if (deal.kind === 'gems') {
+      const gold = this.goldForHours(deal.goldHoursCost!);
+      return { deal, cost: `${formatNumber(gold).toUpperCase()} GOLD`, affordable: this.gold >= gold };
+    }
+    if (deal.kind === 'gold') {
+      return { deal, cost: `${deal.gemCost} GEMS`, affordable: this.gems >= deal.gemCost! };
+    }
+    const price = Math.floor(this.goldEggCost * deal.eggPriceFraction!);
+    return { deal, cost: `${formatNumber(price).toUpperCase()} GOLD`, affordable: this.gold >= price };
+  }
+
+  /** Take today's bargain (once per UTC day). */
+  claimDailyDeal(now: number = this.clock(), roll: number = Math.random()): boolean {
+    if (this.dealClaimedToday(now)) return false;
+    const deal = dailyDeal(now);
+    if (deal.kind === 'gems') {
+      const gold = this.goldForHours(deal.goldHoursCost!);
+      if (this.gold < gold) return false;
+      this.gold -= gold;
+      this.addGems(deal.gems!);
+      this.emit('gold:changed', this.gold);
+    } else if (deal.kind === 'gold') {
+      if (this.gems < deal.gemCost!) return false;
+      this.gems -= deal.gemCost!;
+      this.addGold(this.goldForHours(deal.goldHours!));
+      this.emit('gems:changed', this.gems);
+    } else {
+      const price = Math.floor(this.goldEggCost * deal.eggPriceFraction!);
+      if (this.gold < price) return false;
+      this.gold -= price;
+      const pet = rollPet(roll, eggPool('gold'));
+      if (this.petLevel(pet.id) >= PET_MAX_LEVEL) this.addGems(PET_DUP_GEMS);
+      else this.pets[pet.id] = this.petLevel(pet.id) + 1;
+      this.emit('gold:changed', this.gold);
+      this.emit('pets:changed', this.pets);
+    }
+    this.dealClaimedDay = utcDay(now);
+    this.emit('shop:changed', undefined);
+    return true;
   }
 
   // ---- The Knight's Pass ----
@@ -1979,6 +2034,7 @@ export class GameState {
       passClaimedFree: [...this.passClaimedFree],
       passClaimedPremium: [...this.passClaimedPremium],
       passPremiumSeason: this.passPremiumSeason,
+      dealClaimedDay: this.dealClaimedDay,
       fairyLevel: this.fairyLevel,
       dmgBoostUntil: this.dmgBoostUntil,
       speedBoostUntil: this.speedBoostUntil,
@@ -2056,6 +2112,7 @@ export class GameState {
     gs.passClaimedFree = [...(data.passClaimedFree ?? [])];
     gs.passClaimedPremium = [...(data.passClaimedPremium ?? [])];
     gs.passPremiumSeason = data.passPremiumSeason ?? 0;
+    gs.dealClaimedDay = data.dealClaimedDay ?? '';
     gs.fairyLevel = data.fairyLevel;
     gs.dmgBoostUntil = data.dmgBoostUntil;
     gs.speedBoostUntil = data.speedBoostUntil;

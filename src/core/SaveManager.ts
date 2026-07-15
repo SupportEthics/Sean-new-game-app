@@ -189,6 +189,11 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.passPremiumSeason = 0;
     return save;
   },
+  // v28 -> v29: the shop's daily deal
+  (save) => {
+    save.state.dealClaimedDay = '';
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

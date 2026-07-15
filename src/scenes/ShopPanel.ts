@@ -235,6 +235,32 @@ export class ShopPanel extends Phaser.Scene {
   private buildDeals(): number {
     let y = LIST_TOP + 8;
 
+    // Today's rotating bargain — a fresh reason to open the shop daily
+    {
+      const h = 66;
+      const { deal, cost, affordable } = this.gs.dealTerms();
+      const claimed = this.gs.dealClaimedToday();
+      this.card(y, h, claimed ? 0x6fae4e : 0xb03a2e);
+      this.text(24, y + 12, `TODAY ONLY: ${deal.title}`, 0xb03a2e);
+      this.text(24, y + 28, deal.desc, 0x4a3520);
+      this.text(24, y + 44, claimed ? 'CLAIMED - NEW DEAL TOMORROW' : `PAY ${cost}`, 0x8a5a2e);
+      if (!claimed) {
+        const bx = PANEL_X + PANEL_W - 58;
+        const btn = this.add
+          .image(bx, y + h / 2, 'btn-sm')
+          .setTint(affordable ? 0xb03a2e : THEME.buttonBgDisabled)
+          .setInteractive({ useHandCursor: true });
+        const lbl = this.add.bitmapText(bx, y + h / 2, 'pix', 'GRAB IT', 8).setOrigin(0.5);
+        btn.on('pointerup', (ptr: Phaser.Input.Pointer) => {
+          if (Math.abs(ptr.downY - ptr.upY) > 10) return;
+          // claimDailyDeal emits shop:changed, which rebuilds this list
+          if (this.gs.claimDailyDeal()) audio.coin();
+        });
+        this.rows.add([btn, lbl]);
+      }
+      y += h + 10;
+    }
+
     if (!this.gs.starterPackOwned) {
       const h = 66;
       this.card(y, h, 0xc9961e);
