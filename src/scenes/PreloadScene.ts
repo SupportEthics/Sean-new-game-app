@@ -59,10 +59,12 @@ export class PreloadScene extends Phaser.Scene {
         }),
       ),
     );
-    this.load.spritesheet('fairy', assetUrl('assets/fairy.png'), {
-      frameWidth: 28,
-      frameHeight: 28,
-    });
+    ['', '-s1', '-s2'].forEach((suffix) =>
+      this.load.spritesheet(`fairy${suffix}`, assetUrl(`assets/fairy${suffix}.png`), {
+        frameWidth: 28,
+        frameHeight: 28,
+      }),
+    );
     this.load.spritesheet('gift', assetUrl('assets/gift.png'), {
       frameWidth: 24,
       frameHeight: 24,
@@ -88,6 +90,8 @@ export class PreloadScene extends Phaser.Scene {
       ...ENEMY_SPECIES.map((s) => `enemy-${s.key}`),
       ...PETS.flatMap((p) => [`pet-${p.id}`, `pet-${p.id}-s1`, `pet-${p.id}-s2`]),
       'fairy',
+      'fairy-s1',
+      'fairy-s2',
       'gift',
     ];
     keys.forEach((k) => this.textures.get(k).setFilter(Phaser.Textures.FilterMode.NEAREST));
@@ -142,12 +146,14 @@ export class PreloadScene extends Phaser.Scene {
         }),
       ),
     );
-    this.anims.create({
-      key: 'fairy-idle',
-      frames: this.anims.generateFrameNumbers('fairy', { frames: [0, 1] }),
-      frameRate: 5,
-      repeat: -1,
-    });
+    ['', '-s1', '-s2'].forEach((suffix) =>
+      this.anims.create({
+        key: `fairy${suffix}-idle`,
+        frames: this.anims.generateFrameNumbers(`fairy${suffix}`, { frames: [0, 1] }),
+        frameRate: 5,
+        repeat: -1,
+      }),
+    );
     this.anims.create({
       key: 'gift-idle',
       frames: this.anims.generateFrameNumbers('gift', { frames: [0, 1] }),

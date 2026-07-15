@@ -194,6 +194,11 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.dealClaimedDay = '';
     return save;
   },
+  // v29 -> v30: fairy evolution
+  (save) => {
+    save.state.fairyStage = 0;
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

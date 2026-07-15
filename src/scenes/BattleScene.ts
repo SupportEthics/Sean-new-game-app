@@ -6,9 +6,10 @@ import { raidClearKills } from '../config/raids';
 import { skinById } from '../config/skins';
 import { swordSkinFrame } from '../config/swordSkins';
 import { EVOLUTION } from '../config/pets';
+import { FAIRY_EVOLUTION } from '../config/fairy';
 import { ENEMY_SPECIES, STAGES } from '../config/stages';
 import { isBossWave } from '../core/BattleSim';
-import { formatNumber } from '../core/EconomyMath';
+import { formatNumber, rivalDps } from '../core/EconomyMath';
 import { GameState } from '../core/GameState';
 import { AdService } from '../services/monetization/AdService';
 import { audio } from '../services/AudioService';
@@ -120,6 +121,13 @@ export class BattleScene extends Phaser.Scene {
     this.gs.on('swordskin:changed', () => this.syncWeapon());
     this.gs.on('raid:started', (level) => this.onRaidStarted(level));
     this.gs.on('raid:ended', (r) => this.onRaidEnded(r));
+    // Duels arrive from the Hall of Legends with the outcome pre-rolled;
+    // this scene just stages the show
+    this.events.on(
+      'duel:play',
+      (p: { name: string; skin: string; stage: number; won: boolean; gold: number }) =>
+        this.playDuel(p),
+    );
     this.gs.on('pets:changed', () => this.syncPets());
     this.gs.on('fairy:changed', () => this.syncFairy());
 
@@ -284,14 +292,18 @@ export class BattleScene extends Phaser.Scene {
     });
   }
 
-  /** The fairy flutters above the hero's shoulder once recruited. */
+  /** The fairy flutters above the hero's shoulder once recruited; her
+   * evolution stage picks the sheet and she grows a little each time. */
   private syncFairy(): void {
-    if (this.gs.fairyLevel <= 0 || this.fairySprite) {
-      return;
-    }
+    if (this.gs.fairyLevel <= 0) return;
+    const stage = Math.min(this.gs.fairyStage, FAIRY_EVOLUTION.scales.length - 1);
+    const tex = `fairy${stage > 0 ? `-s${stage}` : ''}`;
+    if (this.fairySprite?.texture.key === tex) return;
+    this.fairySprite?.destroy();
     this.fairySprite = this.add
-      .sprite(this.heroX - 34, this.heroY - 44, 'fairy')
-      .play('fairy-idle')
+      .sprite(this.heroX - 34, this.heroY - 44, tex)
+      .play(`${tex}-idle`)
+      .setScale(FAIRY_EVOLUTION.scales[stage])
       .setDepth(11);
     this.tweens.add({
       targets: this.fairySprite,
@@ -579,6 +591,96 @@ export class BattleScene extends Phaser.Scene {
       delay: 2200,
       duration: 500,
       onComplete: () => banner.destroy(),
+    });
+  }
+
+  // ---- Duels ----
+
+  private duelActive = false;
+
+  /** Stage a rival-knight showdown in the arena: three lunging exchanges
+   * with damage pops, then the pre-rolled loser topples. The battle sim
+   * keeps running underneath; only the visuals borrow the stage. */
+  private playDuel(p: { name: string; skin: string; stage: number; won: boolean; gold: number }): void {
+    if (this.duelActive) return;
+    this.duelActive = true;
+
+    const tex = this.textures.exists(`hero-${p.skin}`) ? `hero-${p.skin}` : 'hero-squire';
+    this.enemy.setVisible(false);
+    this.extraEnemies.forEach((e) => e.setVisible(false));
+    this.enemyName.setText(`DUEL: ${p.name}`).setVisible(true);
+    const rivalShadow = this.add
+      .image(this.enemyX, this.enemyY + 32, 'shadow')
+      .setScale(1.2)
+      .setDepth(4);
+    const rival = this.add.sprite(this.enemyX, this.enemyY, tex).setDepth(10).setFlipX(true);
+    if (this.textures.exists(`${tex}-idle`) || rival.anims) {
+      try {
+        rival.play(`${tex}-idle`);
+      } catch {
+        /* static frame is fine */
+      }
+    }
+
+    const pop = (x: number, y: number, txt: string, tint: number): void => {
+      const t = this.add
+        .bitmapText(x, y - 40, 'pix', txt, 16)
+        .setOrigin(0.5)
+        .setTint(tint)
+        .setDropShadow(1, 1, 0x14101c, 1)
+        .setDepth(41);
+      this.tweens.add({ targets: t, y: t.y - 28, alpha: 0, duration: 650, onComplete: () => t.destroy() });
+    };
+    const lunge = (s: Phaser.GameObjects.Sprite, dir: 1 | -1): void => {
+      this.tweens.add({ targets: s, x: `+=${dir * 42}`, duration: 150, yoyo: true, ease: 'Quad.out' });
+    };
+    const myHit = formatNumber(this.gs.heroDps).toUpperCase();
+    const theirHit = formatNumber(rivalDps(p.stage)).toUpperCase();
+
+    for (let i = 0; i < 3; i++) {
+      this.time.delayedCall(250 + i * 700, () => {
+        lunge(this.hero, 1);
+        audio.hit();
+        pop(this.enemyX, this.enemyY, myHit, 0xffd166);
+      });
+      this.time.delayedCall(600 + i * 700, () => {
+        lunge(rival, -1);
+        audio.hit();
+        pop(this.heroX, this.heroY, theirHit, 0xff8a8a);
+      });
+    }
+
+    this.time.delayedCall(2500, () => {
+      const loser = p.won ? rival : this.hero;
+      this.tweens.add({ targets: loser, angle: p.won ? 90 : -90, alpha: 0.35, duration: 420 });
+      audio.stageUp();
+      const msg = p.won
+        ? `VICTORY! +${formatNumber(p.gold).toUpperCase()} GOLD`
+        : `${p.name} STANDS TALL - TRAIN AND RETRY`;
+      const banner = this.add
+        .bitmapText(THEME.width / 2, L.arenaTop + 150, 'pix', msg, 8)
+        .setTint(p.won ? THEME.gold : 0xffb4b4)
+        .setDropShadow(1, 1, 0x14101c, 1)
+        .setOrigin(0.5)
+        .setDepth(42);
+      this.tweens.add({
+        targets: banner,
+        y: banner.y - 24,
+        alpha: 0,
+        delay: 2000,
+        duration: 500,
+        onComplete: () => banner.destroy(),
+      });
+    });
+
+    this.time.delayedCall(4300, () => {
+      rival.destroy();
+      rivalShadow.destroy();
+      this.hero.setAngle(0).setAlpha(1);
+      this.enemy.setVisible(true);
+      this.enemyName.setVisible(false);
+      this.syncWave(true);
+      this.duelActive = false;
     });
   }
 

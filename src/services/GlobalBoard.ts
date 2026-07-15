@@ -32,13 +32,20 @@ export class GlobalBoard {
     return globalBoardConfigured();
   }
 
-  /** Top rows by stage, best first. Null on any failure. */
+  /** Only real app installs may claim a call sign and submit scores. */
+  get canJoin(): boolean {
+    return this.isConfigured && Capacitor.isNativePlatform();
+  }
+
+  /** Top rows by stage, best first. Null on any failure. Web testers
+   * (the browser demo on the website) are excluded — the ladder is for
+   * the real apps only (Sean's call). */
   async fetchTop(limit = 50): Promise<GlobalRow[] | null> {
     if (!this.isConfigured) return null;
     try {
       const res = await withTimeout(
         `${GLOBAL_BOARD.url}/rest/v1/leaderboard` +
-          `?select=device_id,name,stage,prestiges,skin&order=stage.desc,updated_at.asc&limit=${limit}`,
+          `?select=device_id,name,stage,prestiges,skin&platform=neq.web&order=stage.desc,updated_at.asc&limit=${limit}`,
         { headers: headers() },
       );
       if (!res.ok) return null;
@@ -64,6 +71,8 @@ export class GlobalBoard {
     skin: string,
   ): Promise<boolean> {
     if (!this.isConfigured || !isValidCallSign(name)) return false;
+    // Browser demo players never join the worldwide ladder
+    if (!Capacitor.isNativePlatform()) return false;
     try {
       const res = await withTimeout(`${GLOBAL_BOARD.url}/rest/v1/rpc/submit_score`, {
         method: 'POST',

@@ -10,7 +10,7 @@ import {
   PETS,
   stageName,
 } from '../config/pets';
-import { EXPEDITIONS, expeditionById } from '../config/expeditions';
+import { EXPEDITIONS } from '../config/expeditions';
 import { formatNumber } from '../core/EconomyMath';
 import { EggKind, GameState } from '../core/GameState';
 import { AdService } from '../services/monetization/AdService';
@@ -23,8 +23,8 @@ const PANEL_W = THEME.width - 24;
 const PANEL_H = 520;
 const EGG_W = 110;
 const EGG_H = 86;
-const ROW_H = 58;
-const ROW_PITCH = 64;
+const ROW_H = 54;
+const ROW_PITCH = 59;
 const RARITY_TINT: Record<string, number> = {
   common: 0x8a7a5e,
   rare: 0x3a6ea8,
@@ -114,26 +114,30 @@ export class PetsPanel extends Phaser.Scene {
     }
   }
 
-  /** Expedition strip along the panel's foot: send the reserve pet away,
-   * watch the clock, collect the loot. */
+  /** Expedition strip in the panel's reserved footer band (below the pet
+   * rows — never over them): send the reserve pet away, watch the clock,
+   * collect the loot. Titled so it's obvious what it does. */
   private buildExpedition(): void {
     this.expeditionCard.removeAll(true);
-    const y = PANEL_Y + PANEL_H - 30;
+    const y = PANEL_Y + PANEL_H - 26;
     const exp = this.gs.expedition;
     const reserve = this.gs.reservePetId;
     if (!exp && !reserve) return; // nothing hatched yet
 
     const bg = this.add
-      .rectangle(THEME.width / 2, y, PANEL_W - 20, 40, 0x1c2a38)
+      .rectangle(THEME.width / 2, y, PANEL_W - 20, 42, 0x1c2a38)
       .setStrokeStyle(2, 0x2884a8);
-    this.expeditionCard.add(bg);
+    const title = this.add
+      .bitmapText(PANEL_X + 18, y - 11, 'pix', 'PET EXPEDITION', 8)
+      .setOrigin(0, 0.5)
+      .setTint(0x4a90b8);
+    this.expeditionCard.add([bg, title]);
 
     if (exp) {
-      const def = expeditionById(exp.defId)!;
       const pet = petById(exp.petId)!;
       if (this.gs.expeditionReady()) {
         const lbl = this.add
-          .bitmapText(PANEL_X + 18, y, 'pix', `${pet.name} IS BACK!`, 8)
+          .bitmapText(PANEL_X + 18, y + 9, 'pix', `${pet.name} IS BACK WITH LOOT!`, 8)
           .setOrigin(0, 0.5)
           .setTint(0x7ac74f);
         const btn = this.add
@@ -161,9 +165,9 @@ export class PetsPanel extends Phaser.Scene {
         const lbl = this.add
           .bitmapText(
             PANEL_X + 18,
-            y,
+            y + 9,
             'pix',
-            `${pet.name} - ${def.name} - ${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`,
+            `${pet.name} IS EXPLORING - BACK IN ${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`,
             8,
           )
           .setOrigin(0, 0.5)
@@ -176,7 +180,7 @@ export class PetsPanel extends Phaser.Scene {
     // Idle: offer the three trips for the reserve pet
     const pet = petById(reserve!)!;
     const lbl = this.add
-      .bitmapText(PANEL_X + 18, y, 'pix', `SEND ${pet.name}:`, 8)
+      .bitmapText(PANEL_X + 18, y + 9, 'pix', `SEND ${pet.name} OUT FOR LOOT:`, 8)
       .setOrigin(0, 0.5)
       .setTint(0x7db8d8);
     this.expeditionCard.add(lbl);

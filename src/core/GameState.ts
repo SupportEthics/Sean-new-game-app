@@ -1,6 +1,6 @@
 import { AchievementDef, ACHIEVEMENTS, achievementById } from '../config/achievements';
 import { AD_LOOT, BOOSTS, ECONOMY } from '../config/economy';
-import { FAIRY, fairyLevelCost } from '../config/fairy';
+import { FAIRY, FAIRY_EVOLUTION, fairyLevelCost } from '../config/fairy';
 import { GiftDef } from '../config/gifts';
 import { LOGIN_REWARDS, LoginReward } from '../config/loginRewards';
 import {
@@ -253,6 +253,7 @@ export interface SerializedState {
   passPremiumSeason?: number;
   dealClaimedDay?: string;
   fairyLevel: number;
+  fairyStage?: number;
   dmgBoostUntil: number;
   speedBoostUntil: number;
   adLootReadyAt: number;
@@ -365,6 +366,8 @@ export class GameState {
   dealClaimedDay = '';
   /** Fairy helper level; 0 = not recruited yet. */
   fairyLevel = 0;
+  /** Fairy evolution stage (0-2), gem-bought like pet ascensions. */
+  fairyStage = 0;
   /** Rewarded-ad boosts: epoch ms the x2 damage / x2 speed windows end. */
   dmgBoostUntil = 0;
   speedBoostUntil = 0;
@@ -1449,12 +1452,39 @@ export class GameState {
     return this.highestStage >= FAIRY.unlockStage;
   }
 
+  /** Evolution multiplies her whole blessing (mirrors the pets). */
+  private get fairyStageMult(): number {
+    return FAIRY_EVOLUTION.stageMultipliers[
+      Math.min(this.fairyStage, FAIRY_EVOLUTION.stageMultipliers.length - 1)
+    ];
+  }
+
   get fairyDpsMultiplier(): number {
-    return 1 + this.fairyLevel * FAIRY.dpsPerLevel;
+    return 1 + this.fairyLevel * FAIRY.dpsPerLevel * this.fairyStageMult;
   }
 
   get fairyGoldMultiplier(): number {
-    return 1 + this.fairyLevel * FAIRY.goldPerLevel;
+    return 1 + this.fairyLevel * FAIRY.goldPerLevel * this.fairyStageMult;
+  }
+
+  /** Why the fairy can/can't ascend right now (drives the EVOLVE button). */
+  fairyEvolveStatus(): { ok: boolean; reason: 'ready' | 'maxed' | 'gems' | 'unrecruited'; gems: number } {
+    if (this.fairyLevel <= 0) return { ok: false, reason: 'unrecruited', gems: 0 };
+    if (this.fairyStage >= FAIRY_EVOLUTION.gemCosts.length) {
+      return { ok: false, reason: 'maxed', gems: 0 };
+    }
+    const gems = FAIRY_EVOLUTION.gemCosts[this.fairyStage];
+    return { ok: this.gems >= gems, reason: this.gems >= gems ? 'ready' : 'gems', gems };
+  }
+
+  evolveFairy(): boolean {
+    const status = this.fairyEvolveStatus();
+    if (!status.ok) return false;
+    this.gems -= status.gems;
+    this.fairyStage += 1;
+    this.emit('gems:changed', this.gems);
+    this.emit('fairy:changed', this.fairyLevel);
+    return true;
   }
 
   /** Gold price of the next fairy level, or null at the cap. */
@@ -2036,6 +2066,7 @@ export class GameState {
       passPremiumSeason: this.passPremiumSeason,
       dealClaimedDay: this.dealClaimedDay,
       fairyLevel: this.fairyLevel,
+      fairyStage: this.fairyStage,
       dmgBoostUntil: this.dmgBoostUntil,
       speedBoostUntil: this.speedBoostUntil,
       adLootReadyAt: this.adLootReadyAt,
@@ -2114,6 +2145,7 @@ export class GameState {
     gs.passPremiumSeason = data.passPremiumSeason ?? 0;
     gs.dealClaimedDay = data.dealClaimedDay ?? '';
     gs.fairyLevel = data.fairyLevel;
+    gs.fairyStage = data.fairyStage ?? 0;
     gs.dmgBoostUntil = data.dmgBoostUntil;
     gs.speedBoostUntil = data.speedBoostUntil;
     gs.adLootReadyAt = data.adLootReadyAt;

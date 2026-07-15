@@ -143,20 +143,41 @@ export class MenuPanel extends Phaser.Scene {
           gr.fillTriangle(x - 12, y - 2, x + 12, y - 2, x, y - 13);
         },
       },
-      {
-        label: 'CLOUD',
-        scene: 'Cloud',
-        col: 1,
-        row: 2,
-        locked: () => null,
-        icon: (gr, x, y) => {
-          gr.fillStyle(0xbfd4e8);
-          gr.fillCircle(x - 8, y + 1, 6);
-          gr.fillCircle(x + 1, y - 3, 7);
-          gr.fillCircle(x + 9, y + 2, 5);
-          gr.fillRoundedRect(x - 13, y + 1, 26, 7, 3);
-        },
-      },
+      // The sixth slot earns its place: CLOUD only where Apple sign-in can
+      // actually work (real iPhone build); everywhere else it's a dead
+      // button (Sean's call), so the wardrobe takes the spot instead.
+      (this.registry.get('cloudSave') as { isAvailable: boolean } | undefined)?.isAvailable
+        ? {
+            label: 'CLOUD',
+            scene: 'Cloud',
+            col: 1,
+            row: 2,
+            locked: () => null,
+            icon: (gr, x, y) => {
+              gr.fillStyle(0xbfd4e8);
+              gr.fillCircle(x - 8, y + 1, 6);
+              gr.fillCircle(x + 1, y - 3, 7);
+              gr.fillCircle(x + 9, y + 2, 5);
+              gr.fillRoundedRect(x - 13, y + 1, 26, 7, 3);
+            },
+          }
+        : {
+            label: 'SKINS',
+            scene: 'Skins',
+            col: 1,
+            row: 2,
+            locked: () => null,
+            icon: (gr, x, y) => {
+              // Hanger silhouette: shoulders + hook
+              gr.lineStyle(3, 0xd8d4e4);
+              gr.lineBetween(x - 12, y + 6, x, y - 4);
+              gr.lineBetween(x + 12, y + 6, x, y - 4);
+              gr.lineBetween(x - 12, y + 6, x + 12, y + 6);
+              gr.lineStyle(2, 0xd8d4e4);
+              gr.lineBetween(x, y - 4, x, y - 9);
+              gr.strokeCircle(x + 3, y - 11, 3);
+            },
+          },
     ];
 
     for (const e of entries) this.menuButton(e);

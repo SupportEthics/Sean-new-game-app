@@ -751,29 +751,52 @@ function petDrake(frame, stage = 0) {
 
 // ---------- Fairy (24x24 logical, glowing helper sprite) ----------
 
-function fairy(frame) {
+function fairy(frame, stage = 0) {
+  // Evolution palettes: forest green -> sylph teal -> golden seraph
+  const PAL = [
+    { glow: '#b8f06b', wing: '#e8ffd0', vein: '#8cc850', dress: ['#eaffd8', '#b8f06b', '#5c9a3a'], halo: '#b8f06b88' },
+    { glow: '#6be3ff', wing: '#dcf6ff', vein: '#4fb4d0', dress: ['#e8faff', '#6be3ff', '#2a7a9a'], halo: '#6be3ff90' },
+    { glow: '#ffd166', wing: '#fff2c8', vein: '#e8b84e', dress: ['#fff8e0', '#ffd166', '#a87e1e'], halo: '#ffd16698' },
+  ][stage];
   const p = new Pix(24, 24);
-  const GLOW = '#b8f06b';
   const up = frame === 0;
   const wy = up ? 3 : 8;
-  // Gossamer wings, flapping
-  p.tri(3, wy, 9, 11, 8, 16, '#e8ffd0');
-  p.tri(21, wy, 15, 11, 16, 16, '#e8ffd0');
-  p.line(3, wy, 8, 14, '#8cc850');
-  p.line(21, wy, 16, 14, '#8cc850');
+  // Gossamer wings, flapping — evolved fairies spread wider
+  const spread = stage > 0 ? 1 : 0;
+  p.tri(3 - spread, wy, 9, 11, 8, 16, PAL.wing);
+  p.tri(21 + spread, wy, 15, 11, 16, 16, PAL.wing);
+  p.line(3 - spread, wy, 8, 14, PAL.vein);
+  p.line(21 + spread, wy, 16, 14, PAL.vein);
+  if (stage === 2) {
+    // Seraph: a second wing pair
+    p.tri(5, wy + 6, 10, 13, 9, 17, PAL.wing);
+    p.tri(19, wy + 6, 14, 13, 15, 17, PAL.wing);
+  }
   // Glowing dress
-  p.domeEllipse(12, 14, 4, 5.5, ['#eaffd8', GLOW, '#5c9a3a']);
-  // Head + tiny bun
+  p.domeEllipse(12, 14, 4, 5.5, PAL.dress);
+  // Head + hair
   p.domeEllipse(12, 6, 3, 3, ['#ffe2c8', '#eab88c', '#b08858']);
   p.rect(10, 2, 4, 2, '#8a5a2e');
+  if (stage >= 1) {
+    // Tiara
+    p.rect(10, 2, 4, 1, PAL.glow);
+    p.set(12, 1, PAL.glow);
+  }
   p.set(11, 6, '#14101c'); // eyes
   p.set(14, 6, '#14101c');
+  if (stage === 2) {
+    // The Blade Seraph carries her own little sword, point up
+    p.line(21, 16, 21, 8, '#ffffff');
+    p.set(21, 7, '#e8f0f8');
+    p.rect(20, 16, 3, 1, '#c99a2e'); // guard
+    p.set(21, 18, '#8a5a2e'); // grip
+  }
   // Sparkle trail
-  p.set(6, 19 + (up ? 0 : 1), GLOW);
-  p.set(18, 20 - (up ? 0 : 1), GLOW);
-  p.set(12, 22, '#eaffd8');
+  p.set(6, 19 + (up ? 0 : 1), PAL.glow);
+  p.set(18, 20 - (up ? 0 : 1), PAL.glow);
+  p.set(12, 22, PAL.dress[0]);
   const out = finish(p);
-  out.halo('#b8f06b88');
+  out.halo(PAL.halo);
   return out;
 }
 
@@ -1303,6 +1326,8 @@ for (const [id, fn] of [
   writeSheet(`${OUT}/pet-${id}-s2.png`, [fn(0, 2), fn(1, 2)], 1);
 }
 writeSheet(`${OUT}/fairy.png`, [fairy(0), fairy(1)], 1);
+writeSheet(`${OUT}/fairy-s1.png`, [fairy(0, 1), fairy(1, 1)], 1);
+writeSheet(`${OUT}/fairy-s2.png`, [fairy(0, 2), fairy(1, 2)], 1);
 writeSheet(`${OUT}/gift.png`, [gift(0), gift(1)], 1);
 // 25 tier blades + the 3 premium IAP weapons (frames 25-27)
 writeSheet(`${OUT}/gear.png`, [...WEAPONS.map(weapon), scythe(), voidKatana(), dragonCleaver()], 2);

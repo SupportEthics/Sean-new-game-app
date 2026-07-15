@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { addBackdrop, addCloseButton } from '../ui/panelInput';
-import { FAIRY } from '../config/fairy';
+import { FAIRY, FAIRY_EVOLUTION, fairyStageName } from '../config/fairy';
 import { formatNumber } from '../core/EconomyMath';
 import { GameState } from '../core/GameState';
 import { audio } from '../services/AudioService';
@@ -63,8 +63,13 @@ export class FairyPanel extends Phaser.Scene {
     const unlocked = this.gs.fairyUnlocked;
     const level = this.gs.fairyLevel;
 
-    // The star of the show, hovering
-    const sprite = this.add.sprite(cx, PANEL_Y + 120, 'fairy').play('fairy-idle').setScale(3);
+    // The star of the show, hovering — her evolved form once ascended
+    const stage = Math.min(this.gs.fairyStage, FAIRY_EVOLUTION.stageNames.length - 1);
+    const tex = `fairy${stage > 0 ? `-s${stage}` : ''}`;
+    const sprite = this.add
+      .sprite(cx, PANEL_Y + 120, tex)
+      .play(`${tex}-idle`)
+      .setScale(3 * FAIRY_EVOLUTION.scales[stage]);
     if (!unlocked) sprite.setTintFill(0x3a3048);
     this.body.add(sprite);
     if (unlocked) {
@@ -90,9 +95,15 @@ export class FairyPanel extends Phaser.Scene {
 
     this.body.add(
       this.add
-        .bitmapText(cx, PANEL_Y + 186, 'pix', level === 0 ? 'RECRUIT YOUR FAIRY' : `FAIRY LV ${level}`, 16)
+        .bitmapText(
+          cx,
+          PANEL_Y + 186,
+          'pix',
+          level === 0 ? 'RECRUIT YOUR FAIRY' : `${fairyStageName(stage)} LV ${level}`,
+          16,
+        )
         .setOrigin(0.5, 0)
-        .setTint(0x2e7a1e),
+        .setTint(stage === 2 ? 0xc9961e : stage === 1 ? 0x2884a8 : 0x2e7a1e),
     );
     this.body.add(
       this.add
@@ -152,9 +163,41 @@ export class FairyPanel extends Phaser.Scene {
       });
     }
     this.body.add([btn, lbl]);
+
+    // Evolution: gems buy the next form, multiplying her whole blessing
+    const evo = this.gs.fairyEvolveStatus();
+    const ey = PANEL_Y + 446;
+    if (evo.reason === 'maxed') {
+      this.body.add(
+        this.add
+          .bitmapText(cx, ey, 'pix', 'FINAL FORM - THE BLADE SERAPH', 8)
+          .setOrigin(0.5)
+          .setTint(0xc9961e),
+      );
+    } else if (level > 0) {
+      const mult = FAIRY_EVOLUTION.stageMultipliers[stage + 1];
+      const ebtn = this.add
+        .image(cx, ey, 'btn-wide')
+        .setTint(evo.ok ? 0x6a2a8a : THEME.buttonBgDisabled);
+      const elbl = this.add
+        .bitmapText(
+          cx,
+          ey,
+          'pix',
+          `EVOLVE TO ${fairyStageName(stage + 1)} - ${evo.gems} GEMS (X${mult} PERKS)`,
+          8,
+        )
+        .setOrigin(0.5);
+      if (evo.ok) {
+        ebtn.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
+          if (this.gs.evolveFairy()) audio.stageUp();
+        });
+      }
+      this.body.add([ebtn, elbl]);
+    }
     this.body.add(
       this.add
-        .bitmapText(cx, PANEL_Y + 440, 'pix', `LEVEL CAP ${FAIRY.maxLevel}`, 8)
+        .bitmapText(cx, PANEL_Y + 476, 'pix', `LEVEL CAP ${FAIRY.maxLevel}`, 8)
         .setOrigin(0.5, 0)
         .setTint(0x9a8d6e),
     );

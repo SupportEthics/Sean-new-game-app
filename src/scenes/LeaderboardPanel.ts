@@ -8,7 +8,7 @@ import {
   seasonNumber,
 } from '../config/globalBoard';
 import { GameState } from '../core/GameState';
-import { duelWinChance, formatNumber } from '../core/EconomyMath';
+import { duelWinChance } from '../core/EconomyMath';
 import { globalBoard } from '../services/GlobalBoard';
 import { audio } from '../services/AudioService';
 import { addBackdrop, addCloseButton, addDragScroll } from '../ui/panelInput';
@@ -94,7 +94,8 @@ export class LeaderboardPanel extends Phaser.Scene {
     );
 
     if (globalBoard.isConfigured) {
-      if (this.gs.boardName) {
+      if (this.gs.boardName || !globalBoard.canJoin) {
+        // Browser demo players watch the ladder; only apps can join it
         void this.syncGlobal();
       } else {
         this.showNamePicker();
@@ -355,20 +356,16 @@ export class LeaderboardPanel extends Phaser.Scene {
       mkButton(THEME.width / 2 - 72, 'FIGHT!', 0xb03a2e, () => {
         const result = this.gs.duel(rival.stage);
         if (!result) return close();
+        // The showdown plays out in the arena, hero vs rival knight
         audio.bossWarn();
-        title.setText(result.won ? 'VICTORY!' : 'DEFEATED!');
-        title.setTint(result.won ? 0x7ac74f : 0xffb4b4);
-        info.setText(
-          result.won
-            ? `YOU OUT-FOUGHT ${rival.name}\n+${formatNumber(result.gold).toUpperCase()} GOLD`
-            : `${rival.name} STANDS TALL\nTRAIN AND TRY AGAIN`,
-        );
-        layer.each((child: Phaser.GameObjects.GameObject) => {
-          if (child !== cover && child !== card && child !== title && child !== info) {
-            child.destroy();
-          }
+        this.scene.get('Battle').events.emit('duel:play', {
+          name: rival.name,
+          skin: rival.skin,
+          stage: rival.stage,
+          won: result.won,
+          gold: result.gold,
         });
-        mkButton(THEME.width / 2, 'CLOSE', 0x8a5a2e, close);
+        this.scene.stop();
       });
       mkButton(THEME.width / 2 + 72, 'CANCEL', 0x8a5a2e, close);
     } else {
