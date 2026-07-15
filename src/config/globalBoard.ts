@@ -55,6 +55,21 @@ export function isValidCallSign(name: string): boolean {
   return /^[A-Z0-9 ]{3,20}$/.test(name);
 }
 
+// ---- Seasons --------------------------------------------------------------
+
+/** Monday-anchored weekly seasons, counted from the game's launch week.
+ * Purely cosmetic: the top ten of the live board wear crowns, and the
+ * season number gives the ladder a fresh-start feel every week. */
+const SEASON_EPOCH = Date.UTC(2026, 6, 13); // Mon 13 Jul 2026, launch week
+const WEEK_MS = 7 * 86_400_000;
+
+export function seasonNumber(nowMs: number): number {
+  return Math.max(1, Math.floor((nowMs - SEASON_EPOCH) / WEEK_MS) + 1);
+}
+
+/** Rows this high on the live board wear a crown. */
+export const CROWNED_RANKS = 10;
+
 // ---- Board assembly -------------------------------------------------------
 
 import { BoardRow, RIVALS } from './leaderboard';

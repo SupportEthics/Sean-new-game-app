@@ -112,3 +112,14 @@ describe('real-players-only view', () => {
     expect(board).toHaveLength(2);
   });
 });
+
+describe('weekly seasons', () => {
+  it('counts Monday-anchored weeks from launch, never below 1', async () => {
+    const { seasonNumber } = await import('../../src/config/globalBoard');
+    const launchMonday = Date.UTC(2026, 6, 13);
+    expect(seasonNumber(launchMonday)).toBe(1);
+    expect(seasonNumber(launchMonday + 6 * 86_400_000)).toBe(1); // Sunday, same week
+    expect(seasonNumber(launchMonday + 7 * 86_400_000)).toBe(2); // next Monday
+    expect(seasonNumber(launchMonday - 30 * 86_400_000)).toBe(1); // pre-launch clamps
+  });
+});

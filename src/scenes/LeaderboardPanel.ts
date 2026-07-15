@@ -1,6 +1,12 @@
 import Phaser from 'phaser';
 import { BoardRow, buildBoard } from '../config/leaderboard';
-import { buildGlobalBoard, GlobalRow, rollCallSign } from '../config/globalBoard';
+import {
+  buildGlobalBoard,
+  CROWNED_RANKS,
+  GlobalRow,
+  rollCallSign,
+  seasonNumber,
+} from '../config/globalBoard';
 import { GameState } from '../core/GameState';
 import { globalBoard } from '../services/GlobalBoard';
 import { audio } from '../services/AudioService';
@@ -28,6 +34,8 @@ export class LeaderboardPanel extends Phaser.Scene {
   private footer!: Phaser.GameObjects.BitmapText;
   /** Last live rows fetched, so the rivals toggle re-renders instantly. */
   private lastReal: GlobalRow[] | null = null;
+  /** True once the board on screen is the live one (crowns only there). */
+  private liveBoard = false;
   private viewToggle!: Phaser.GameObjects.Container;
   private subtitle!: Phaser.GameObjects.BitmapText;
 
@@ -127,6 +135,7 @@ export class LeaderboardPanel extends Phaser.Scene {
   /** Render the live board honouring the rivals filter. */
   private renderGlobal(): void {
     if (!this.lastReal) return;
+    this.liveBoard = true;
     this.renderBoard(
       buildGlobalBoard(
         this.lastReal,
@@ -139,8 +148,11 @@ export class LeaderboardPanel extends Phaser.Scene {
         !this.gs.boardRealOnly,
       ),
     );
+    const season = `SEASON ${seasonNumber(this.gs.clock())}`;
     this.footer.setText(
-      this.gs.boardRealOnly ? 'LIVE PLAYERS ONLY - WORLDWIDE' : 'GLOBAL RANKINGS - LIVE',
+      this.gs.boardRealOnly
+        ? `${season} - LIVE PLAYERS ONLY`
+        : `${season} - GLOBAL RANKINGS LIVE`,
     );
   }
 
@@ -267,5 +279,19 @@ export class LeaderboardPanel extends Phaser.Scene {
       )
       .setTint(0x8a5a2e);
     this.rows.add([bg, rank, portrait, name, score]);
+
+    // The season's royalty: top ranks on the LIVE board wear a crown
+    if (this.liveBoard && row.rank <= CROWNED_RANKS) {
+      const cx = PANEL_X + PANEL_W - 44;
+      const crown = this.add.graphics();
+      crown.fillStyle(0xffd166);
+      crown.fillTriangle(cx - 10, y + 4, cx - 10, y - 6, cx - 4, y + 0);
+      crown.fillTriangle(cx - 6, y + 4, cx, y - 8, cx + 6, y + 4);
+      crown.fillTriangle(cx + 10, y + 4, cx + 10, y - 6, cx + 4, y + 0);
+      crown.fillRect(cx - 10, y + 2, 20, 5);
+      crown.lineStyle(1, 0x8a5a2e);
+      crown.strokeRect(cx - 10, y + 2, 20, 5);
+      this.rows.add(crown);
+    }
   }
 }
