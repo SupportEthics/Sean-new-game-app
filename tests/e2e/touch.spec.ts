@@ -27,10 +27,13 @@ test.beforeEach(async ({ page }) => {
   await page.waitForFunction(() => window.__uiReady === true);
 });
 
-test('side MENU expands and opens the quests panel', async ({ page }) => {
-  await page.touchscreen.tap(30, 144); // MENU toggle (TOWN sits below it)
+test('MENU opens the modal and the modal opens the quests panel', async ({ page }) => {
+  await page.touchscreen.tap(30, 144); // MENU toggle
+  await page.waitForFunction(
+    () => (window as unknown as { __menuOpen?: boolean }).__menuOpen === true,
+  );
   await page.waitForTimeout(300);
-  await page.touchscreen.tap(30, 316); // QUESTS, stacked below RAID
+  await page.touchscreen.tap(283, 252); // QUESTS card (right column, top row)
   await page.waitForFunction(
     () => (window as unknown as { __questsOpen?: boolean }).__questsOpen === true,
   );

@@ -22,6 +22,7 @@ import { UIScene } from './scenes/UIScene';
 import { CloudPanel } from './scenes/CloudPanel';
 import { DungeonPanel } from './scenes/DungeonPanel';
 import { CodexPanel } from './scenes/CodexPanel';
+import { MenuPanel } from './scenes/MenuPanel';
 import { LeaderboardPanel } from './scenes/LeaderboardPanel';
 import { makeCloudSave } from './services/CloudSave';
 import { LeaderboardService, WebMockLeaderboard } from './services/LeaderboardService';
@@ -61,7 +62,7 @@ async function boot(): Promise<void> {
       width: THEME.width,
       height: THEME.height,
     },
-    scene: [BootScene, PreloadScene, TitleScene, BattleScene, UIScene, SkinsPanel, RaidPanel, SoulsPanel, QuestsPanel, PetsPanel, ShopPanel, SkillsPanel, FairyPanel, TownPanel, LeaderboardPanel, CloudPanel, DungeonPanel, CodexPanel],
+    scene: [BootScene, PreloadScene, TitleScene, BattleScene, UIScene, SkinsPanel, RaidPanel, SoulsPanel, QuestsPanel, PetsPanel, ShopPanel, SkillsPanel, FairyPanel, TownPanel, LeaderboardPanel, CloudPanel, DungeonPanel, CodexPanel, MenuPanel],
     callbacks: {
       preBoot: (g) => {
         g.registry.set('gs', gs);

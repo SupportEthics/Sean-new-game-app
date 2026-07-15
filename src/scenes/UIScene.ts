@@ -1,6 +1,5 @@
 import Phaser from 'phaser';
 import { BOOSTS, ECONOMY } from '../config/economy';
-import { DUNGEON } from '../config/dungeon';
 import { GEAR, tierName, weaponFrame } from '../config/gear';
 import { formatNumber, gearDps, heroLevel, killsForLevel, levelDpsMultiplier } from '../core/EconomyMath';
 import { GameState } from '../core/GameState';
@@ -52,12 +51,6 @@ export class UIScene extends Phaser.Scene {
   private adPending: string | null = null;
   private autoStates: { key: 'auto_merge' | 'auto_buy'; label: Phaser.GameObjects.BitmapText }[] = [];
   private lastHud = '';
-  private raidLock!: Phaser.GameObjects.Text;
-  private townLock!: Phaser.GameObjects.Text;
-  private dungeonLock!: Phaser.GameObjects.Text;
-  private sideMenu!: Phaser.GameObjects.Container;
-  private menuOpen = false;
-  private menuLabel!: Phaser.GameObjects.BitmapText;
   private menuBadge!: Phaser.GameObjects.Container;
   private bin!: Phaser.GameObjects.Container;
   private binLabel!: Phaser.GameObjects.BitmapText;
@@ -71,8 +64,6 @@ export class UIScene extends Phaser.Scene {
     62,
     62,
   );
-  private raidIcon!: Phaser.GameObjects.Image;
-  private rebirthButton!: Phaser.GameObjects.Container;
   private confirmLayer: Phaser.GameObjects.Container | null = null;
   /** The sword card mid-drag; grid rebuilds are deferred while set so an
    * auto merge/buy can't yank the card out of the player's finger. */
@@ -186,11 +177,6 @@ export class UIScene extends Phaser.Scene {
     if (key === this.lastHud) return;
     this.lastHud = key;
 
-    this.raidLock.setVisible(!this.gs.raidsUnlocked);
-    this.raidIcon.setAlpha(this.gs.raidsUnlocked ? 1 : 0.35);
-    this.townLock.setVisible(!this.gs.townUnlocked);
-    this.dungeonLock.setVisible(!this.gs.dungeonUnlocked);
-    this.rebirthButton.setVisible(this.gs.canPrestige);
     this.menuBadge.setVisible(this.gs.canPrestige);
 
     this.stageText.setText(`STAGE ${b.stage}`);
@@ -326,120 +312,14 @@ export class UIScene extends Phaser.Scene {
 
   // ---- Side buttons (arena left edge) ----
 
-  private sideButton(
-    menu: Phaser.GameObjects.Container,
-    x: number,
-    y: number,
-    label: string,
-    onTap: () => void,
-  ): { lock: Phaser.GameObjects.Text; icon: (img: Phaser.GameObjects.Image) => void } {
-    const g = this.add.graphics();
-    g.fillStyle(THEME.headerBg, 0.9);
-    g.fillRoundedRect(x - 24, y - 24, 48, 48, 8);
-    g.lineStyle(2, THEME.headerTrim);
-    g.strokeRoundedRect(x - 24, y - 24, 48, 48, 8);
-    const lbl = this.add
-      .bitmapText(x, y + 20, 'pix', label, 8)
-      .setTint(0xffd166)
-      .setOrigin(0.5, 1);
-    const lock = this.add
-      .text(x, y - 5, '🔒', { fontSize: '15px' })
-      .setOrigin(0.5)
-      .setVisible(false);
-    const hit = this.add
-      .rectangle(x, y, 48, 48, 0xffffff, 0.001)
-      .setInteractive({ useHandCursor: true })
-      .on('pointerdown', onTap);
-    menu.add([g, lbl, lock, hit]);
-    return {
-      lock,
-      icon: (img) => {
-        img.setPosition(x, y - 5);
-        menu.add(img);
-      },
-    };
-  }
 
-  /** RAID/QUESTS/TOWN/CLOUD/REBIRTH live in a collapsible menu so they
-   * don't sit over the pets fighting on the left flank. Tap MENU to fan
-   * them out (two columns), tap again (or pick one) to tuck them away. */
+  /** One MENU button on the arena edge; everything behind it lives in the
+   * MenuPanel modal (RAID/QUESTS/DUNGEON/CODEX/TOWN/CLOUD/REBIRTH) so the
+   * battle never wears a wall of buttons — Sean's call. */
   private createSideButtons(): void {
     const bx = 30;
     const ty = L.arenaTop + 48;
-    this.sideMenu = this.add.container(0, 0).setVisible(false).setDepth(30);
 
-    // Expanded menu: one clean column under TOWN — RAID, QUESTS, REBIRTH
-    const rowA = ty + 116;
-    const rowB = ty + 172;
-    const rowC = ty + 228;
-    const raid = this.sideButton(this.sideMenu, bx, rowA, 'RAID', () => {
-      if (!this.gs.raidsUnlocked) {
-        this.toast('UNLOCKS AFTER FIRST REBIRTH');
-        return;
-      }
-      this.toggleMenu(false);
-      if (!this.scene.isActive('Raids') && !this.gs.raid) {
-        audio.buy();
-        this.scene.launch('Raids');
-      }
-    });
-    const raidIcon = this.add.image(0, 0, 'icons', 0).setScale(0.9);
-    raid.icon(raidIcon);
-    this.raidLock = raid.lock;
-    this.raidIcon = raidIcon;
-
-    const quests = this.sideButton(this.sideMenu, bx, rowB, 'QUESTS', () => {
-      this.toggleMenu(false);
-      if (!this.scene.isActive('Quests')) {
-        audio.buy();
-        this.scene.launch('Quests');
-      }
-    });
-    quests.icon(this.add.image(0, 0, 'icons', 1).setScale(0.9));
-
-    // CLOUD: Apple-account save backup/restore. The column below is full
-    // (REBIRTH already touches the arena floor) so it opens a second column
-    // beside RAID — only visible while the menu is fanned out anyway.
-    this.sideButton(this.sideMenu, bx + 56, rowA, 'CLOUD', () => {
-      this.toggleMenu(false);
-      if (!this.scene.isActive('Cloud')) {
-        audio.buy();
-        this.scene.launch('Cloud');
-      }
-    });
-    const cloudMark = this.add.graphics();
-    cloudMark.fillStyle(0xbfd4e8);
-    cloudMark.fillCircle(bx + 56 - 8, rowA - 6, 6);
-    cloudMark.fillCircle(bx + 56 + 1, rowA - 10, 7);
-    cloudMark.fillCircle(bx + 56 + 9, rowA - 5, 5);
-    cloudMark.fillRoundedRect(bx + 56 - 13, rowA - 6, 26, 7, 3);
-    this.sideMenu.add(cloudMark);
-
-    // Rebirth appears at the column's foot once the run reaches stage 40
-    this.rebirthButton = this.add.container(0, 0).setVisible(false);
-    const x = bx;
-    const y = rowC;
-    const g = this.add.graphics();
-    g.fillStyle(0x4a1e60, 0.95);
-    g.fillRoundedRect(x - 24, y - 24, 48, 48, 8);
-    g.lineStyle(2, 0x9b7ede);
-    g.strokeRoundedRect(x - 24, y - 24, 48, 48, 8);
-    const star = this.add.image(x, y - 5, 'icons', 3).setScale(0.9);
-    const lbl = this.add
-      .bitmapText(x, y + 20, 'pix', 'REBIRTH', 8)
-      .setTint(0xd8b4ff)
-      .setOrigin(0.5, 1);
-    const hit = this.add
-      .rectangle(x, y, 48, 48, 0xffffff, 0.001)
-      .setInteractive({ useHandCursor: true })
-      .on('pointerdown', () => {
-        this.toggleMenu(false);
-        this.confirmPrestige();
-      });
-    this.rebirthButton.add([g, star, lbl, hit]);
-    this.sideMenu.add(this.rebirthButton);
-
-    // The always-visible toggle
     const tg = this.add.graphics().setDepth(31);
     tg.fillStyle(THEME.headerBg, 0.9);
     tg.fillRoundedRect(bx - 24, ty - 24, 48, 48, 8);
@@ -448,13 +328,13 @@ export class UIScene extends Phaser.Scene {
     const bars = this.add.graphics().setDepth(31);
     bars.fillStyle(0xffd166);
     for (let i = 0; i < 3; i++) bars.fillRect(bx - 10, ty - 14 + i * 7, 20, 3);
-    this.menuLabel = this.add
+    this.add
       .bitmapText(bx, ty + 20, 'pix', 'MENU', 8)
       .setTint(0xffd166)
       .setOrigin(0.5, 1)
       .setDepth(31);
-    // A little beacon when a rebirth is waiting inside: a purple disc pinned
-    // to the button's top-left corner (mirrors the red quest counter)
+
+    // A purple beacon when a rebirth is waiting inside
     this.menuBadge = this.add.container(0, 0).setDepth(32).setVisible(false);
     const beacon = this.add.graphics();
     beacon.fillStyle(0x7a3ea8);
@@ -466,101 +346,27 @@ export class UIScene extends Phaser.Scene {
       .setTint(0xffffff)
       .setOrigin(0.5);
     this.menuBadge.add([beacon, beaconMark]);
-    // TOWN: inside the menu (second column, beside QUESTS) so the arena
-    // edge stays clean — Sean's call
-    const town = this.sideButton(this.sideMenu, bx + 56, rowB, 'TOWN', () => {
-      if (!this.gs.townUnlocked) {
-        this.toast('UNLOCKS AFTER YOUR 2ND REBIRTH');
-        return;
-      }
-      this.toggleMenu(false);
-      if (!this.scene.isActive('Town')) {
-        audio.buy();
-        this.scene.launch('Town');
-      }
-    });
-    this.townLock = town.lock;
-    // Little house mark
-    const house = this.add.graphics();
-    house.fillStyle(0xd8e4c4);
-    house.fillRect(bx + 56 - 8, rowB - 6, 16, 10);
-    house.fillStyle(0xb03a2e);
-    house.fillTriangle(bx + 56 - 11, rowB - 6, bx + 56 + 11, rowB - 6, bx + 56, rowB - 15);
-    this.sideMenu.add(house);
 
-    // DUNGEON: the daily challenge (second column, third row)
-    const dungeon = this.sideButton(this.sideMenu, bx + 56, rowC, 'DUNGEON', () => {
-      if (!this.gs.dungeonUnlocked) {
-        this.toast(`UNLOCKS AT STAGE ${DUNGEON.unlockStage}`);
-        return;
-      }
-      if (this.gs.raid) {
-        this.toast('FINISH THE CURRENT FIGHT FIRST');
-        return;
-      }
-      this.toggleMenu(false);
-      if (!this.scene.isActive('Dungeon')) {
-        audio.buy();
-        this.scene.launch('Dungeon');
-      }
-    });
-    this.dungeonLock = dungeon.lock;
-    // Door mark: an arched doorway
-    const door = this.add.graphics();
-    door.fillStyle(0x2884a8);
-    door.fillRoundedRect(bx + 56 - 9, rowC - 16, 18, 20, { tl: 9, tr: 9, bl: 0, br: 0 });
-    door.fillStyle(0x14101c);
-    door.fillRoundedRect(bx + 56 - 5, rowC - 10, 10, 14, { tl: 5, tr: 5, bl: 0, br: 0 });
-    this.sideMenu.add(door);
-
-    // CODEX: the collection book (third column, top row)
-    this.sideButton(this.sideMenu, bx + 112, rowA, 'CODEX', () => {
-      this.toggleMenu(false);
-      if (!this.scene.isActive('Codex')) {
-        audio.buy();
-        this.scene.launch('Codex');
-      }
-    });
-    // Book mark: two page leaves
-    const book = this.add.graphics();
-    book.fillStyle(0xf5e3b8);
-    book.fillRect(bx + 112 - 11, rowA - 13, 10, 15);
-    book.fillRect(bx + 112 + 1, rowA - 13, 10, 15);
-    book.lineStyle(2, 0x8a5a2e);
-    book.strokeRect(bx + 112 - 11, rowA - 13, 22, 15);
-    this.sideMenu.add(book);
-
-    // Red counters for finished-but-unclaimed quests/awards: one on the
-    // MENU toggle, and a twin on the QUESTS button so an open menu shows
-    // exactly where the notification lives
+    // Red counter for finished-but-unclaimed quests/awards
     const toggleBadge = this.makeCountBadge(bx + 20, ty - 20, 32);
-    const questsBadge = this.makeCountBadge(bx + 20, rowB - 20, 32);
-    this.sideMenu.add(questsBadge.container);
     this.refreshQuestBadge = (): void => {
       const n = this.gs.claimableQuests;
-      const label = String(Math.min(n, 9));
-      // While the menu is open, only the QUESTS button wears the badge
-      toggleBadge.container.setVisible(n > 0 && !this.menuOpen);
-      toggleBadge.text.setText(label);
-      questsBadge.container.setVisible(n > 0);
-      questsBadge.text.setText(label);
+      toggleBadge.container.setVisible(n > 0);
+      toggleBadge.text.setText(String(Math.min(n, 9)));
     };
     this.gs.on('quests:changed', this.refreshQuestBadge);
     this.refreshQuestBadge();
+
     this.add
       .rectangle(bx, ty, 48, 48, 0xffffff, 0.001)
       .setDepth(31)
       .setInteractive({ useHandCursor: true })
-      .on('pointerdown', () => this.toggleMenu(!this.menuOpen));
-  }
-
-  private toggleMenu(open: boolean): void {
-    if (this.menuOpen === open) return;
-    this.menuOpen = open;
-    this.sideMenu.setVisible(open);
-    this.menuLabel.setText(open ? 'CLOSE' : 'MENU');
-    this.refreshQuestBadge();
-    audio.buy();
+      .on('pointerdown', () => {
+        if (!this.scene.isActive('Menu')) {
+          audio.buy();
+          this.scene.launch('Menu');
+        }
+      });
   }
 
   /** New version live on the App Store? One tappable strip under the HUD:
@@ -1149,7 +955,8 @@ export class UIScene extends Phaser.Scene {
     });
   }
 
-  private confirmPrestige(): void {
+  /** Public: the MENU modal reaches in to run the rebirth flow. */
+  confirmPrestige(): void {
     if (!this.gs.canPrestige || this.confirmLayer) return;
     audio.bossWarn();
     const layer = this.add.container(0, 0).setDepth(60);
