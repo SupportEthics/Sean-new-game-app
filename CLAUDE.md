@@ -66,6 +66,31 @@ device screenshots, store submissions. Skin catalog lives in src/config/skins.js
 (assets/hero-<id>.png); pet defs in src/config/pets.ts (sheets
 assets/pet-<id>.png); IAP catalog in src/config/monetization.ts.
 
+2026-07-15 content wave (save v29, all behind existing surfaces per
+Sean's no-clutter rule — MENU is a 3-column grid: RAID/QUESTS/REBIRTH,
+CLOUD/TOWN/DUNGEON, CODEX): weekend events (config/events.ts, Fri-Sun
+UTC rotation, arena-top banner only while live; GameState.clock is
+injectable and frozen to a Wednesday under vitest); Daily Dungeon
+(config/dungeon.ts, rides the generalized RaidState — duration/
+clearKills/killCap/goldPerKill fields + dungeon flag — daily modifier,
+free retries, once-a-day reward); Codex collection book
+(config/codex.ts, beasts derive from location pools + bestTier blades +
+hatched pets, one-time gem bounties, CodexPanel); Forge enchantments
+(config/enchants.ts, gem-bought permanent Sharpness/Greed/Soulbind,
+SoulsPanel became THE FORGE OF POWER with RELICS/ENCHANTS tabs); pet
+expeditions (config/expeditions.ts, the weakest hatched pet leaves the
+arena AND its DPS for 1/4/12h, strip at the PETS panel foot); locations
+9+10 THE ABYSS/CELESTIAL REALM (cycle is now 100 stages); weekly
+seasons + crowns on the live board (globalBoard.ts seasonNumber,
+CROWNED_RANKS); rival duels (config/duels.ts + EconomyMath
+duelWinChance, DUEL buttons on live rows, 3/day); Knight's Pass
+(config/pass.ts, 30-day seasons, XP via trackQuest, free+premium lanes,
+knights_pass consumable IAP, PASS tab in QuestsPanel); shop daily deal
+(config/dailyDeal.ts, rotating currency trades, top of DEALS); update
+nudge (services/UpdateCheck.ts reads version.json on the Netlify site,
+banner links to the App Store when the native build is behind — bump
+version.json AFTER each release goes live).
+
 ## Commands
 
 - `npm run dev` — Vite dev server on :5173 (game is fully playable in browser)

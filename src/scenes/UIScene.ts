@@ -10,6 +10,7 @@ import { LOGIN_REWARDS } from '../config/loginRewards';
 import { formatDuration } from '../core/OfflineEarnings';
 import { SAVE_KEY, SaveManager } from '../core/SaveManager';
 import { CloudSaveService } from '../services/CloudSave';
+import { checkForUpdate } from '../services/UpdateCheck';
 import { AdPlacement, AdService } from '../services/monetization/AdService';
 import { audio } from '../services/AudioService';
 import { THEME, tierColor } from '../ui/theme';
@@ -145,6 +146,7 @@ export class UIScene extends Phaser.Scene {
 
     this.createSideButtons();
     this.createEventBanner();
+    this.maybeShowUpdateBanner();
     this.createBoostButtons();
     this.createBin();
     this.maybeShowOffline();
@@ -559,6 +561,35 @@ export class UIScene extends Phaser.Scene {
     this.menuLabel.setText(open ? 'CLOSE' : 'MENU');
     this.refreshQuestBadge();
     audio.buy();
+  }
+
+  /** New version live on the App Store? One tappable strip under the HUD:
+   * tap to open the store page, tap the ✕ to dismiss for this session. */
+  private maybeShowUpdateBanner(): void {
+    void checkForUpdate().then((info) => {
+      if (!info || !this.scene.isActive()) return;
+      const y = L.arenaTop + 38;
+      const banner = this.add.container(0, 0).setDepth(29);
+      const bg = this.add
+        .rectangle(THEME.width / 2 + 14, y, 264, 20, 0x1e3a14, 0.94)
+        .setStrokeStyle(2, 0x7ac74f)
+        .setInteractive({ useHandCursor: true });
+      const label = this.add
+        .bitmapText(THEME.width / 2 + 2, y, 'pix', `UPDATE ${info.latest} IS OUT - TAP TO GET IT`, 8)
+        .setOrigin(0.5)
+        .setTint(0x7ac74f);
+      const dismiss = this.add
+        .bitmapText(THEME.width / 2 + 132, y, 'pix', 'X', 8)
+        .setOrigin(0.5)
+        .setTint(0x9a8d6e)
+        .setInteractive({ useHandCursor: true });
+      bg.on('pointerdown', () => window.open(info.storeUrl, '_blank'));
+      dismiss.on('pointerdown', (_p: unknown, _x: number, _y: number, ev: { stopPropagation(): void }) => {
+        ev.stopPropagation();
+        banner.destroy();
+      });
+      banner.add([bg, label, dismiss]);
+    });
   }
 
   /** Weekend-event strip across the arena top: exists only while an event

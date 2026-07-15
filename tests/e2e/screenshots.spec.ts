@@ -279,7 +279,7 @@ test('quests panel weekly tab', async ({ page }) => {
     () => (window as unknown as { __questsOpen?: boolean }).__questsOpen === true,
   );
   await page.waitForTimeout(400);
-  await page.mouse.click(195, 212); // WEEKLY tab
+  await page.mouse.click(125, 212); // WEEKLY tab (5-tab row)
   await page.waitForTimeout(400);
   await page.screenshot({ path: 'screenshots/13-quests-weekly.png' });
 });
@@ -309,7 +309,7 @@ test('awards tab with claimable achievement', async ({ page }) => {
     () => (window as unknown as { __questsOpen?: boolean }).__questsOpen === true,
   );
   await page.waitForTimeout(400);
-  await page.mouse.click(327, 212); // AWARDS tab
+  await page.mouse.click(265, 212); // AWARDS tab (5-tab row)
   await page.waitForTimeout(400);
   await page.screenshot({ path: 'screenshots/20-awards.png' });
 });

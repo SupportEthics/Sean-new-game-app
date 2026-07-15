@@ -103,7 +103,7 @@ test('awards list keeps its scroll while quest progress ticks in', async ({ page
     () => (window as unknown as { __questsOpen?: boolean }).__questsOpen === true,
   );
   await page.waitForTimeout(400);
-  await page.mouse.click(327, 212); // AWARDS tab
+  await page.mouse.click(265, 212); // AWARDS tab (5-tab row)
   await page.waitForTimeout(300);
 
   // Drag the list up
