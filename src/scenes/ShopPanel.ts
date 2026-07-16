@@ -300,11 +300,11 @@ export class ShopPanel extends Phaser.Scene {
       const h = 66;
       this.card(y, h, this.gs.goldenKnight ? 0x6fae4e : 0xc9961e);
       this.text(24, y + 12, 'GOLDEN KNIGHT', 0xc9961e);
-      this.text(24, y + 28, 'EVERY AD REWARD - INSTANT, FOREVER', 0x4a3520);
+      this.text(24, y + 28, 'EVERY AD REWARD, INSTANTLY', 0x4a3520);
       this.text(
         24,
         y + 44,
-        this.gs.goldenKnight ? 'YOURS FOREVER' : 'RAID RESETS, LOOT, SKILLS + MORE',
+        this.gs.goldenKnight ? 'YOURS FOREVER' : 'RAID RESETS, LOOT + MORE',
         0x8a5a2e,
       );
       if (this.gs.goldenKnight) {
