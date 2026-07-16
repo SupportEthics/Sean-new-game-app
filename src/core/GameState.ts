@@ -952,6 +952,7 @@ export class GameState {
       goldPerKill: goldDrop(stage, 5) * mod.goldMult,
       dungeon: mod.id,
     };
+    this.trackQuest('dungeons', 1, now);
     this.emit('raid:started', 0);
     return true;
   }
@@ -1145,6 +1146,7 @@ export class GameState {
       this.duelsUsed = 0;
     }
     this.duelsUsed += 1;
+    this.trackQuest('duels', 1, now);
     const chance = duelWinChance(this.heroDps, theirStage);
     const won = roll < chance;
     let gold = 0;

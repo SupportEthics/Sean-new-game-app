@@ -28,6 +28,8 @@ export const PASS = {
     raids: 25,
     merges: 1,
     ads: 15,
+    dungeons: 25,
+    duels: 15,
   } as Record<string, number>,
 } as const;
 

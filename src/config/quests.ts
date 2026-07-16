@@ -2,7 +2,14 @@
 // daily grows a streak); weekly quests reset Monday UTC; monthly quests
 // reset on the 1st. Bigger periods, bigger targets, bigger gem payouts.
 
-export type QuestMetric = 'kills' | 'merges' | 'stages' | 'raids' | 'ads';
+export type QuestMetric =
+  | 'kills'
+  | 'merges'
+  | 'stages'
+  | 'raids'
+  | 'ads'
+  | 'dungeons'
+  | 'duels';
 export type QuestPeriod = 'daily' | 'weekly' | 'monthly';
 
 export interface QuestDef {
@@ -17,6 +24,8 @@ export const DAILY_QUESTS: QuestDef[] = [
   { id: 'merges', name: 'MERGE 15 SWORDS', target: 15, gems: 10 },
   { id: 'stages', name: 'CLEAR 3 STAGES', target: 3, gems: 15 },
   { id: 'raids', name: 'FIGHT A RAID', target: 1, gems: 15 },
+  { id: 'dungeons', name: 'CHALLENGE THE DRAGON', target: 1, gems: 15 },
+  { id: 'duels', name: 'FIGHT A DUEL', target: 1, gems: 15 },
   { id: 'ads', name: 'WATCH 2 ADS', target: 2, gems: 20 },
 ];
 
@@ -25,6 +34,8 @@ export const WEEKLY_QUESTS: QuestDef[] = [
   { id: 'merges', name: 'MERGE 120 SWORDS', target: 120, gems: 40 },
   { id: 'stages', name: 'CLEAR 20 STAGES', target: 20, gems: 50 },
   { id: 'raids', name: 'FIGHT 5 RAIDS', target: 5, gems: 50 },
+  { id: 'dungeons', name: 'CHALLENGE 4 DRAGONS', target: 4, gems: 50 },
+  { id: 'duels', name: 'FIGHT 8 DUELS', target: 8, gems: 50 },
   { id: 'ads', name: 'WATCH 10 ADS', target: 10, gems: 70 },
 ];
 
@@ -33,6 +44,8 @@ export const MONTHLY_QUESTS: QuestDef[] = [
   { id: 'merges', name: 'MERGE 600 SWORDS', target: 600, gems: 150 },
   { id: 'stages', name: 'CLEAR 80 STAGES', target: 80, gems: 200 },
   { id: 'raids', name: 'FIGHT 20 RAIDS', target: 20, gems: 200 },
+  { id: 'dungeons', name: 'CHALLENGE 15 DRAGONS', target: 15, gems: 200 },
+  { id: 'duels', name: 'FIGHT 30 DUELS', target: 30, gems: 200 },
   { id: 'ads', name: 'WATCH 40 ADS', target: 40, gems: 250 },
 ];
 

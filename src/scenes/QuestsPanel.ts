@@ -163,9 +163,10 @@ export class QuestsPanel extends Phaser.Scene {
       this.setScroll(this.scrollY);
       return;
     }
-    this.maxScroll = 0;
-    this.setScroll(0);
     const period = this.sheet;
+    // Seven rows outgrew the list — quest sheets scroll like the others
+    this.maxScroll = Math.max(0, QUESTS[period].length * ROW_PITCH + 12 - LIST_H);
+    this.setScroll(Math.min(this.scrollY, this.maxScroll));
     this.footer.setText(
       period === 'daily'
         ? `STREAK ${this.gs.daily.streak} - FULL CLEAR PAYS +${Math.min(

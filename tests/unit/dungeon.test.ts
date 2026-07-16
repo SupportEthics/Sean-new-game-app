@@ -76,6 +76,13 @@ describe('dungeon runs', () => {
     expect(gs.canStartDungeon()).toBe(true); // free retry
   });
 
+  it('entering the dungeon ticks the daily quest', () => {
+    const gs = readyState();
+    expect(gs.questProgress('dungeons')).toBe(0);
+    gs.startDungeon();
+    expect(gs.questProgress('dungeons')).toBe(1);
+  });
+
   it('never overlaps a raid', () => {
     const gs = readyState();
     gs.prestigeCount = 1;

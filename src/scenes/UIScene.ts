@@ -6,6 +6,7 @@ import { GameState } from '../core/GameState';
 import { InterstitialPolicy } from '../core/Interstitials';
 import { Tutorial, TutorialStep } from '../core/Tutorial';
 import { LOGIN_REWARDS } from '../config/loginRewards';
+import { WHATS_NEW } from '../config/whatsnew';
 import { formatDuration } from '../core/OfflineEarnings';
 import { SAVE_KEY, SaveManager } from '../core/SaveManager';
 import { CloudSaveService } from '../services/CloudSave';
@@ -149,7 +150,9 @@ export class UIScene extends Phaser.Scene {
       this.renderTutorial(step);
     });
     this.renderTutorial(this.tutorial.currentStep);
-    this.time.delayedCall(800, () => this.maybeShowLogin());
+    // What's New goes first for returning players; it hands off to the
+    // daily-login popup when dismissed (or immediately when skipped)
+    this.time.delayedCall(800, () => this.maybeShowWhatsNew());
 
     // The battle scene surfaces its messages (gift prizes) through our toast
     this.scene.get('Battle').events.on('toast', (msg: string) => this.toast(msg));
@@ -808,6 +811,79 @@ export class UIScene extends Phaser.Scene {
   /** Welcome-back popup: collect offline gold, or double it with an ad. */
   /** Daily login calendar: pops once per UTC day, after any offline popup
    * and never over the tutorial. */
+  /** One-time changelog for RETURNING players after an update: a knight
+   * who lived through 1.0.2 has no other way to learn a dragon now
+   * guards a daily hoard. New players skip straight past (and the key is
+   * stamped so it never shows them stale news later). */
+  private maybeShowWhatsNew(): void {
+    if (this.prefTime(WHATS_NEW.key) > 0) {
+      this.maybeShowLogin();
+      return;
+    }
+    if (this.gs.highestStage < 10) {
+      this.setPrefTime(WHATS_NEW.key, 1);
+      this.maybeShowLogin();
+      return;
+    }
+    if (this.confirmLayer || this.tutorial.active) {
+      this.time.delayedCall(3000, () => this.maybeShowWhatsNew());
+      return;
+    }
+    this.setPrefTime(WHATS_NEW.key, 1);
+
+    const layer = this.add.container(0, 0).setDepth(60);
+    this.confirmLayer = layer;
+    if (import.meta.env.DEV) {
+      (window as unknown as { __whatsNewOpen?: boolean }).__whatsNewOpen = true;
+    }
+    const top = 240;
+    const height = 120 + WHATS_NEW.lines.length * 24 + 62;
+    const dim = this.add
+      .rectangle(THEME.width / 2, THEME.height / 2, THEME.width, THEME.height, 0x14101c, 0.7)
+      .setInteractive();
+    const g = this.add.graphics();
+    g.fillStyle(THEME.cardBg);
+    g.fillRoundedRect(25, top, 340, height, 12);
+    g.lineStyle(3, THEME.gold);
+    g.strokeRoundedRect(25, top, 340, height, 12);
+    const title = this.add
+      .bitmapText(THEME.width / 2, top + 22, 'pix', WHATS_NEW.title, 16)
+      .setTint(THEME.gold)
+      .setOrigin(0.5, 0);
+    const sub = this.add
+      .bitmapText(THEME.width / 2, top + 52, 'pix', WHATS_NEW.subtitle, 8)
+      .setTint(0x8a5a2e)
+      .setOrigin(0.5, 0);
+    layer.add([dim, g, title, sub]);
+    WHATS_NEW.lines.forEach((line, i) => {
+      layer.add(
+        this.add
+          .bitmapText(48, top + 86 + i * 24, 'pix', `- ${line}`, 8)
+          .setOrigin(0, 0)
+          .setTint(0x4a3520),
+      );
+    });
+    const by = top + height - 34;
+    const btn = this.add
+      .image(THEME.width / 2, by, 'btn-wide')
+      .setDisplaySize(200, 38)
+      .setTint(0x2e7a1e)
+      .setInteractive({ useHandCursor: true });
+    const blbl = this.add
+      .bitmapText(THEME.width / 2, by, 'pix', WHATS_NEW.button, 8)
+      .setOrigin(0.5);
+    btn.on('pointerdown', () => {
+      audio.coin();
+      layer.destroy();
+      this.confirmLayer = null;
+      if (import.meta.env.DEV) {
+        (window as unknown as { __whatsNewOpen?: boolean }).__whatsNewOpen = false;
+      }
+      this.maybeShowLogin();
+    });
+    layer.add([btn, blbl]);
+  }
+
   private maybeShowLogin(force = false): void {
     if (!this.gs.loginRewardReady()) return;
     // Not on the very first play session — let new players just play

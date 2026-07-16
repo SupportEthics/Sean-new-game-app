@@ -39,6 +39,13 @@ describe('duels in GameState', () => {
     expect(gs.gold).toBe(after);
   });
 
+  it('fighting a duel ticks the daily quest', () => {
+    const gs = new GameState();
+    expect(gs.questProgress('duels')).toBe(0);
+    gs.duel(10);
+    expect(gs.questProgress('duels')).toBe(1);
+  });
+
   it('never duels while a raid or dungeon owns the arena', () => {
     const gs = new GameState();
     gs.prestigeCount = 1;
