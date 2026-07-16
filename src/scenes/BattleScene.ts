@@ -712,11 +712,18 @@ export class BattleScene extends Phaser.Scene {
     const myHit = formatNumber(this.gs.heroDps).toUpperCase();
     const theirHit = formatNumber(rivalDps(p.stage)).toUpperCase();
 
+    // The enemy health bar becomes the RIVAL's for the duration: full at
+    // the bell, chunked down by each exchange (Sean: it used to just sit
+    // frozen at the last monster's health)
+    this.hpBar.width = 42;
+
     for (let i = 0; i < 3; i++) {
       this.time.delayedCall(250 + i * 700, () => {
         lunge(this.hero, 1);
         audio.hit();
         pop(this.enemyX, this.enemyY, myHit, 0xffd166);
+        const frac = p.won ? 1 - (i + 1) / 3 : 1 - (i + 1) * 0.18;
+        this.hpBar.width = 42 * Math.max(0, frac);
       });
       this.time.delayedCall(600 + i * 700, () => {
         lunge(rival, -1);
