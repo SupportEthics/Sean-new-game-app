@@ -138,9 +138,13 @@ export class BattleScene extends Phaser.Scene {
   }
 
   override update(_time: number, delta: number): void {
-    this.gs.update(delta / 1000);
-    this.syncWave(false);
-    this.syncHpBar();
+    // The whole battle holds its breath during a duel (Sean: monsters,
+    // boss banners and wave pops piling onto the duel read as chaos)
+    if (!this.duelActive) {
+      this.gs.update(delta / 1000);
+      this.syncWave(false);
+      this.syncHpBar();
+    }
 
     // Signature orbiting blades — one per equipped sword, evenly spaced
     this.orbitAngle += (delta / 1000) * this.orbitSpeed;
@@ -659,7 +663,8 @@ export class BattleScene extends Phaser.Scene {
 
   /** Stage a rival-knight showdown in the arena: three lunging exchanges
    * with damage pops, then the pre-rolled loser topples. The battle sim
-   * keeps running underneath; only the visuals borrow the stage. */
+   * is frozen for the duration (see update) and the arena dims, so the
+   * two knights are the only thing happening on screen. */
   private playDuel(p: { name: string; skin: string; stage: number; won: boolean; gold: number }): void {
     if (this.duelActive) return;
     this.duelActive = true;
@@ -668,6 +673,17 @@ export class BattleScene extends Phaser.Scene {
     this.enemy.setVisible(false);
     this.extraEnemies.forEach((e) => e.setVisible(false));
     this.enemyName.setText(`DUEL: ${p.name}`).setVisible(true);
+    // Spotlight: dim everything on the arena floor except the duelists
+    const dim = this.add
+      .rectangle(
+        THEME.width / 2,
+        (L.arenaTop + L.arenaBottom) / 2,
+        THEME.width,
+        L.arenaBottom - L.arenaTop,
+        0x14101c,
+        0.45,
+      )
+      .setDepth(5);
     const rivalShadow = this.add
       .image(this.enemyX, this.enemyY + 32, 'shadow')
       .setScale(1.2)
@@ -735,6 +751,7 @@ export class BattleScene extends Phaser.Scene {
     this.time.delayedCall(4300, () => {
       rival.destroy();
       rivalShadow.destroy();
+      dim.destroy();
       this.hero.setAngle(0).setAlpha(1);
       this.enemy.setVisible(true);
       this.enemyName.setVisible(false);

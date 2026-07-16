@@ -1137,6 +1137,7 @@ export class GameState {
     now: number = this.clock(),
     roll: number = Math.random(),
   ): { won: boolean; gold: number; chance: number } | null {
+    if (this.raid) return null; // the arena is busy: no duels mid-raid/dungeon
     if (this.duelsLeft(now) <= 0) return null;
     const today = utcDay(now);
     if (this.duelDay !== today) {

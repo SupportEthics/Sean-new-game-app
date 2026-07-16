@@ -39,6 +39,13 @@ describe('duels in GameState', () => {
     expect(gs.gold).toBe(after);
   });
 
+  it('never duels while a raid or dungeon owns the arena', () => {
+    const gs = new GameState();
+    gs.prestigeCount = 1;
+    gs.startRaid(1, 0);
+    expect(gs.duel(10)).toBeNull();
+  });
+
   it('the daily allowance runs out and resets tomorrow', () => {
     const gs = new GameState();
     expect(gs.duelsLeft()).toBe(DUELS.perDay);

@@ -143,8 +143,11 @@ export class FairyPanel extends Phaser.Scene {
     // Upgrade button
     const cost = this.gs.fairyUpgradeCost;
     const afford = this.gs.canUpgradeFairy;
+    // Two-line labels on sized buttons: the single-line version overflowed
+    // the button art once costs grew past a few characters (Sean bug)
     const btn = this.add
       .image(cx, PANEL_Y + 400, 'btn-wide')
+      .setDisplaySize(240, 38)
       .setTint(cost === null ? THEME.buttonBgDisabled : afford ? 0x2e7a1e : THEME.buttonBgDisabled);
     const lbl = this.add
       .bitmapText(
@@ -153,9 +156,10 @@ export class FairyPanel extends Phaser.Scene {
         'pix',
         cost === null
           ? 'MAX LEVEL'
-          : `${level === 0 ? 'RECRUIT' : 'LEVEL UP'} - ${formatNumber(cost).toUpperCase()} GOLD`,
+          : `${level === 0 ? 'RECRUIT' : 'LEVEL UP'}\n${formatNumber(cost).toUpperCase()} GOLD`,
         8,
       )
+      .setCenterAlign()
       .setOrigin(0.5);
     if (afford) {
       btn.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
@@ -178,15 +182,17 @@ export class FairyPanel extends Phaser.Scene {
       const mult = FAIRY_EVOLUTION.stageMultipliers[stage + 1];
       const ebtn = this.add
         .image(cx, ey, 'btn-wide')
+        .setDisplaySize(280, 38)
         .setTint(evo.ok ? 0x6a2a8a : THEME.buttonBgDisabled);
       const elbl = this.add
         .bitmapText(
           cx,
           ey,
           'pix',
-          `EVOLVE TO ${fairyStageName(stage + 1)} - ${evo.gems} GEMS (X${mult} PERKS)`,
+          `EVOLVE TO ${fairyStageName(stage + 1)}\n${evo.gems} GEMS - X${mult} PERKS`,
           8,
         )
+        .setCenterAlign()
         .setOrigin(0.5);
       if (evo.ok) {
         ebtn.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
