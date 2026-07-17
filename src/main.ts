@@ -29,6 +29,7 @@ import { LeaderboardService, WebMockLeaderboard } from './services/LeaderboardSe
 import { hydrateSaveFromPreferences, MirroredStorage } from './services/NativeSave';
 import { createMonetization } from './services/monetization/factory';
 import { wrapWithGoldenKnight } from './services/monetization/GoldenAdService';
+import { attachAnalytics } from './services/Analytics';
 import { THEME } from './ui/theme';
 
 async function boot(): Promise<void> {
@@ -63,6 +64,8 @@ async function boot(): Promise<void> {
   // Golden Knight owners skip every ad, so the service gets wrapped once here.
   const { iap, ads: platformAds } = createMonetization();
   const ads = wrapWithGoldenKnight(platformAds, gs);
+  // Firebase Analytics (native only; silent no-op on web)
+  attachAnalytics(gs);
   // Platform leaderboards stay mocked until store setup (see the service)
   const leaderboard: LeaderboardService = new WebMockLeaderboard();
   // Apple-account cloud saves on configured iOS builds, quiet mock elsewhere
