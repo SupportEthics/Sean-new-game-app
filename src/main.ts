@@ -30,6 +30,12 @@ import { hydrateSaveFromPreferences, MirroredStorage } from './services/NativeSa
 import { createMonetization } from './services/monetization/factory';
 import { wrapWithGoldenKnight } from './services/monetization/GoldenAdService';
 import { attachAnalytics } from './services/Analytics';
+import {
+  cancelAllNotifications,
+  maybeRequestNotificationPermission,
+  scheduleNotifications,
+} from './services/Notifications';
+import { attachReviewPrompt } from './services/Review';
 import { THEME } from './ui/theme';
 
 async function boot(): Promise<void> {
@@ -66,6 +72,8 @@ async function boot(): Promise<void> {
   const ads = wrapWithGoldenKnight(platformAds, gs);
   // Firebase Analytics (native only; silent no-op on web)
   attachAnalytics(gs);
+  // Rating prompt at a proud moment (native only, once ever)
+  attachReviewPrompt(gs);
   // Platform leaderboards stay mocked until store setup (see the service)
   const leaderboard: LeaderboardService = new WebMockLeaderboard();
   // Apple-account cloud saves on configured iOS builds, quiet mock elsewhere
@@ -100,9 +108,16 @@ async function boot(): Promise<void> {
     },
   });
 
-  // Native lifecycle: persist the moment the app is backgrounded
+  // Native lifecycle: persist the moment the app is backgrounded, line up
+  // the come-back notifications, and clear them again on return
   if (Capacitor.isNativePlatform()) {
-    void App.addListener('pause', () => saveManager.save(gs));
+    void App.addListener('pause', () => {
+      saveManager.save(gs);
+      void scheduleNotifications(gs);
+    });
+    void App.addListener('resume', () => void cancelAllNotifications());
+    void cancelAllNotifications();
+    void maybeRequestNotificationPermission(gs);
   }
 
   // Mobile browsers move/resize the canvas when their toolbars collapse or

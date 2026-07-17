@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import { viteSingleFile } from 'vite-plugin-singlefile';
 
@@ -11,7 +12,9 @@ export default defineConfig({
     alias: {
       // Analytics is native-only; stub the optional Firebase JS SDK the
       // Capacitor plugin's (unused) web half wants (see firebase-web-stub)
-      'firebase/analytics': '/src/services/firebase-web-stub.ts',
+      'firebase/analytics': fileURLToPath(
+        new URL('./src/services/firebase-web-stub.ts', import.meta.url),
+      ),
     },
   },
   server: {
