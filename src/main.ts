@@ -68,6 +68,17 @@ async function boot(): Promise<void> {
   const offline = loaded ? computeOffline(gs, loaded.awaySeconds) : null;
   gs.rollDaily();
 
+  // Tester lever (web only): play.html?teststage=35 jumps the run to that
+  // stage so stage-gated features can be tried without the grind. Never on
+  // native, and web scores never reach the real leaderboard.
+  if (!Capacitor.isNativePlatform()) {
+    const teststage = Number(new URLSearchParams(location.search).get('teststage'));
+    if (Number.isFinite(teststage) && teststage >= 1 && teststage <= 500) {
+      gs.battle = newBattleState(teststage, 1, gs.enemyHpMultiplier);
+      gs.highestStage = Math.max(gs.highestStage, teststage);
+    }
+  }
+
   // Real AdMob/RevenueCat inside the Capacitor shells, web mocks elsewhere.
   // Golden Knight owners skip every ad, so the service gets wrapped once here.
   const { iap, ads: platformAds } = createMonetization();
