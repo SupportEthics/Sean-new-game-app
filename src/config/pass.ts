@@ -11,11 +11,10 @@ export interface PassReward {
 }
 
 export const PASS = {
-  /** Premium lane on sale? OFF until the knights_pass product exists in
-   * App Store Connect — with this false the pass is free-lane only (no
-   * buy button, no locked lane teasing an unbuyable product). Flip to
-   * true and reship once the store product is live. */
-  premiumEnabled: false,
+  /** Premium lane on sale (1.0.4+): the knights_pass product exists in
+   * App Store Connect and ships with the app version that sells it.
+   * Set false to pull the buy button + locked lane from the UI. */
+  premiumEnabled: true,
 
   seasonDays: 30,
   xpPerLevel: 100,

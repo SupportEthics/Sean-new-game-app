@@ -22,8 +22,8 @@ class SpyAd implements AdService {
 }
 
 describe('the Golden Knight purchase', () => {
-  it('is off sale until the store product exists', () => {
-    expect(GOLDEN_KNIGHT.onSale).toBe(false);
+  it('is on sale (1.0.4+: the store product exists)', () => {
+    expect(GOLDEN_KNIGHT.onSale).toBe(true);
   });
 
   it('grants once, includes remove-ads, and refuses a double buy', () => {

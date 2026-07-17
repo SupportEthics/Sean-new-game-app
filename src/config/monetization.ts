@@ -88,15 +88,15 @@ export const REMOVE_ADS: IapProduct = {
 
 /** Golden Knight VIP: interstitials gone AND every rewarded-ad gate pays
  * out instantly, forever — raid resets, treasure, 2x offline, ad-cast
- * skills, gifts, eggs, the lot. onSale stays false until the
- * golden_knight product exists in App Store Connect; flip it and reship
- * to put it in the shop. Owners keep it either way. */
+ * skills, gifts, eggs, the lot. On sale from 1.0.4 (the golden_knight
+ * product exists in App Store Connect); set onSale false to pull the
+ * shop card. Owners keep the perks either way. */
 export const GOLDEN_KNIGHT: IapProduct & { onSale: boolean } = {
   sku: 'golden_knight',
   priceUsd: 19.99,
   title: 'GOLDEN KNIGHT',
   kind: 'nonconsumable',
-  onSale: false,
+  onSale: true,
 };
 
 /** Piggy bank: gems drip in as bosses fall; crack it open for real money. */
