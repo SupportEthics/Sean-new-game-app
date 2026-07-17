@@ -193,7 +193,12 @@ export class SkillsPanel extends Phaser.Scene {
           if (this.gs.castSkill(def.id)) audio.stageUp();
         });
       } else if (adCast) {
+        // Casting rebuilds these rows mid-tap, and the fresh AD CAST button
+        // landing under the finger was eating the same press and rolling an
+        // ad (Sean bug). Newborn buttons ignore the first beat.
+        const born = this.time.now;
         btn.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
+          if (this.time.now - born < 350) return;
           if (this.adBusy) return;
           this.adBusy = true;
           void this.ads.showRewarded('skill_cast').then((result) => {
