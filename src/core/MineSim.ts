@@ -119,7 +119,7 @@ export function generateFloor(depth: number, rng: Rng): MineFloor {
       }
     }
   }
-  for (let i = randInt(rng, ...MINE.fuelPerFloor); i > 0 && floorSpots.length > 0; i--) {
+  for (let i = fuelCountAt(depth, randInt(rng, ...MINE.fuelPerFloor)); i > 0 && floorSpots.length > 0; i--) {
     const idx = Math.floor(rng() * floorSpots.length);
     const spot = floorSpots.splice(idx, 1)[0];
     grid[spot.y][spot.x] = Cell.Fuel;
@@ -193,7 +193,7 @@ export function generateMaze(depth: number, rng: Rng): MineFloor {
       }
     }
   }
-  for (let i = randInt(rng, ...MINE.mazeFuelPerFloor); i > 0 && corridor.length > 0; i--) {
+  for (let i = fuelCountAt(depth, randInt(rng, ...MINE.mazeFuelPerFloor)); i > 0 && corridor.length > 0; i--) {
     const idx = Math.floor(rng() * corridor.length);
     const spot = corridor.splice(idx, 1)[0];
     grid[spot.y][spot.x] = Cell.Fuel;
@@ -396,11 +396,17 @@ export function tickFuel(state: MineState, dtMs: number): void {
   if (state.fuelMs === 0) state.over = true;
 }
 
-/** Light radius in tiles for the scene's falloff (shrinks when low). */
+/** Light radius in tiles for the scene's falloff. Shrinks when fuel
+ * runs low — and creeps in with every depth, down to a hard floor. */
 export function lightRadius(state: MineState): number {
   const secs = state.fuelMs / 1000;
-  if (secs > 25) return 5.2;
-  if (secs > 12) return 4.2;
-  if (secs > 5) return 3.2;
-  return 2.4;
+  const base = secs > 25 ? 5.2 : secs > 12 ? 4.2 : secs > 5 ? 3.2 : 2.4;
+  const dark = MINE.lightLossPerDepth * (state.depth - 1);
+  return Math.max(MINE.minLightRadius, base - dark);
+}
+
+/** Fuel spawns for a floor at `depth`: the rolled count loses one every
+ * few depths, but a single torch always remains. */
+function fuelCountAt(depth: number, rolled: number): number {
+  return Math.max(1, rolled - Math.floor((depth - 1) / MINE.fuelDropEveryDepths));
 }

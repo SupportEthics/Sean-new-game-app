@@ -291,4 +291,35 @@ describe('fuel and light', () => {
     expect(bright).toBeGreaterThan(dim);
     expect(dim).toBeGreaterThan(dying);
   });
+
+  it('the dark presses in with depth, down to a hard floor', () => {
+    const state = newMine(seeded(5));
+    const surface = lightRadius(state);
+    state.depth = 5;
+    const deep = lightRadius(state);
+    state.depth = 50;
+    const abyss = lightRadius(state);
+    expect(surface).toBeGreaterThan(deep);
+    expect(deep).toBeGreaterThan(abyss);
+    expect(abyss).toBe(MINE.minLightRadius);
+    // full fuel at depth 5 still beats low fuel at depth 5
+    state.depth = 5;
+    const deepBright = lightRadius(state);
+    state.fuelMs = 3_000;
+    expect(deepBright).toBeGreaterThan(lightRadius(state));
+  });
+
+  it('fuel spawns thin out on deeper floors but never vanish', () => {
+    for (let seed = 1; seed <= 10; seed++) {
+      const shallow = count(generateFloor(1, seeded(seed)).grid, Cell.Fuel);
+      const deep = count(generateFloor(1 + MINE.fuelDropEveryDepths, seeded(seed)).grid, Cell.Fuel);
+      expect(deep).toBeLessThanOrEqual(MINE.fuelPerFloor[1] - 1);
+      expect(deep).toBeLessThanOrEqual(shallow);
+      const bottom = count(generateFloor(99, seeded(seed)).grid, Cell.Fuel);
+      expect(bottom).toBe(1);
+      const mazeDeep = count(generateMaze(1 + MINE.fuelDropEveryDepths, seeded(seed)).grid, Cell.Fuel);
+      const mazeShallow = count(generateMaze(1, seeded(seed)).grid, Cell.Fuel);
+      expect(mazeDeep).toBe(Math.max(1, mazeShallow - 1));
+    }
+  });
 });

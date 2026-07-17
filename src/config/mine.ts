@@ -48,6 +48,13 @@ export const MINE = {
   mazeFuelPerFloor: [3, 4] as const,
   mazeCrystalsPerFloor: [1, 2] as const,
 
+  /** Difficulty creep: the dark presses in as you go deeper. Each depth
+   * past the first trims the light radius (never below the floor), and
+   * every few depths one fuel spawn vanishes (never below one). */
+  lightLossPerDepth: 0.22,
+  minLightRadius: 2.2,
+  fuelDropEveryDepths: 4,
+
   /** Knight walk speed, ms per tile (the scene's tween pace). */
   msPerTile: 160,
   /** Ms between pickaxe swings. */

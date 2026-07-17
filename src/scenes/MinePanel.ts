@@ -57,7 +57,7 @@ export class MinePanel extends Phaser.Scene {
         cx,
         PANEL_Y + 84,
         'pix',
-        'A TREASURE CHEST HIDES IN THE DARK -\nOPEN IT AND BRAVE THE MAZE BEHIND IT.',
+        'A TREASURE CHEST HIDES IN THE DARK -\nOPEN IT AND BRAVE THE MAZE BEHIND IT.\nEVERY FLOOR IS DARKER - AND RICHER.',
         8,
       )
       .setCenterAlign()
