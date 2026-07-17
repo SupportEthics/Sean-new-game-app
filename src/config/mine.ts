@@ -1,7 +1,8 @@
-// The Labyrinth — data only. A tap-to-walk mining descent: gold veins,
-// gem crystals, fuel for the torch, a ladder down on every floor. One
-// free descent a day (an ad buys another); deeper floors pay more and
-// light gets scarcer.
+// The Labyrinth — data only. Each depth is two halves: a torchlit mining
+// cave (veins, crystals, fuel) hiding a treasure chest, and — once the
+// chest is opened — an actual labyrinth: a true maze with a treasure
+// hoard at its farthest dead end. Looting the hoard uncovers the ladder
+// to the next, richer cave. One free descent a day (an ad buys another).
 
 export const MINE = {
   /** Stage that opens the Labyrinth (MENU tile shows a lock before it). */
@@ -33,6 +34,20 @@ export const MINE = {
   crystalsPerFloor: [2, 3] as const,
   fuelPerFloor: [2, 3] as const,
 
+  /** Opening the cave's chest tops the torch up for the maze ahead. */
+  chestFuelSeconds: 20,
+
+  /** The hoard at the maze's heart: hours of income + gems, per depth. */
+  treasureGoldHours: 0.25,
+  treasureGoldHoursPerDepth: 0.1,
+  treasureGems: 4,
+  treasureGemsPerDepth: 1,
+
+  /** Maze-half spawn counts [min, max] (fuel on corridors, crystals in
+   * the walls between them). */
+  mazeFuelPerFloor: [3, 4] as const,
+  mazeCrystalsPerFloor: [1, 2] as const,
+
   /** Knight walk speed, ms per tile (the scene's tween pace). */
   msPerTile: 160,
   /** Ms between pickaxe swings. */
@@ -47,4 +62,14 @@ export function veinGoldHoursAt(depth: number): number {
 /** Gems a single crystal pays at `depth` (1-based). */
 export function crystalGemsAt(depth: number): number {
   return Math.round(MINE.crystalGems + MINE.crystalGemsPerDepth * (depth - 1));
+}
+
+/** Gold hours the maze hoard pays at `depth` (1-based). */
+export function treasureGoldHoursAt(depth: number): number {
+  return MINE.treasureGoldHours + MINE.treasureGoldHoursPerDepth * (depth - 1);
+}
+
+/** Gems the maze hoard pays at `depth` (1-based). */
+export function treasureGemsAt(depth: number): number {
+  return Math.round(MINE.treasureGems + MINE.treasureGemsPerDepth * (depth - 1));
 }

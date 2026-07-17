@@ -1266,8 +1266,9 @@ ARSENAL[ARSENAL.length - 1] = () =>
 
 // ---------- The Labyrinth mine props (22x22 + pad -> 26x26 frames) ----------
 // Frames: 0 gold vein, 1 gem crystal, 2 fuel torch, 3 ladder, 4 rubble,
-// 5 pickaxe. Drawn on transparent tiles; the scene lays them over its own
-// cave floor and dims them with the torchlight falloff.
+// 5 pickaxe, 6 treasure chest, 7 treasure hoard. Drawn on transparent
+// tiles; the scene lays them over its own cave floor and dims them with
+// the torchlight falloff.
 
 function mineVein() {
   const p = new Pix(22, 22);
@@ -1331,6 +1332,51 @@ function mineRubble() {
   }
   const out = pad(p, 2);
   out.outline();
+  return out;
+}
+
+function mineChest() {
+  const p = new Pix(22, 22);
+  // banded wooden body with a domed lid
+  p.domeEllipse(11, 9, 8, 5, ['#a8703a', '#8a5a2e', '#5c3a1c']);
+  p.cylRect(3, 9, 16, 9, ['#8a5a2e', '#6e4322', '#4a2e18']);
+  // gold trim: lid seam, feet band, centre strap
+  p.rect(3, 11, 16, 1, '#ffd166');
+  p.rect(3, 16, 16, 1, '#c9961e');
+  p.rect(10, 4, 2, 14, '#c9961e');
+  // hasp + keyhole
+  p.rect(9, 11, 4, 4, '#ffd166');
+  p.set(10, 13, '#4a2e18');
+  p.set(11, 13, '#4a2e18');
+  // lamplight glint on the lid
+  p.set(6, 6, '#ffe696');
+  p.set(7, 6, '#ffe696');
+  const out = pad(p, 2);
+  out.outline();
+  out.halo('#ffd16660');
+  return out;
+}
+
+function mineTreasure() {
+  const p = new Pix(22, 22);
+  // heaped gold
+  p.domeEllipse(11, 15, 9, 5, ['#ffe696', '#ffd166', '#c9961e']);
+  p.domeEllipse(7, 12, 4, 3, ['#ffe696', '#ffd166', '#c9961e']);
+  p.domeEllipse(15, 12, 4, 3, ['#ffe696', '#ffd166', '#c9961e']);
+  // a crown's spikes poking from the pile
+  p.tri(11, 4, 9, 8, 13, 8, '#ffd166');
+  p.set(11, 5, '#ffe696');
+  // gems tumbled down the sides
+  p.rect(4, 15, 2, 2, '#6ee3ff');
+  p.rect(16, 14, 2, 2, '#ff9adc');
+  p.rect(12, 17, 2, 2, '#7ef29a');
+  // sparkles
+  p.set(6, 10, '#ffffff');
+  p.set(15, 9, '#ffffff');
+  p.set(11, 12, '#ffffff');
+  const out = pad(p, 2);
+  out.outline();
+  out.halo('#ffd16680');
   return out;
 }
 
@@ -1713,7 +1759,7 @@ for (const [name, pal] of Object.entries(DRAGON_PALETTES)) {
   writeSheet(`${OUT}/dragon-${name}.png`, [dungeonDragon(0, pal), dungeonDragon(1, pal)], 1);
 }
 writeSheet(`${OUT}/gift.png`, [gift(0), gift(1)], 1);
-writeSheet(`${OUT}/mine.png`, [mineVein(), mineCrystal(), mineFuel(), mineLadder(), mineRubble(), minePickaxe()], 1);
+writeSheet(`${OUT}/mine.png`, [mineVein(), mineCrystal(), mineFuel(), mineLadder(), mineRubble(), minePickaxe(), mineChest(), mineTreasure()], 1);
 // 25 tier blades + 50 arsenal weapons (tiers 26-75) + the 3 premium IAP
 // weapons (frames 75-77 — swordSkins.ts derives them from weaponArtCount)
 writeSheet(`${OUT}/gear.png`, [...WEAPONS.map(weapon), ...ARSENAL.map((f) => f()), scythe(), voidKatana(), dragonCleaver()], 2);

@@ -97,6 +97,19 @@ nudge (services/UpdateCheck.ts reads version.json on the Netlify site,
 banner links to the App Store when the native build is behind — bump
 version.json AFTER each release goes live).
 
+2026-07-17 The Labyrinth (save v32 mineDay/mineRunsUsed/mineBestDepth,
+MENU tile next to DUNGEON, stage 30+, one free run/day + one ad run,
+gems capped 20/run): tap-to-walk descents, rules pure in core/MineSim.ts
+(fuzz-tested) + balance in config/mine.ts. Each depth is two halves —
+a torchlit mining cave (gold veins/gem crystals/fuel pickups, torch
+timer, camera follows the knight, bedrock rim) hiding a treasure CHEST
+far from the entry; opening it swaps in an actual maze (recursive
+backtracker, 1-wide corridors, brighter worked-stone walls) whose
+farthest dead end holds a depth-scaled treasure HOARD; looting it
+uncovers the ladder to the next, richer cave. mine.png frames:
+0 vein / 1 crystal / 2 fuel / 3 ladder / 4 rubble / 5 pickaxe /
+6 chest / 7 hoard. Loot banks via GameState.bankMine on exit.
+
 ## Commands
 
 - `npm run dev` — Vite dev server on :5173 (game is fully playable in browser)

@@ -49,7 +49,7 @@ export class MinePanel extends Phaser.Scene {
 
     // The pitch
     this.add
-      .bitmapText(cx, PANEL_Y + 62, 'pix', 'MINE GOLD + GEMS BY TORCHLIGHT', 8)
+      .bitmapText(cx, PANEL_Y + 62, 'pix', 'MINE THE CAVE BY TORCHLIGHT', 8)
       .setTint(0xc9961e)
       .setOrigin(0.5, 0);
     this.add
@@ -57,17 +57,17 @@ export class MinePanel extends Phaser.Scene {
         cx,
         PANEL_Y + 84,
         'pix',
-        'FIND FUEL BEFORE YOUR LIGHT DIES.\nTHE LADDER LEADS DEEPER - AND RICHER.',
+        'A TREASURE CHEST HIDES IN THE DARK -\nOPEN IT AND BRAVE THE MAZE BEHIND IT.',
         8,
       )
       .setCenterAlign()
       .setOrigin(0.5, 0)
       .setTint(0x8a5a2e);
 
-    // Props row: vein / crystal / fuel / ladder, a visual legend
-    const icons = [0, 1, 2, 3];
+    // Props row: vein / crystal / fuel / chest / hoard, a visual legend
+    const icons = [0, 1, 2, 6, 7];
     icons.forEach((f, i) => {
-      this.add.image(cx - 66 + i * 44, PANEL_Y + 148, 'mine', f).setScale(1.4);
+      this.add.image(cx - 88 + i * 44, PANEL_Y + 148, 'mine', f).setScale(1.4);
     });
 
     // Best depth

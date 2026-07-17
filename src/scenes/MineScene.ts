@@ -7,9 +7,11 @@ import {
   descend,
   findPath,
   lightRadius,
+  lootTreasure,
   mineHit,
   MineState,
   newMine,
+  openChest,
   stepTo,
   tickFuel,
 } from '../core/MineSim';
@@ -22,9 +24,14 @@ const GRID_Y = 0;
 const HUD_H = 88;
 const FOOT_H = 116;
 
-/** The Labyrinth run: a full-screen cave. Tap to walk, mine what the
- * torch reveals, chase the ladder down. All rules live in core/MineSim;
- * this scene renders the state and feeds it taps and time. */
+/** What a walk ends in: swing at ore, open the chest, loot the hoard,
+ * or take the ladder down. */
+type Goal = { kind: 'mine' | 'chest' | 'treasure' | 'ladder'; x: number; y: number } | null;
+
+/** The Labyrinth run: mine the torchlit cave, find the treasure chest,
+ * and brave the true maze behind it — the hoard at its heart uncovers
+ * the ladder down. All rules live in core/MineSim; this scene renders
+ * the state and feeds it taps and time. */
 export class MineScene extends Phaser.Scene {
   private gs!: GameState;
   private state!: MineState;
@@ -36,6 +43,7 @@ export class MineScene extends Phaser.Scene {
   private fuelBar!: Phaser.GameObjects.Rectangle;
   private fuelLabel!: Phaser.GameObjects.BitmapText;
   private depthLabel!: Phaser.GameObjects.BitmapText;
+  private hintLabel!: Phaser.GameObjects.BitmapText;
   private goldLabel!: Phaser.GameObjects.BitmapText;
   private gemLabel!: Phaser.GameObjects.BitmapText;
   private walking = false;
@@ -166,15 +174,25 @@ export class MineScene extends Phaser.Scene {
     this.add.bitmapText(THEME.width - 46, 66, 'pix', 'LEAVE', 8).setOrigin(0.5).setDepth(32).setScrollFactor(0);
     leave.on('pointerdown', () => this.endRun('YOU CLIMB BACK TO THE LIGHT'));
 
-    // Footer hint
+    // Footer hint (phase-aware: the cave hunts the chest, the maze the hoard)
     this.add
       .rectangle(THEME.width / 2, THEME.height - 100, THEME.width, 32, 0x1c1622)
       .setDepth(30).setScrollFactor(0);
-    this.add
-      .bitmapText(THEME.width / 2, THEME.height - 100, 'pix', 'TAP TO WALK - MINE THE VEINS', 8)
+    this.hintLabel = this.add
+      .bitmapText(THEME.width / 2, THEME.height - 100, 'pix', '', 8)
       .setOrigin(0.5)
       .setTint(0x9a8d6e)
       .setDepth(31).setScrollFactor(0);
+    this.refreshHint();
+  }
+
+  private refreshHint(): void {
+    this.hintLabel.setText(
+      this.state.phase === 'cave'
+        ? 'MINE THE VEINS - FIND THE CHEST'
+        : 'THE HOARD WAITS AT THE HEART',
+    );
+    this.hintLabel.setTint(this.state.phase === 'cave' ? 0x9a8d6e : 0x6ee3ff);
   }
 
   private buildFloor(): void {
@@ -183,6 +201,9 @@ export class MineScene extends Phaser.Scene {
     this.props.clear();
     this.tiles = [];
     const { grid } = this.state.floor;
+    // The labyrinth's walls are worked stone, not raw rock: brighter and
+    // bricked so the corridors read clearly through the torchlight
+    const maze = this.state.phase === 'maze';
     for (let y = 0; y < grid.length; y++) {
       const row: Phaser.GameObjects.Rectangle[] = [];
       for (let x = 0; x < grid[y].length; x++) {
@@ -193,11 +214,15 @@ export class MineScene extends Phaser.Scene {
         const shade = border
           ? 0x181220
           : rock
-            ? (x * 7 + y * 13) % 3 ? 0x423a4e : 0x3a3044
-            : (x + y) % 2 === 0 ? 0x262030 : 0x2a2434;
+            ? maze
+              ? (x * 7 + y * 13) % 3 ? 0x564a6a : 0x4c4060
+              : (x * 7 + y * 13) % 3 ? 0x423a4e : 0x3a3044
+            : maze
+              ? (x + y) % 2 === 0 ? 0x1e1826 : 0x221c2c
+              : (x + y) % 2 === 0 ? 0x262030 : 0x2a2434;
         const tile = this.add
           .rectangle(px, py, TILE, TILE, shade)
-          .setStrokeStyle(border ? 2 : 1, border ? 0x5a4a6e : 0x1e1826)
+          .setStrokeStyle(border ? 2 : 1, border ? 0x5a4a6e : maze && rock ? 0x6a5a7e : 0x1e1826)
           .setDepth(5);
         row.push(tile);
         const frame = this.propFrame(grid[y][x]);
@@ -215,6 +240,8 @@ export class MineScene extends Phaser.Scene {
       case Cell.Crystal: return 1;
       case Cell.Fuel: return 2;
       case Cell.Ladder: return 3;
+      case Cell.Chest: return 6;
+      case Cell.Treasure: return 7;
       default: return -1;
     }
   }
@@ -257,18 +284,18 @@ export class MineScene extends Phaser.Scene {
     const path = findPath(this.state, tx, ty);
     if (!path) return;
     const target = grid[ty][tx];
-    const mineTarget = target === Cell.Vein || target === Cell.Crystal ? { x: tx, y: ty } : null;
+    let goal: Goal = null;
+    if (target === Cell.Vein || target === Cell.Crystal) goal = { kind: 'mine', x: tx, y: ty };
+    else if (target === Cell.Chest) goal = { kind: 'chest', x: tx, y: ty };
+    else if (target === Cell.Treasure) goal = { kind: 'treasure', x: tx, y: ty };
+    else if (target === Cell.Ladder) goal = { kind: 'ladder', x: tx, y: ty };
     audio.buy();
-    this.walkPath(path, mineTarget, target === Cell.Ladder);
+    this.walkPath(path, goal);
   }
 
-  private walkPath(
-    path: { x: number; y: number }[],
-    mineTarget: { x: number; y: number } | null,
-    toLadder: boolean,
-  ): void {
+  private walkPath(path: { x: number; y: number }[], goal: Goal): void {
     if (path.length === 0) {
-      this.arrived(mineTarget, toLadder);
+      this.arrived(goal);
       return;
     }
     this.walking = true;
@@ -293,18 +320,70 @@ export class MineScene extends Phaser.Scene {
           this.pop(this.knight.x, this.knight.y - 26, `+${MINE.fuelSeconds}S LIGHT`, 0xff9a3c);
         }
         this.applyLight();
-        this.walkPath(path, mineTarget, toLadder);
+        this.walkPath(path, goal);
       },
     });
   }
 
-  private arrived(mineTarget: { x: number; y: number } | null, toLadder: boolean): void {
+  private arrived(goal: Goal): void {
     this.walking = false;
-    if (toLadder) {
-      this.goDeeper();
-      return;
+    if (!goal) return;
+    switch (goal.kind) {
+      case 'ladder': this.goDeeper(); break;
+      case 'chest': this.openTheChest(goal); break;
+      case 'treasure': this.lootTheHoard(goal); break;
+      case 'mine': this.startSwinging(goal); break;
     }
-    if (mineTarget) this.startSwinging(mineTarget);
+  }
+
+  /** The chest's lid swings back on a stairway: the labyrinth. */
+  private openTheChest(goal: { x: number; y: number }): void {
+    if (!openChest(this.state, Math.random)) return;
+    this.ending = true; // pause fuel during the reveal flash
+    const { x: cx, y: cy } = this.tileXY(goal.x, goal.y);
+    audio.stageUp();
+    this.pop(cx, cy - 18, 'THE CHEST HIDES A STAIRWAY!', 0xffd166);
+    const flash = this.add
+      .rectangle(THEME.width / 2, THEME.height / 2, THEME.width, THEME.height, 0x0c0910)
+      .setAlpha(0)
+      .setDepth(40).setScrollFactor(0);
+    this.tweens.add({
+      targets: flash,
+      alpha: 1,
+      duration: 420,
+      yoyo: true,
+      hold: 200,
+      delay: 350,
+      onYoyo: () => {
+        this.buildFloor();
+        const start = this.tileXY(this.state.knight.x, this.state.knight.y);
+        this.knight.setPosition(start.x, start.y - 6);
+        this.pickaxe.setPosition(start.x + 8, start.y - 4);
+        this.cameras.main.centerOn(start.x, start.y);
+        this.applyLight();
+        this.refreshHint();
+        this.pop(start.x, start.y - 30, 'THE LABYRINTH', 0x6ee3ff);
+        this.pop(start.x, start.y - 48, `+${MINE.chestFuelSeconds}S LIGHT`, 0xff9a3c);
+      },
+      onComplete: () => {
+        flash.destroy();
+        this.ending = false;
+      },
+    });
+  }
+
+  /** The hoard at the maze's heart: big payout, ladder underneath. */
+  private lootTheHoard(goal: { x: number; y: number }): void {
+    const result = lootTreasure(this.state);
+    if (!result) return;
+    audio.stageUp();
+    const { x: ox, y: oy } = this.tileXY(goal.x, goal.y);
+    const prop = this.props.get(`${goal.x},${goal.y}`);
+    prop?.setTexture('mine', 3); // the ladder beneath the pile
+    this.pop(ox, oy - 14, `+${formatNumber(this.gs.goldForHours(result.goldHours)).toUpperCase()}`, 0xffd166);
+    if (result.gems > 0) this.pop(ox, oy - 32, `+${result.gems} GEMS`, 0x6ee3ff);
+    this.pop(ox, oy - 50, 'THE LADDER LIES BENEATH', 0x9a8d6e);
+    this.refreshLoot();
   }
 
   // ---- mining ----
@@ -399,7 +478,7 @@ export class MineScene extends Phaser.Scene {
       yoyo: true,
       hold: 150,
       onYoyo: () => {
-        descend(this.state, Math.random);
+        if (!descend(this.state, Math.random)) return;
         this.depthLabel.setText(`DEPTH ${this.state.depth}`);
         this.buildFloor();
         const start = this.tileXY(this.state.knight.x, this.state.knight.y);
@@ -407,7 +486,8 @@ export class MineScene extends Phaser.Scene {
         this.pickaxe.setPosition(start.x + 8, start.y - 4);
         this.cameras.main.centerOn(start.x, start.y);
         this.applyLight();
-        this.pop(start.x, start.y - 30, `FLOOR ${this.state.depth}`, 0x6ee3ff);
+        this.refreshHint();
+        this.pop(start.x, start.y - 30, `THE MINE - FLOOR ${this.state.depth}`, 0x6ee3ff);
       },
       onComplete: () => {
         flash.destroy();
