@@ -1264,6 +1264,91 @@ const ARSENAL = ARSENAL_BANDS.flatMap((band, i) => {
 ARSENAL[ARSENAL.length - 1] = () =>
   weapon({ blade: '#ffffff', len: 18, w: 7, guard: '#ffd166', gem: '#ff9adc', glow: '#ffffff98', name: 'eternity' });
 
+// ---------- The Labyrinth mine props (22x22 + pad -> 26x26 frames) ----------
+// Frames: 0 gold vein, 1 gem crystal, 2 fuel torch, 3 ladder, 4 rubble,
+// 5 pickaxe. Drawn on transparent tiles; the scene lays them over its own
+// cave floor and dims them with the torchlight falloff.
+
+function mineVein() {
+  const p = new Pix(22, 22);
+  // rock knuckle the gold is set in
+  p.domeEllipse(11, 12, 9, 8, ['#6a5e78', '#584a66', '#40364e']);
+  for (const [x, y, r] of [[7, 9, 3], [13, 7, 2], [14, 13, 3], [8, 15, 2], [11, 11, 2]]) {
+    p.ellipse(x, y, r, r, '#ffd166');
+  }
+  p.set(6, 8, '#fff5c8');
+  p.set(14, 12, '#fff5c8');
+  p.set(12, 6, '#fff5c8');
+  const out = pad(p, 2);
+  out.outline();
+  return out;
+}
+
+function mineCrystal() {
+  const p = new Pix(22, 22);
+  p.tri(11, 2, 16, 11, 11, 20, '#6ee3ff');
+  p.tri(11, 2, 6, 11, 11, 20, '#4ec3e8');
+  p.line(11, 3, 11, 19, '#dcfaff');
+  // small side shard
+  p.tri(17, 10, 20, 14, 16, 16, '#4ec3e8');
+  p.set(11, 4, '#ffffff');
+  const out = pad(p, 2);
+  out.outline();
+  out.halo('#6ee3ff70');
+  return out;
+}
+
+function mineFuel() {
+  const p = new Pix(22, 22);
+  p.cylRect(10, 8, 3, 12, ['#8a5a2e', '#5c3a1c', '#3a2a1e']);
+  p.rect(9, 12, 5, 1, '#8a5a2e');
+  p.ellipse(11, 6, 4, 4, '#ff9a3c');
+  p.ellipse(11, 6, 2, 2, '#ffe696');
+  p.set(11, 2, '#ffe696');
+  const out = pad(p, 2);
+  out.outline();
+  out.halo('#ff9a3c80');
+  return out;
+}
+
+function mineLadder() {
+  const p = new Pix(22, 22);
+  // dark hole beneath
+  p.ellipse(11, 12, 9, 8, '#14101c');
+  p.cylRect(5, 2, 2, 18, ['#d8b27a', '#bc9e64', '#8a744a']);
+  p.cylRect(15, 2, 2, 18, ['#d8b27a', '#bc9e64', '#8a744a']);
+  for (const y of [4, 9, 14]) p.rect(6, y, 10, 2, '#bc9e64');
+  const out = pad(p, 2);
+  out.outline();
+  return out;
+}
+
+function mineRubble() {
+  const p = new Pix(22, 22);
+  for (const [x, y, r] of [[7, 15, 2], [12, 16, 2], [16, 14, 1], [10, 13, 1], [14, 17, 1]]) {
+    p.ellipse(x, y, r + 1, r, '#584a66');
+    p.set(x - 1, y - 1, '#6a5e78');
+  }
+  const out = pad(p, 2);
+  out.outline();
+  return out;
+}
+
+function minePickaxe() {
+  const p = new Pix(22, 22);
+  // haft, diagonal
+  p.line(6, 18, 14, 6, '#8a5a2e');
+  p.line(7, 18, 15, 6, '#5c3a1c');
+  // curved steel head
+  p.line(9, 4, 19, 9, '#c9ced4');
+  p.line(9, 5, 19, 10, '#8a8f96');
+  p.set(8, 5, '#e8ecf4');
+  p.set(19, 8, '#e8ecf4');
+  const out = pad(p, 2);
+  out.outline();
+  return out;
+}
+
 // ---------- Tiles (32x32 logical; floor/wall grayscale for biome tint) ----------
 
 function floorTile(variant) {
@@ -1628,6 +1713,7 @@ for (const [name, pal] of Object.entries(DRAGON_PALETTES)) {
   writeSheet(`${OUT}/dragon-${name}.png`, [dungeonDragon(0, pal), dungeonDragon(1, pal)], 1);
 }
 writeSheet(`${OUT}/gift.png`, [gift(0), gift(1)], 1);
+writeSheet(`${OUT}/mine.png`, [mineVein(), mineCrystal(), mineFuel(), mineLadder(), mineRubble(), minePickaxe()], 1);
 // 25 tier blades + 50 arsenal weapons (tiers 26-75) + the 3 premium IAP
 // weapons (frames 75-77 — swordSkins.ts derives them from weaponArtCount)
 writeSheet(`${OUT}/gear.png`, [...WEAPONS.map(weapon), ...ARSENAL.map((f) => f()), scythe(), voidKatana(), dragonCleaver()], 2);

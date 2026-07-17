@@ -76,6 +76,7 @@ export class PreloadScene extends Phaser.Scene {
       });
     }
     this.load.spritesheet('gear', assetUrl('assets/gear.png'), { frameWidth: 56, frameHeight: 64 });
+    this.load.spritesheet('mine', assetUrl('assets/mine.png'), { frameWidth: 26, frameHeight: 26 });
     this.load.spritesheet('deco', assetUrl('assets/deco.png'), { frameWidth: 28, frameHeight: 28 });
     this.load.spritesheet('torch', assetUrl('assets/torch.png'), { frameWidth: 20, frameHeight: 34 });
     this.load.spritesheet('tiles', assetUrl('assets/tiles.png'), { frameWidth: 64, frameHeight: 64 });

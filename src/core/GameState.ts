@@ -48,6 +48,7 @@ import {
   dungeonModifier,
   dungeonQuota,
 } from '../config/dungeon';
+import { MINE } from '../config/mine';
 import { CodexEntry, codexEntries } from '../config/codex';
 import { enchantById, enchantCost } from '../config/enchants';
 import { expeditionById } from '../config/expeditions';
@@ -243,6 +244,9 @@ export interface SerializedState {
   autoSkills?: boolean;
   boardRealOnly?: boolean;
   dungeonClearedDay?: string;
+  mineDay?: string;
+  mineRunsUsed?: number;
+  mineBestDepth?: number;
   codexClaimed?: string[];
   enchants?: Record<string, number>;
   expedition?: { petId: string; defId: string; endsAt: number } | null;
@@ -351,6 +355,11 @@ export class GameState {
   boardRealOnly = false;
   /** UTC day the Daily Dungeon reward was last collected. */
   dungeonClearedDay = '';
+  /** UTC day of the Labyrinth's runs + how many were spent that day. */
+  mineDay = '';
+  mineRunsUsed = 0;
+  /** Deepest Labyrinth floor ever reached (lifetime brag stat). */
+  mineBestDepth = 0;
   /** Codex entries whose gem bounty has been collected. */
   codexClaimed: string[] = [];
   /** Forge enchantment levels by id — gem-bought, survives rebirth. */
@@ -924,6 +933,42 @@ export class GameState {
 
   canStartDungeon(now: number = this.clock()): boolean {
     return this.dungeonUnlocked && !this.raid && !this.dungeonClearedToday(now);
+  }
+
+  // ---- The Labyrinth (mine) ----
+
+  get mineUnlocked(): boolean {
+    return this.highestStage >= MINE.unlockStage;
+  }
+
+  /** Descents already spent today (1 free + 1 via ad = max 2). */
+  mineRunsToday(now: number = this.clock()): number {
+    return this.mineDay === utcDay(now) ? this.mineRunsUsed : 0;
+  }
+
+  canEnterMine(now: number = this.clock()): boolean {
+    return this.mineUnlocked && this.mineRunsToday(now) < 2;
+  }
+
+  /** Spend a descent (the panel gates the second behind an ad). */
+  enterMine(now: number = this.clock()): boolean {
+    if (!this.canEnterMine(now)) return false;
+    const today = utcDay(now);
+    if (this.mineDay !== today) {
+      this.mineDay = today;
+      this.mineRunsUsed = 0;
+    }
+    this.mineRunsUsed += 1;
+    return true;
+  }
+
+  /** Bank a finished run: hours of income as gold, gems, depth record. */
+  bankMine(goldHours: number, gems: number, depth: number): { gold: number; gems: number } {
+    const gold = goldHours > 0 ? this.goldForHours(goldHours) : 0;
+    if (gold > 0) this.addGold(gold);
+    if (gems > 0) this.addGems(gems);
+    this.mineBestDepth = Math.max(this.mineBestDepth, depth);
+    return { gold, gems };
   }
 
   /** Kick off today's dungeon: a kill quota against monsters tuned to the
@@ -2081,6 +2126,9 @@ export class GameState {
       autoSkills: this.autoSkills,
       boardRealOnly: this.boardRealOnly,
       dungeonClearedDay: this.dungeonClearedDay,
+      mineDay: this.mineDay,
+      mineRunsUsed: this.mineRunsUsed,
+      mineBestDepth: this.mineBestDepth,
       codexClaimed: [...this.codexClaimed],
       enchants: { ...this.enchants },
       expedition: this.expedition ? { ...this.expedition } : null,
@@ -2161,6 +2209,9 @@ export class GameState {
     gs.autoSkills = data.autoSkills ?? false;
     gs.boardRealOnly = data.boardRealOnly ?? false;
     gs.dungeonClearedDay = data.dungeonClearedDay ?? '';
+    gs.mineDay = data.mineDay ?? '';
+    gs.mineRunsUsed = data.mineRunsUsed ?? 0;
+    gs.mineBestDepth = data.mineBestDepth ?? 0;
     gs.codexClaimed = [...(data.codexClaimed ?? [])];
     gs.enchants = { ...(data.enchants ?? {}) };
     gs.expedition = data.expedition ? { ...data.expedition } : null;

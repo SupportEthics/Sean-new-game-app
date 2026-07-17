@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { DUNGEON } from '../config/dungeon';
+import { MINE } from '../config/mine';
 import { GameState } from '../core/GameState';
 import { audio } from '../services/AudioService';
 import { addBackdrop, addCloseButton } from '../ui/panelInput';
@@ -8,7 +9,7 @@ import { THEME } from '../ui/theme';
 const PANEL_X = 12;
 const PANEL_Y = 150;
 const PANEL_W = THEME.width - 24;
-const PANEL_H = 452;
+const PANEL_H = 548;
 const BTN_W = 168;
 const BTN_H = 84;
 const COL_L = PANEL_X + 12 + BTN_W / 2;
@@ -21,6 +22,8 @@ interface MenuEntry {
   scene: string;
   col: 0 | 1;
   row: number;
+  /** Lone row: render centred instead of in a column. */
+  center?: boolean;
   /** null = open; otherwise the toast explaining the lock. */
   locked: () => string | null;
   badge?: () => number;
@@ -116,7 +119,7 @@ export class MenuPanel extends Phaser.Scene {
         label: 'CODEX',
         scene: 'Codex',
         col: 1,
-        row: 1,
+        row: 2,
         locked: () => null,
         badge: () => this.gs.codexClaimable,
         icon: (gr, x, y) => {
@@ -127,6 +130,23 @@ export class MenuPanel extends Phaser.Scene {
           gr.lineStyle(2, 0x8a5a2e);
           gr.strokeRect(x - 13, y - 8, 26, 18);
           gr.lineBetween(x, y - 8, x, y + 10);
+        },
+      },
+      {
+        label: 'LABYRINTH',
+        scene: 'Mine',
+        col: 1,
+        row: 1,
+        locked: () => (this.gs.mineUnlocked ? null : `UNLOCKS AT STAGE ${MINE.unlockStage}`),
+        badge: () => (this.gs.mineUnlocked && this.gs.mineRunsToday() === 0 ? 1 : 0),
+        icon: (gr, x, y) => {
+          // Pickaxe: haft + curved head
+          gr.lineStyle(4, 0x8a5a2e);
+          gr.lineBetween(x - 8, y + 12, x + 6, y - 8);
+          gr.lineStyle(4, 0xc9ced4);
+          gr.lineBetween(x - 6, y - 11, x + 12, y - 3);
+          gr.lineStyle(2, 0xe8ecf4);
+          gr.lineBetween(x - 6, y - 11, x + 3, y - 8);
         },
       },
       {
@@ -151,7 +171,8 @@ export class MenuPanel extends Phaser.Scene {
             label: 'CLOUD',
             scene: 'Cloud',
             col: 1,
-            row: 2,
+            row: 3,
+            center: true,
             locked: () => null,
             icon: (gr, x, y) => {
               gr.fillStyle(0xbfd4e8);
@@ -165,7 +186,8 @@ export class MenuPanel extends Phaser.Scene {
             label: 'SKINS',
             scene: 'Skins',
             col: 1,
-            row: 2,
+            row: 3,
+            center: true,
             locked: () => null,
             icon: (gr, x, y) => {
               // Hanger silhouette: shoulders + hook
@@ -223,7 +245,7 @@ export class MenuPanel extends Phaser.Scene {
   }
 
   private menuButton(e: MenuEntry): void {
-    const x = e.col === 0 ? COL_L : COL_R;
+    const x = e.center ? THEME.width / 2 : e.col === 0 ? COL_L : COL_R;
     const y = ROW_TOP + e.row * ROW_PITCH;
     const lockReason = e.locked();
     const bg = this.add

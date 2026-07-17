@@ -14,7 +14,8 @@ export type AdPlacement =
   | 'boost_speed'
   | 'loot'
   | 'skill_cast'
-  | 'gift';
+  | 'gift'
+  | 'mine';
 
 export interface AdResult {
   /** True when the ad played to completion and the reward should be granted. */

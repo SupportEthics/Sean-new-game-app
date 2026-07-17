@@ -23,6 +23,8 @@ import { CloudPanel } from './scenes/CloudPanel';
 import { DungeonPanel } from './scenes/DungeonPanel';
 import { CodexPanel } from './scenes/CodexPanel';
 import { MenuPanel } from './scenes/MenuPanel';
+import { MinePanel } from './scenes/MinePanel';
+import { MineScene } from './scenes/MineScene';
 import { LeaderboardPanel } from './scenes/LeaderboardPanel';
 import { makeCloudSave } from './services/CloudSave';
 import { LeaderboardService, WebMockLeaderboard } from './services/LeaderboardService';
@@ -94,7 +96,7 @@ async function boot(): Promise<void> {
       width: THEME.width,
       height: THEME.height,
     },
-    scene: [BootScene, PreloadScene, TitleScene, BattleScene, UIScene, SkinsPanel, RaidPanel, SoulsPanel, QuestsPanel, PetsPanel, ShopPanel, SkillsPanel, FairyPanel, TownPanel, LeaderboardPanel, CloudPanel, DungeonPanel, CodexPanel, MenuPanel],
+    scene: [BootScene, PreloadScene, TitleScene, BattleScene, UIScene, SkinsPanel, RaidPanel, SoulsPanel, QuestsPanel, PetsPanel, ShopPanel, SkillsPanel, FairyPanel, TownPanel, LeaderboardPanel, CloudPanel, DungeonPanel, CodexPanel, MenuPanel, MinePanel, MineScene],
     callbacks: {
       preBoot: (g) => {
         g.registry.set('gs', gs);
@@ -159,6 +161,7 @@ async function boot(): Promise<void> {
     openTown: () => game.scene.getScene('UI')?.scene.launch('Town'),
     openDungeon: () => game.scene.getScene('UI')?.scene.launch('Dungeon'),
     openCodex: () => game.scene.getScene('UI')?.scene.launch('Codex'),
+    openMine: () => game.scene.getScene('UI')?.scene.launch('Mine'),
     openRanks: () => game.scene.getScene('UI')?.scene.launch('Ranks'),
     openCloud: () => game.scene.getScene('UI')?.scene.launch('Cloud'),
     spawnGift: () => (game.scene.getScene('Battle') as unknown as { spawnGift(): void }).spawnGift(),

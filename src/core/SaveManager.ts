@@ -204,6 +204,13 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.goldenKnight = false;
     return save;
   },
+  // v31 -> v32: the Labyrinth (daily mining descents)
+  (save) => {
+    save.state.mineDay = '';
+    save.state.mineRunsUsed = 0;
+    save.state.mineBestDepth = 0;
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;
