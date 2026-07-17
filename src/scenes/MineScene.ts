@@ -16,10 +16,11 @@ import {
 import { audio } from '../services/AudioService';
 import { THEME } from '../ui/theme';
 
-const TILE = 26;
+const TILE = 30;
 const GRID_X = 0;
-const GRID_Y = 96;
+const GRID_Y = 0;
 const HUD_H = 88;
+const FOOT_H = 116;
 
 /** The Labyrinth run: a full-screen cave. Tap to walk, mine what the
  * torch reveals, chase the ladder down. All rules live in core/MineSim;
@@ -54,8 +55,10 @@ export class MineScene extends Phaser.Scene {
     this.swingTimer = null;
     this.props.clear();
 
-    // Opaque cave backdrop over the whole game
-    this.add.rectangle(THEME.width / 2, THEME.height / 2, THEME.width, THEME.height, 0x0c0910)
+    // Opaque cave backdrop, pinned to the screen (the world scrolls past)
+    this.add
+      .rectangle(THEME.width / 2, THEME.height / 2, THEME.width, THEME.height, 0x0c0910)
+      .setScrollFactor(0)
       .setInteractive(); // swallow taps outside the grid
 
     this.buildHud();
@@ -83,6 +86,9 @@ export class MineScene extends Phaser.Scene {
       .setDepth(21);
 
     this.applyLight();
+
+    // The camera lives on the knight: he stays centred, the cave moves
+    this.cameras.main.startFollow(this.knight, true, 0.15, 0.15);
 
     // Tap to walk/mine
     this.input.on('pointerdown', (ptr: Phaser.Input.Pointer) => this.onTap(ptr));
@@ -120,55 +126,55 @@ export class MineScene extends Phaser.Scene {
   // ---- construction ----
 
   private buildHud(): void {
-    this.add.rectangle(THEME.width / 2, HUD_H / 2, THEME.width, HUD_H, 0x1c1622).setDepth(30);
-    this.add.rectangle(THEME.width / 2, HUD_H - 1, THEME.width, 2, 0x3c3048).setDepth(30);
+    this.add.rectangle(THEME.width / 2, HUD_H / 2, THEME.width, HUD_H, 0x1c1622).setDepth(30).setScrollFactor(0);
+    this.add.rectangle(THEME.width / 2, HUD_H - 1, THEME.width, 2, 0x3c3048).setDepth(30).setScrollFactor(0);
     this.add
       .bitmapText(14, 12, 'pix', 'THE LABYRINTH', 16)
       .setTint(THEME.gold)
-      .setDepth(31);
+      .setDepth(31).setScrollFactor(0);
     this.depthLabel = this.add
       .bitmapText(THEME.width - 14, 14, 'pix', 'DEPTH 1', 8)
       .setOrigin(1, 0)
       .setTint(0x6ee3ff)
-      .setDepth(31);
-    this.add.bitmapText(14, 40, 'pix', 'TORCH', 8).setTint(0xff9a3c).setDepth(31);
-    this.add.rectangle(66 + 76, 44, 154, 12, 0x14101c).setDepth(31).setStrokeStyle(1, 0x5a4a6e);
+      .setDepth(31).setScrollFactor(0);
+    this.add.bitmapText(14, 40, 'pix', 'TORCH', 8).setTint(0xff9a3c).setDepth(31).setScrollFactor(0);
+    this.add.rectangle(66 + 76, 44, 154, 12, 0x14101c).setDepth(31).setScrollFactor(0).setStrokeStyle(1, 0x5a4a6e);
     this.fuelBar = this.add
       .rectangle(68, 39, 150, 8, 0xff9a3c)
       .setOrigin(0, 0)
-      .setDepth(32);
+      .setDepth(32).setScrollFactor(0);
     this.fuelLabel = this.add
       .bitmapText(232, 40, 'pix', '1:00', 8)
       .setTint(0xff9a3c)
-      .setDepth(31);
+      .setDepth(31).setScrollFactor(0);
     // Loot
-    this.add.circle(20, 68, 6, 0xffd166).setDepth(31);
-    this.goldLabel = this.add.bitmapText(32, 63, 'pix', '0', 8).setTint(0xe6dec8).setDepth(31);
-    const gem = this.add.graphics().setDepth(31);
+    this.add.circle(20, 68, 6, 0xffd166).setDepth(31).setScrollFactor(0);
+    this.goldLabel = this.add.bitmapText(32, 63, 'pix', '0', 8).setTint(0xe6dec8).setDepth(31).setScrollFactor(0);
+    const gem = this.add.graphics().setDepth(31).setScrollFactor(0);
     gem.fillStyle(0x6ee3ff);
     gem.fillPoints(
       [new Phaser.Geom.Point(120, 62), new Phaser.Geom.Point(126, 68), new Phaser.Geom.Point(120, 74), new Phaser.Geom.Point(114, 68)],
       true,
     );
-    this.gemLabel = this.add.bitmapText(134, 63, 'pix', '0', 8).setTint(0xe6dec8).setDepth(31);
+    this.gemLabel = this.add.bitmapText(134, 63, 'pix', '0', 8).setTint(0xe6dec8).setDepth(31).setScrollFactor(0);
     // LEAVE
     const leave = this.add
       .rectangle(THEME.width - 46, 66, 76, 26, 0x3a3244)
       .setStrokeStyle(2, 0x8a7d60)
-      .setDepth(31)
+      .setDepth(31).setScrollFactor(0)
       .setInteractive({ useHandCursor: true });
-    this.add.bitmapText(THEME.width - 46, 66, 'pix', 'LEAVE', 8).setOrigin(0.5).setDepth(32);
+    this.add.bitmapText(THEME.width - 46, 66, 'pix', 'LEAVE', 8).setOrigin(0.5).setDepth(32).setScrollFactor(0);
     leave.on('pointerdown', () => this.endRun('YOU CLIMB BACK TO THE LIGHT'));
 
     // Footer hint
     this.add
       .rectangle(THEME.width / 2, THEME.height - 100, THEME.width, 32, 0x1c1622)
-      .setDepth(30);
+      .setDepth(30).setScrollFactor(0);
     this.add
       .bitmapText(THEME.width / 2, THEME.height - 100, 'pix', 'TAP TO WALK - MINE THE VEINS', 8)
       .setOrigin(0.5)
       .setTint(0x9a8d6e)
-      .setDepth(31);
+      .setDepth(31).setScrollFactor(0);
   }
 
   private buildFloor(): void {
@@ -181,13 +187,17 @@ export class MineScene extends Phaser.Scene {
       const row: Phaser.GameObjects.Rectangle[] = [];
       for (let x = 0; x < grid[y].length; x++) {
         const { x: px, y: py } = this.tileXY(x, y);
+        const border =
+          x === 0 || y === 0 || x === grid[y].length - 1 || y === grid.length - 1;
         const rock = grid[y][x] === Cell.Rock || grid[y][x] === Cell.Vein || grid[y][x] === Cell.Crystal;
-        const shade = rock
-          ? (x * 7 + y * 13) % 3 ? 0x423a4e : 0x3a3044
-          : (x + y) % 2 === 0 ? 0x262030 : 0x2a2434;
+        const shade = border
+          ? 0x181220
+          : rock
+            ? (x * 7 + y * 13) % 3 ? 0x423a4e : 0x3a3044
+            : (x + y) % 2 === 0 ? 0x262030 : 0x2a2434;
         const tile = this.add
           .rectangle(px, py, TILE, TILE, shade)
-          .setStrokeStyle(1, 0x1e1826)
+          .setStrokeStyle(border ? 2 : 1, border ? 0x5a4a6e : 0x1e1826)
           .setDepth(5);
         row.push(tile);
         const frame = this.propFrame(grid[y][x]);
@@ -220,7 +230,12 @@ export class MineScene extends Phaser.Scene {
     for (let y = 0; y < this.tiles.length; y++) {
       for (let x = 0; x < this.tiles[y].length; x++) {
         const dist = Math.hypot(x - kx, y - ky);
-        const f = dist <= radius * 0.55 ? 1 : dist <= radius ? 0.62 : dist <= radius * 1.35 ? 0.25 : 0.08;
+        let f = dist <= radius * 0.55 ? 1 : dist <= radius ? 0.62 : dist <= radius * 1.35 ? 0.25 : 0.08;
+        // The bedrock rim stays faintly visible however dark it gets, so
+        // the cave's edge always reads (Sean: clear boundaries)
+        const border =
+          x === 0 || y === 0 || x === this.tiles[y].length - 1 || y === this.tiles.length - 1;
+        if (border) f = Math.max(f, 0.5);
         this.tiles[y][x].setAlpha(f);
         const prop = this.props.get(`${x},${y}`);
         if (prop) prop.setAlpha(Math.max(f, 0.12));
@@ -232,6 +247,8 @@ export class MineScene extends Phaser.Scene {
 
   private onTap(ptr: Phaser.Input.Pointer): void {
     if (this.ending || this.walking) return;
+    // Taps on the pinned HUD/footer never walk the knight
+    if (ptr.y < HUD_H || ptr.y > THEME.height - FOOT_H) return;
     const tx = Math.floor((ptr.worldX - GRID_X) / TILE);
     const ty = Math.floor((ptr.worldY - GRID_Y) / TILE);
     const { grid } = this.state.floor;
@@ -373,7 +390,7 @@ export class MineScene extends Phaser.Scene {
     const flash = this.add
       .rectangle(THEME.width / 2, THEME.height / 2, THEME.width, THEME.height, 0x0c0910)
       .setAlpha(0)
-      .setDepth(40);
+      .setDepth(40).setScrollFactor(0);
     audio.stageUp();
     this.tweens.add({
       targets: flash,
@@ -388,6 +405,7 @@ export class MineScene extends Phaser.Scene {
         const start = this.tileXY(this.state.knight.x, this.state.knight.y);
         this.knight.setPosition(start.x, start.y - 6);
         this.pickaxe.setPosition(start.x + 8, start.y - 4);
+        this.cameras.main.centerOn(start.x, start.y);
         this.applyLight();
         this.pop(start.x, start.y - 30, `FLOOR ${this.state.depth}`, 0x6ee3ff);
       },
@@ -408,23 +426,23 @@ export class MineScene extends Phaser.Scene {
     const banked = this.gs.bankMine(this.state.lootGoldHours, this.state.lootGems, this.state.depth);
     const dim = this.add
       .rectangle(THEME.width / 2, THEME.height / 2, THEME.width, THEME.height, 0x0c0910, 0.85)
-      .setDepth(50)
+      .setDepth(50).setScrollFactor(0)
       .setInteractive();
     const cy = THEME.height / 2 - 40;
     this.add
       .rectangle(THEME.width / 2, cy, 320, 190, 0x1c1622)
       .setStrokeStyle(3, THEME.gold)
-      .setDepth(51);
+      .setDepth(51).setScrollFactor(0);
     this.add
       .bitmapText(THEME.width / 2, cy - 66, 'pix', reason, 8)
       .setOrigin(0.5)
       .setTint(0xffb4b4)
-      .setDepth(52);
+      .setDepth(52).setScrollFactor(0);
     this.add
       .bitmapText(THEME.width / 2, cy - 34, 'pix', `DEPTH ${this.state.depth} REACHED`, 16)
       .setOrigin(0.5)
       .setTint(0x6ee3ff)
-      .setDepth(52);
+      .setDepth(52).setScrollFactor(0);
     const haul = [
       banked.gold > 0 ? `${formatNumber(banked.gold).toUpperCase()} GOLD` : '',
       banked.gems > 0 ? `${banked.gems} GEMS` : '',
@@ -441,12 +459,12 @@ export class MineScene extends Phaser.Scene {
       )
       .setOrigin(0.5)
       .setTint(THEME.gold)
-      .setDepth(52);
+      .setDepth(52).setScrollFactor(0);
     this.add
       .bitmapText(THEME.width / 2, cy + 56, 'pix', 'TAP TO RETURN', 8)
       .setOrigin(0.5)
       .setTint(0x9a8d6e)
-      .setDepth(52);
+      .setDepth(52).setScrollFactor(0);
     audio.stageUp();
     this.time.delayedCall(400, () => {
       dim.once('pointerdown', () => this.scene.stop());

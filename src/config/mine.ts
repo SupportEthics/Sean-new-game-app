@@ -7,9 +7,10 @@ export const MINE = {
   /** Stage that opens the Labyrinth (MENU tile shows a lock before it). */
   unlockStage: 30,
 
-  /** Cave dimensions in tiles. */
-  cols: 15,
-  rows: 21,
+  /** Cave dimensions in tiles — bigger than the screen; the camera
+   * follows the knight through the dark. */
+  cols: 21,
+  rows: 29,
 
   /** Torch: starting light + what a fuel pickup adds (seconds). */
   torchSeconds: 60,
@@ -28,9 +29,9 @@ export const MINE = {
   gemCapPerRun: 20,
 
   /** Per-floor spawn counts [min, max]; veins grow with depth a bit. */
-  veinsPerFloor: [4, 6] as const,
-  crystalsPerFloor: [1, 2] as const,
-  fuelPerFloor: [1, 2] as const,
+  veinsPerFloor: [6, 9] as const,
+  crystalsPerFloor: [2, 3] as const,
+  fuelPerFloor: [2, 3] as const,
 
   /** Knight walk speed, ms per tile (the scene's tween pace). */
   msPerTile: 160,
