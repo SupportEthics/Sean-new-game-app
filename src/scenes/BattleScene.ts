@@ -7,6 +7,7 @@ import { premiumSwordById, swordSkinFrame } from '../config/swordSkins';
 import { EVOLUTION } from '../config/pets';
 import { FAIRY_EVOLUTION } from '../config/fairy';
 import { DUNGEON_MODIFIERS } from '../config/dungeon';
+import { TAP } from '../config/economy';
 import { ENEMY_SPECIES, STAGES } from '../config/stages';
 import { isBossWave } from '../core/BattleSim';
 import { formatNumber, rivalDps } from '../core/EconomyMath';
@@ -82,6 +83,10 @@ export class BattleScene extends Phaser.Scene {
     }
 
     this.buildArena();
+    // Tap-to-strike (Cloe's request): tapping the arena floor lands bonus
+    // hits. The floor sits under every button and gift, so those still win.
+    this.floorTs.setInteractive();
+    this.floorTs.on('pointerdown', () => this.onArenaTap());
     this.decoLayer = this.add.group();
     this.redrawArena();
 
@@ -168,6 +173,53 @@ export class BattleScene extends Phaser.Scene {
 
   private biomeIndex(): number {
     return locationIndex(this.gs.battle.stage);
+  }
+
+  /** A tap on the arena floor: instant bonus strike on the monster. The
+   * knight lunges, sparks fly, and the hit lands through the same sim
+   * path as idle damage — frantic tapping genuinely speeds up kills. */
+  private tapLunge: Phaser.Tweens.Tween | null = null;
+
+  private onArenaTap(): void {
+    if (this.duelActive) return;
+    const result = this.gs.tapStrike();
+    if (!result) return;
+    audio.hit();
+    if (!this.tapLunge?.isPlaying()) {
+      this.tapLunge = this.tweens.add({
+        targets: this.hero,
+        x: this.heroX + 26,
+        duration: 90,
+        yoyo: true,
+        ease: 'Quad.out',
+      });
+    }
+    const dmg = formatNumber(this.gs.heroDps * TAP.dpsFraction).toUpperCase();
+    const t = this.add
+      .bitmapText(this.enemyX + Phaser.Math.Between(-16, 16), this.enemyY - 44, 'pix', dmg, 8)
+      .setOrigin(0.5)
+      .setTint(0xffe696)
+      .setDropShadow(1, 1, 0x14101c, 1)
+      .setDepth(41);
+    this.tweens.add({ targets: t, y: t.y - 22, alpha: 0, duration: 500, onComplete: () => t.destroy() });
+    for (let i = 0; i < 3; i++) {
+      const s = this.add
+        .rectangle(
+          this.enemyX + Phaser.Math.Between(-12, 12),
+          this.enemyY + Phaser.Math.Between(-14, 8),
+          3,
+          3,
+          0xffe696,
+        )
+        .setDepth(40);
+      this.tweens.add({
+        targets: s,
+        y: s.y - Phaser.Math.Between(8, 18),
+        alpha: 0,
+        duration: 260,
+        onComplete: () => s.destroy(),
+      });
+    }
   }
 
   /** Static arena furniture, created once: wall, floor, fence, torches. */

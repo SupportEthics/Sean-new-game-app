@@ -52,5 +52,13 @@ export const AD_LOOT = {
   cooldownMinutes: 15,
 } as const;
 
+/** Tap-to-strike (Cloe's request): tapping the arena lands an instant
+ * bonus hit worth a fraction of a DPS-second, rate limited so frantic
+ * tapping tops out around 3x idle damage. */
+export const TAP = {
+  dpsFraction: 0.35,
+  minIntervalMs: 120,
+} as const;
+
 /** Suffixes for big-number formatting: 1.2K, 3.4M ... then aa, ab ... */
 export const NUMBER_SUFFIXES = ['', 'K', 'M', 'B', 'T'] as const;

@@ -1,5 +1,5 @@
 import { AchievementDef, ACHIEVEMENTS, achievementById } from '../config/achievements';
-import { AD_LOOT, BOOSTS, ECONOMY } from '../config/economy';
+import { AD_LOOT, BOOSTS, ECONOMY, TAP } from '../config/economy';
 import { FAIRY, FAIRY_EVOLUTION, fairyLevelCost } from '../config/fairy';
 import { GiftDef } from '../config/gifts';
 import { LOGIN_REWARDS, LoginReward } from '../config/loginRewards';
@@ -670,7 +670,27 @@ export class GameState {
     }
     const before = this.battle.stage;
     const result = tick(this.battle, this.heroDps, dt, this.enemyHpMultiplier);
+    this.applyTickResult(result, before);
+  }
 
+  /** Tap-to-strike (Cloe's request): tapping the arena lands an instant
+   * bonus hit worth TAP.dpsFraction of a DPS-second. Rate limited, and
+   * the strike itself consumes only 1ms of boss clock — tapping speeds
+   * the fight up, it never burns the timer. */
+  tapStrike(now: number = this.clock()): TickResult | null {
+    if (this.raid) return null;
+    if (now - this.lastTapStrikeAt < TAP.minIntervalMs) return null;
+    this.lastTapStrikeAt = now;
+    const before = this.battle.stage;
+    const strike = this.heroDps * TAP.dpsFraction;
+    const result = tick(this.battle, strike / 0.001, 0.001, this.enemyHpMultiplier);
+    this.applyTickResult(result, before);
+    return result;
+  }
+
+  private lastTapStrikeAt = 0;
+
+  private applyTickResult(result: TickResult, before: number): void {
     if (result.goldEarned > 0) this.addGold(Math.round(result.goldEarned * this.goldMultiplier));
     this.totalKills += result.kills;
     if (result.kills > 0) this.trackQuest('kills', result.kills);
