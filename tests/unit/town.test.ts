@@ -33,6 +33,20 @@ describe('town', () => {
     expect(gs.buildingUpgradeCost('farm')).toBeNull();
   });
 
+  it('the keep boosts gold AND damage together', () => {
+    const gs = townState();
+    gs.grid[0] = 5;
+    const dps = gs.heroDps;
+    const goldMult = gs.goldMultiplier;
+    gs.townBuildings = { keep: 20 };
+    expect(gs.goldMultiplier).toBeCloseTo(goldMult * 1.2); // 20 x 1%
+    expect(gs.heroDps).toBeCloseTo(dps * 1.2);
+    // it stacks multiplicatively with the farm and blacksmith
+    gs.townBuildings = { keep: 20, farm: 10, blacksmith: 10 };
+    expect(gs.goldMultiplier).toBeCloseTo(goldMult * 1.2 * 1.3);
+    expect(gs.heroDps).toBeCloseTo(dps * 1.2 * 1.2);
+  });
+
   it('farm boosts gold, blacksmith boosts DPS, mine boosts offline', () => {
     const gs = townState();
     gs.grid[0] = 5;

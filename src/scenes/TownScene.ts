@@ -37,6 +37,7 @@ export class TownScene extends Phaser.Scene {
   private vaultBubble!: Phaser.GameObjects.Container;
   private vaultText!: Phaser.GameObjects.BitmapText;
   private cardLayer: Phaser.GameObjects.Container | null = null;
+  private castle!: Phaser.GameObjects.Sprite;
   private walking = false;
 
   constructor() {
@@ -159,6 +160,10 @@ export class TownScene extends Phaser.Scene {
       const img = this.add
         .sprite(spot.anchor.x, spot.anchor.y, tex[spot.id], 0)
         .setDepth(spot.anchor.y);
+      if (spot.id === 'keep') {
+        this.castle = img;
+        img.setFrame(this.keepStage());
+      }
       if (spot.id === 'blacksmith' || spot.id === 'soulforge') {
         this.time.addEvent({
           delay: spot.id === 'blacksmith' ? 620 : 460,
@@ -171,11 +176,11 @@ export class TownScene extends Phaser.Scene {
     // trees + lamps, placed clear of every sign
     for (const [tx, ty] of [
       [20, 210], [370, 210], [92, 408], [305, 408], [30, 580], [360, 580],
-      [105, 895], [285, 895], [40, 1010], [350, 1010],
+      [105, 790], [285, 790],
     ]) {
       this.add.image(tx, ty, 'town-tree').setDepth(ty + 16);
     }
-    for (const [lx, ly] of [[163, 380], [227, 530], [163, 760], [227, 920]]) {
+    for (const [lx, ly] of [[163, 380], [227, 530], [163, 745]]) {
       const lamp = this.add.image(lx, ly, 'town-lamp').setDepth(ly + 14);
       const glow = this.add
         .image(lx, ly - 12, 'spark')
@@ -195,7 +200,6 @@ export class TownScene extends Phaser.Scene {
   }
 
   private signLabel(spot: TownSpot): string {
-    if (spot.id === 'keep') return 'THE KNIGHTS KEEP';
     if (spot.id === 'soulforge') return 'THE SOULFORGE';
     const def = buildingById(spot.id)!;
     const level = this.gs.buildingLevel(spot.id);
@@ -386,14 +390,6 @@ export class TownScene extends Phaser.Scene {
       layer.add([btn, lbl]);
     };
 
-    if (spot.id === 'keep') {
-      title('THE KNIGHTS KEEP');
-      line(-38, 'YOUR CASTLE WATCHES OVER THE TOWN', 0xe6dec8);
-      line(-20, `REBIRTHS: ${this.gs.prestigeCount}  SOULS: ${formatNumber(this.gs.souls).toUpperCase()}`, 0x9a8d6e);
-      line(2, 'NEW HALLS WILL OPEN IN TIME...', 0x8a5a2e);
-      button(60, 160, 'CLOSE', 0x3a3244, () => this.closeCard());
-      return;
-    }
     if (spot.id === 'soulforge') {
       title('THE SOULFORGE', 0xa882f0);
       line(-38, 'THE TOWNS HEART BURNS WITH SOULS', 0xe6dec8);
@@ -411,6 +407,9 @@ export class TownScene extends Phaser.Scene {
     line(-40, level > 0 ? `LEVEL ${level} OF ${def.maxLevel}` : 'NOT YET BUILT', 0x9a8d6e);
     line(-20, this.effectLabel(spot.id, level), 0x2e7a1e);
     line(0, cost === null ? 'FULLY UPGRADED' : `NEXT: ${this.effectLabel(spot.id, level + 1)}`, 0x9a8d6e);
+    if (spot.id === 'keep') {
+      line(20, 'THE CASTLE GROWS GRANDER AT LV 10 + 30', 0x8a5a2e);
+    }
     if (spot.id === 'jeweler') {
       const vault = this.gs.jewelerVault();
       line(
@@ -446,7 +445,14 @@ export class TownScene extends Phaser.Scene {
     audio.buy();
     this.refreshSign(spot);
     this.refreshVault();
+    if (spot.id === 'keep') this.castle.setFrame(this.keepStage());
     this.openCard(spot); // reopen with fresh numbers
+  }
+
+  /** Castle art tier: modest, grand at LV 10, majestic at LV 30. */
+  private keepStage(): number {
+    const level = this.gs.buildingLevel('keep');
+    return level >= 30 ? 2 : level >= 10 ? 1 : 0;
   }
 
   private closeCard(): void {

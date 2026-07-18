@@ -78,7 +78,7 @@ export class PreloadScene extends Phaser.Scene {
     this.load.spritesheet('gear', assetUrl('assets/gear.png'), { frameWidth: 56, frameHeight: 64 });
     this.load.spritesheet('mine', assetUrl('assets/mine.png'), { frameWidth: 26, frameHeight: 26 });
     // The walkable Town's structures
-    this.load.image('town-castle', assetUrl('assets/town-castle.png'));
+    this.load.spritesheet('town-castle', assetUrl('assets/town-castle.png'), { frameWidth: 154, frameHeight: 126 });
     this.load.image('town-barn', assetUrl('assets/town-barn.png'));
     this.load.spritesheet('town-smith', assetUrl('assets/town-smith.png'), { frameWidth: 76, frameHeight: 64 });
     this.load.image('town-mine', assetUrl('assets/town-mine.png'));

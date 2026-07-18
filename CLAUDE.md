@@ -98,9 +98,12 @@ banner links to the App Store when the native build is behind — bump
 version.json AFTER each release goes live).
 
 2026-07-18 The walkable Town (replaces TownPanel; scene key 'Town'
-stays): a 13x38-tile village taller than the screen — enter the gate,
+stays): a 13x30-tile village taller than the screen — enter the gate,
 walk the cobbled lane past farm/blacksmith (flickering forge)/soulforge
-statue/mine/jeweler to THE KNIGHTS KEEP castle at the top. Layout+BFS
+statue/mine/jeweler to THE KNIGHTS KEEP castle at the top — itself the
+5th upgradeable building (config/town.ts id 'keep', 50 levels, +1%
+gold AND DPS per level via GameState.keepMultiplier; castle art grows
+grander at LV 10 + 30, town-castle.png frames 0-2). Layout+BFS
 pure in core/TownWalk.ts (tests in town-walk.test.ts); sprites
 town-*.png from generate-assets.mjs; tap a building -> knight walks to
 its door -> upgrade card modal (same GameState town methods; jeweler

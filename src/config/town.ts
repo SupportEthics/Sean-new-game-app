@@ -55,6 +55,15 @@ export const BUILDINGS: BuildingDef[] = [
     costGrowth: 1.8,
     perLevel: 1, // +1 gem/day, collected in town
   },
+  {
+    id: 'keep',
+    name: 'THE KNIGHTS KEEP',
+    desc: 'GOLD AND DAMAGE',
+    maxLevel: 50,
+    costBase: 250_000,
+    costGrowth: 1.6,
+    perLevel: 0.01, // +1% battle gold AND hero DPS — the premium sink
+  },
 ];
 
 export function buildingById(id: string): BuildingDef | undefined {

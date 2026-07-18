@@ -5,7 +5,7 @@
 
 export const TOWN_TILE = 30;
 export const TOWN_COLS = 13;
-export const TOWN_ROWS = 38;
+export const TOWN_ROWS = 30;
 
 export type TownSpotId = 'keep' | 'farm' | 'blacksmith' | 'soulforge' | 'mine' | 'jeweler';
 
@@ -29,7 +29,7 @@ export const TOWN_SPOTS: TownSpot[] = [
 ];
 
 /** Where the knight enters: the gate at the bottom of the lane. */
-export const TOWN_ENTRY = { x: 6, y: 35 };
+export const TOWN_ENTRY = { x: 6, y: 27 };
 
 /** Tiles drawn (and walked) as cobbles: the lane, the crossbars, the
  * castle forecourt. */

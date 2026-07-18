@@ -1400,58 +1400,94 @@ function minePickaxe() {
 // finished with the house outline; glows get halos. The smithy and the
 // soulforge statue ship two frames for a light flicker.
 
-function townCastle() {
-  const p = new Pix(150, 104);
+function townCastle(stage = 0) {
+  // The Keep grows with its level: 0 modest keep, 1 grand (taller towers,
+  // more banners, gold finials), 2 majestic (gold-capped spire, corner
+  // turrets, glowing halo). All stages share one canvas so the sheet's
+  // frames line up.
+  const p = new Pix(150, 122);
+  const Y = 20; // stage-0 content starts lower; taller stages reach up
   const stone = ['#a8a2b8', '#8a8598', '#6e6a80'];
   const stoneDark = ['#8a8598', '#6e6a80', '#565266'];
-  const roof = '#4c3a66';
-  const roofHi = '#6a5a7e';
+  const roof = stage === 2 ? '#5a4a80' : '#4c3a66';
+  const roofHi = stage === 2 ? '#7a68a2' : '#6a5a7e';
+  const finial = stage >= 1 ? '#ffd166' : '#8a8598';
+  const towerLift = stage * 5; // towers climb with grandeur
+  const spireLift = stage * 6;
+
   // central tall tower (behind the keep)
-  p.cylRect(60, 10, 30, 52, stoneDark);
-  p.tri(55, 12, 95, 12, 75, -6, roof);
-  p.tri(60, 6, 90, 6, 75, -4, roofHi);
-  p.rect(74, -6, 2, 6, '#b03a2e'); // flag pole + banner
-  p.rect(76, -6, 8, 4, '#b03a2e');
+  p.cylRect(60, Y - spireLift + 10, 30, 52 + spireLift, stoneDark);
+  p.tri(55, Y - spireLift + 12, 95, Y - spireLift + 12, 75, Y - spireLift - 6, roof);
+  p.tri(60, Y - spireLift + 6, 90, Y - spireLift + 6, 75, Y - spireLift - 4, roofHi);
+  if (stage === 2) {
+    // gold cap on the spire
+    p.tri(63, Y - spireLift + 4, 87, Y - spireLift + 4, 75, Y - spireLift - 5, '#ffd166');
+    p.set(75, Y - spireLift - 6, '#ffe696');
+  }
+  p.rect(74, Y - spireLift - 6, 2, 6, '#b03a2e'); // flag pole + banner
+  p.rect(76, Y - spireLift - 6, 8, 4, '#b03a2e');
+
   // side towers
   for (const tx of [8, 116]) {
-    p.cylRect(tx, 26, 26, 62, stone);
-    p.tri(tx - 4, 28, tx + 30, 28, tx + 13, 8, roof);
-    p.tri(tx + 1, 22, tx + 25, 22, tx + 13, 10, roofHi);
-    p.set(tx + 13, 7, '#ffd166'); // finial
+    const ty = Y + 26 - towerLift;
+    p.cylRect(tx, ty, 26, 62 + towerLift, stone);
+    p.tri(tx - 4, ty + 2, tx + 30, ty + 2, tx + 13, ty - 18, roof);
+    p.tri(tx + 1, ty - 4, tx + 25, ty - 4, tx + 13, ty - 16, roofHi);
+    p.set(tx + 13, ty - 19, finial);
+    if (stage >= 1) p.set(tx + 13, ty - 20, '#ffe696');
     // arrow slits
-    p.rect(tx + 8, 40, 3, 8, '#14101c');
-    p.rect(tx + 15, 54, 3, 8, '#14101c');
-    // hanging banner
-    p.rect(tx + 9, 30, 8, 14, '#b03a2e');
-    p.tri(tx + 9, 44, tx + 17, 44, tx + 13, 48, '#b03a2e');
-    p.set(tx + 12, 35, '#ffd166');
-    p.set(tx + 13, 35, '#ffd166');
+    p.rect(tx + 8, ty + 14, 3, 8, '#14101c');
+    p.rect(tx + 15, ty + 28, 3, 8, '#14101c');
+    // hanging banner (a second one on grander keeps)
+    p.rect(tx + 9, ty + 4, 8, 14, '#b03a2e');
+    p.tri(tx + 9, ty + 18, tx + 17, ty + 18, tx + 13, ty + 22, '#b03a2e');
+    p.set(tx + 12, ty + 9, '#ffd166');
+    p.set(tx + 13, ty + 9, '#ffd166');
+    if (stage >= 1) {
+      p.rect(tx + 1, ty + 26, 6, 10, '#b03a2e');
+      p.tri(tx + 1, ty + 36, tx + 7, ty + 36, tx + 4, ty + 39, '#b03a2e');
+    }
   }
+
+  // corner turrets on the majestic keep
+  if (stage === 2) {
+    for (const tx of [34, 104]) {
+      p.cylRect(tx, Y + 24, 12, 24, stoneDark);
+      p.tri(tx - 2, Y + 25, tx + 14, Y + 25, tx + 6, Y + 12, roof);
+      p.set(tx + 6, Y + 11, '#ffd166');
+    }
+  }
+
   // keep body
-  p.cylRect(30, 46, 90, 44, stone);
-  // battlements
-  for (let x = 30; x < 120; x += 10) p.rect(x, 40, 6, 8, stone[1]);
-  p.rect(30, 46, 90, 2, stone[0]);
-  // lit arched windows
-  for (const wx of [42, 60, 92, 108]) {
-    p.rect(wx, 56, 6, 9, '#ffd166');
-    p.set(wx + 1, 55, '#ffd166');
-    p.set(wx + 4, 55, '#ffd166');
-    p.set(wx + 2, 54, '#ffe696');
-    p.set(wx + 3, 54, '#ffe696');
+  p.cylRect(30, Y + 46, 90, 44, stone);
+  // battlements (gold-trimmed at the top stage)
+  for (let x = 30; x < 120; x += 10) {
+    p.rect(x, Y + 40, 6, 8, stone[1]);
+    if (stage === 2) p.rect(x, Y + 40, 6, 2, '#c9961e');
+  }
+  p.rect(30, Y + 46, 90, 2, stone[0]);
+  // lit arched windows (more of them as the keep grows)
+  const windows = stage >= 1 ? [42, 60, 92, 108, 51, 99] : [42, 60, 92, 108];
+  for (const wx of windows) {
+    p.rect(wx, Y + 56, 6, 9, '#ffd166');
+    p.set(wx + 1, Y + 55, '#ffd166');
+    p.set(wx + 4, Y + 55, '#ffd166');
+    p.set(wx + 2, Y + 54, '#ffe696');
+    p.set(wx + 3, Y + 54, '#ffe696');
   }
   // grand gate + raised portcullis
-  p.rect(66, 66, 18, 24, '#14101c');
-  p.ellipse(75, 68, 9, 6, '#14101c');
-  p.rect(64, 64, 22, 2, '#5c3a1c');
-  for (let x = 68; x <= 82; x += 4) p.rect(x, 66, 1, 8, '#8a744a');
-  p.rect(66, 74, 18, 1, '#8a744a');
+  p.rect(66, Y + 66, 18, 24, '#14101c');
+  p.ellipse(75, Y + 68, 9, 6, '#14101c');
+  p.rect(64, Y + 64, 22, 2, '#5c3a1c');
+  for (let x = 68; x <= 82; x += 4) p.rect(x, Y + 66, 1, 8, '#8a744a');
+  p.rect(66, Y + 74, 18, 1, '#8a744a');
   // stone texture
-  p.noise(30, 46, 90, 42, '#9a94ac', 9, 1);
-  p.noise(8, 30, 26, 56, '#b4aec6', 8, 2);
-  p.noise(116, 30, 26, 56, '#7a768c', 8, 3);
+  p.noise(30, Y + 46, 90, 42, '#9a94ac', 9, 1);
+  p.noise(8, Y + 4, 26, 78, '#b4aec6', 8, 2);
+  p.noise(116, Y + 4, 26, 78, '#7a768c', 8, 3);
   const out = pad(p, 2);
   out.outline();
+  if (stage === 2) out.halo('#ffd16630');
   return out;
 }
 
@@ -2000,7 +2036,7 @@ for (const [name, pal] of Object.entries(DRAGON_PALETTES)) {
 }
 writeSheet(`${OUT}/gift.png`, [gift(0), gift(1)], 1);
 writeSheet(`${OUT}/mine.png`, [mineVein(), mineCrystal(), mineFuel(), mineLadder(), mineRubble(), minePickaxe(), mineChest(), mineTreasure()], 1);
-writeSheet(`${OUT}/town-castle.png`, [townCastle()], 1);
+writeSheet(`${OUT}/town-castle.png`, [townCastle(0), townCastle(1), townCastle(2)], 1);
 writeSheet(`${OUT}/town-barn.png`, [townBarn()], 1);
 writeSheet(`${OUT}/town-smith.png`, [townSmith(false), townSmith(true)], 1);
 writeSheet(`${OUT}/town-mine.png`, [townMine()], 1);

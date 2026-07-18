@@ -1716,12 +1716,20 @@ export class GameState {
     return true;
   }
 
+  /** The castle blesses gold AND damage alike. */
+  private get keepMultiplier(): number {
+    return 1 + this.buildingLevel('keep') * (buildingById('keep')?.perLevel ?? 0);
+  }
+
   get townGoldMultiplier(): number {
-    return 1 + this.buildingLevel('farm') * (buildingById('farm')?.perLevel ?? 0);
+    return (1 + this.buildingLevel('farm') * (buildingById('farm')?.perLevel ?? 0)) * this.keepMultiplier;
   }
 
   get townDpsMultiplier(): number {
-    return 1 + this.buildingLevel('blacksmith') * (buildingById('blacksmith')?.perLevel ?? 0);
+    return (
+      (1 + this.buildingLevel('blacksmith') * (buildingById('blacksmith')?.perLevel ?? 0)) *
+      this.keepMultiplier
+    );
   }
 
   get townOfflineMultiplier(): number {
