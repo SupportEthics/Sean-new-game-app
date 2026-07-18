@@ -17,7 +17,7 @@ import { SkillsPanel } from './scenes/SkillsPanel';
 import { SkinsPanel } from './scenes/SkinsPanel';
 import { SoulsPanel } from './scenes/SoulsPanel';
 import { TitleScene } from './scenes/TitleScene';
-import { TownPanel } from './scenes/TownPanel';
+import { TownScene } from './scenes/TownScene';
 import { UIScene } from './scenes/UIScene';
 import { CloudPanel } from './scenes/CloudPanel';
 import { DungeonPanel } from './scenes/DungeonPanel';
@@ -107,7 +107,7 @@ async function boot(): Promise<void> {
       width: THEME.width,
       height: THEME.height,
     },
-    scene: [BootScene, PreloadScene, TitleScene, BattleScene, UIScene, SkinsPanel, RaidPanel, SoulsPanel, QuestsPanel, PetsPanel, ShopPanel, SkillsPanel, FairyPanel, TownPanel, LeaderboardPanel, CloudPanel, DungeonPanel, CodexPanel, MenuPanel, MinePanel, MineScene],
+    scene: [BootScene, PreloadScene, TitleScene, BattleScene, UIScene, SkinsPanel, RaidPanel, SoulsPanel, QuestsPanel, PetsPanel, ShopPanel, SkillsPanel, FairyPanel, TownScene, LeaderboardPanel, CloudPanel, DungeonPanel, CodexPanel, MenuPanel, MinePanel, MineScene],
     callbacks: {
       preBoot: (g) => {
         g.registry.set('gs', gs);

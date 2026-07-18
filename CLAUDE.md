@@ -97,6 +97,17 @@ nudge (services/UpdateCheck.ts reads version.json on the Netlify site,
 banner links to the App Store when the native build is behind — bump
 version.json AFTER each release goes live).
 
+2026-07-18 The walkable Town (replaces TownPanel; scene key 'Town'
+stays): a 13x38-tile village taller than the screen — enter the gate,
+walk the cobbled lane past farm/blacksmith (flickering forge)/soulforge
+statue/mine/jeweler to THE KNIGHTS KEEP castle at the top. Layout+BFS
+pure in core/TownWalk.ts (tests in town-walk.test.ts); sprites
+town-*.png from generate-assets.mjs; tap a building -> knight walks to
+its door -> upgrade card modal (same GameState town methods; jeweler
+card + world bubble collect the vault). Camera bounds padded so the
+castle clears the pinned HUD. Caps doubled same day: town 100/100/80/40,
+pets 40, enchants 50.
+
 2026-07-17 The Labyrinth (save v32 mineDay/mineRunsUsed/mineBestDepth,
 MENU tile next to DUNGEON, stage 30+, one free run/day + one ad run,
 gems capped 20/run): tap-to-walk descents, rules pure in core/MineSim.ts

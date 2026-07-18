@@ -1395,6 +1395,246 @@ function minePickaxe() {
   return out;
 }
 
+// ---------- The Town (walkable): buildings as real structures ----------
+// Each structure is its own PNG so the scene can place them freely. All
+// finished with the house outline; glows get halos. The smithy and the
+// soulforge statue ship two frames for a light flicker.
+
+function townCastle() {
+  const p = new Pix(150, 104);
+  const stone = ['#a8a2b8', '#8a8598', '#6e6a80'];
+  const stoneDark = ['#8a8598', '#6e6a80', '#565266'];
+  const roof = '#4c3a66';
+  const roofHi = '#6a5a7e';
+  // central tall tower (behind the keep)
+  p.cylRect(60, 10, 30, 52, stoneDark);
+  p.tri(55, 12, 95, 12, 75, -6, roof);
+  p.tri(60, 6, 90, 6, 75, -4, roofHi);
+  p.rect(74, -6, 2, 6, '#b03a2e'); // flag pole + banner
+  p.rect(76, -6, 8, 4, '#b03a2e');
+  // side towers
+  for (const tx of [8, 116]) {
+    p.cylRect(tx, 26, 26, 62, stone);
+    p.tri(tx - 4, 28, tx + 30, 28, tx + 13, 8, roof);
+    p.tri(tx + 1, 22, tx + 25, 22, tx + 13, 10, roofHi);
+    p.set(tx + 13, 7, '#ffd166'); // finial
+    // arrow slits
+    p.rect(tx + 8, 40, 3, 8, '#14101c');
+    p.rect(tx + 15, 54, 3, 8, '#14101c');
+    // hanging banner
+    p.rect(tx + 9, 30, 8, 14, '#b03a2e');
+    p.tri(tx + 9, 44, tx + 17, 44, tx + 13, 48, '#b03a2e');
+    p.set(tx + 12, 35, '#ffd166');
+    p.set(tx + 13, 35, '#ffd166');
+  }
+  // keep body
+  p.cylRect(30, 46, 90, 44, stone);
+  // battlements
+  for (let x = 30; x < 120; x += 10) p.rect(x, 40, 6, 8, stone[1]);
+  p.rect(30, 46, 90, 2, stone[0]);
+  // lit arched windows
+  for (const wx of [42, 60, 92, 108]) {
+    p.rect(wx, 56, 6, 9, '#ffd166');
+    p.set(wx + 1, 55, '#ffd166');
+    p.set(wx + 4, 55, '#ffd166');
+    p.set(wx + 2, 54, '#ffe696');
+    p.set(wx + 3, 54, '#ffe696');
+  }
+  // grand gate + raised portcullis
+  p.rect(66, 66, 18, 24, '#14101c');
+  p.ellipse(75, 68, 9, 6, '#14101c');
+  p.rect(64, 64, 22, 2, '#5c3a1c');
+  for (let x = 68; x <= 82; x += 4) p.rect(x, 66, 1, 8, '#8a744a');
+  p.rect(66, 74, 18, 1, '#8a744a');
+  // stone texture
+  p.noise(30, 46, 90, 42, '#9a94ac', 9, 1);
+  p.noise(8, 30, 26, 56, '#b4aec6', 8, 2);
+  p.noise(116, 30, 26, 56, '#7a768c', 8, 3);
+  const out = pad(p, 2);
+  out.outline();
+  return out;
+}
+
+function townBarn() {
+  const p = new Pix(76, 62);
+  // walls
+  p.cylRect(4, 24, 68, 36, ['#b07c4a', '#9a6a3e', '#7a5230']);
+  // gambrel roof: two banded slopes
+  p.tri(0, 26, 38, 26, 38, 0, '#b03a2e');
+  p.tri(76, 26, 38, 26, 38, 0, '#b03a2e');
+  p.rect(6, 18, 64, 4, '#d05a42');
+  p.rect(14, 10, 48, 4, '#d05a42');
+  p.rect(2, 24, 72, 2, '#7a2418');
+  // hayloft window + hay
+  p.rect(32, 8, 12, 10, '#5c3a1c');
+  p.rect(34, 10, 8, 7, '#ffd166');
+  p.set(36, 9, '#ffe696');
+  // big X door
+  p.rect(28, 38, 20, 22, '#7a5230');
+  p.rect(29, 39, 18, 20, '#5c3a1c');
+  p.line(29, 39, 46, 58, '#bc9e64');
+  p.line(46, 39, 29, 58, '#bc9e64');
+  p.rect(28, 38, 20, 2, '#bc9e64');
+  // lit windows
+  for (const wx of [10, 58]) {
+    p.rect(wx, 32, 9, 8, '#5c3a1c');
+    p.rect(wx + 1, 33, 7, 6, '#ffd166');
+  }
+  p.noise(4, 26, 68, 32, '#8a5e36', 9, 4);
+  const out = pad(p, 2);
+  out.outline();
+  return out;
+}
+
+function townSmith(hot) {
+  const p = new Pix(72, 60);
+  // stone walls
+  p.cylRect(4, 22, 64, 36, ['#8a8598', '#6e6a80', '#565266']);
+  p.noise(4, 24, 64, 32, '#9a94ac', 6, 5);
+  p.noise(4, 24, 64, 32, '#5a5668', 7, 6);
+  // slate roof
+  p.tri(0, 24, 72, 24, 36, 2, '#564a68');
+  p.tri(10, 20, 62, 20, 36, 6, '#6a5a7e');
+  // chimney + ember smoke
+  p.cylRect(50, 2, 10, 18, ['#8a8598', '#6e6a80', '#565266']);
+  p.rect(48, 0, 14, 3, '#565266');
+  // open forge mouth with heat gradient
+  p.rect(24, 34, 24, 24, '#14101c');
+  p.ellipse(36, 36, 12, 7, '#14101c');
+  p.rect(26, hot ? 42 : 46, 20, 16, '#ff7a28');
+  p.rect(28, hot ? 46 : 50, 16, 12, '#ffb246');
+  p.rect(32, hot ? 50 : 53, 8, 8, '#ffe696');
+  // anvil on a stump, out front
+  p.cylRect(8, 50, 10, 8, ['#8a5a2e', '#5c3a1c', '#4a2e18']);
+  p.rect(6, 46, 14, 5, '#6e6a80');
+  p.rect(4, 44, 18, 3, '#8a8598');
+  p.set(5, 44, '#a8a2b8');
+  // weapon rack by the door
+  p.rect(56, 40, 2, 18, '#5c3a1c');
+  p.rect(62, 40, 2, 18, '#5c3a1c');
+  p.rect(54, 42, 12, 2, '#8a5a2e');
+  p.line(57, 44, 57, 56, '#c9ced4');
+  p.line(63, 44, 63, 56, '#c9ced4');
+  const out = pad(p, 2);
+  out.outline();
+  if (hot) out.halo('#ff9a3c50');
+  return out;
+}
+
+function townMine() {
+  const p = new Pix(72, 54);
+  // rocky hill
+  p.domeEllipse(34, 26, 32, 24, ['#a8a2b8', '#8a8598', '#6e6a80']);
+  p.noise(4, 6, 62, 40, '#9a94ac', 6, 7);
+  p.noise(4, 6, 62, 40, '#5a5668', 8, 8);
+  // timber portal
+  p.rect(22, 22, 24, 28, '#14101c');
+  p.cylRect(18, 20, 5, 30, ['#bc9e64', '#8a5a2e', '#5c3a1c']);
+  p.cylRect(45, 20, 5, 30, ['#bc9e64', '#8a5a2e', '#5c3a1c']);
+  p.rect(16, 16, 36, 5, '#8a5a2e');
+  p.rect(16, 16, 36, 2, '#bc9e64');
+  // lantern in the dark
+  p.set(33, 32, '#ffd166');
+  p.set(34, 32, '#ffe696');
+  p.set(33, 33, '#ff9a3c');
+  // rails out of the mouth
+  p.rect(26, 50, 2, 4, '#8a8f96');
+  p.rect(40, 50, 2, 4, '#8a8f96');
+  p.rect(24, 52, 20, 1, '#5c3a1c');
+  // ore cart
+  p.cylRect(52, 40, 18, 10, ['#8a5a2e', '#5c3a1c', '#4a2e18']);
+  for (const [ox, oy] of [[56, 38], [61, 36], [65, 38]]) {
+    p.ellipse(ox, oy, 3, 2, '#ffd166');
+    p.set(ox - 1, oy - 1, '#ffe696');
+  }
+  p.ellipse(56, 51, 3, 3, '#2a2434');
+  p.ellipse(66, 51, 3, 3, '#2a2434');
+  const out = pad(p, 2);
+  out.outline();
+  return out;
+}
+
+function townJeweler() {
+  const p = new Pix(68, 60);
+  // violet walls
+  p.cylRect(4, 20, 60, 38, ['#a082c0', '#8a6aa8', '#6e5289']);
+  // roof
+  p.tri(0, 22, 68, 22, 34, 2, '#4c3a66');
+  p.tri(8, 18, 60, 18, 34, 6, '#6a5a7e');
+  p.set(34, 4, '#ffd166'); // finial
+  // striped awning over the window
+  for (let i = 0; i < 8; i++) {
+    p.rect(6 + i * 6, 26, 6, 7, i % 2 === 0 ? '#e6d4ff' : '#8a6aa8');
+  }
+  p.rect(6, 26, 48, 1, '#4c3a66');
+  // display window with gems on velvet
+  p.rect(8, 36, 26, 16, '#2a2040');
+  p.rect(9, 37, 24, 14, '#3a2c54');
+  for (const [gx, gy, c] of [[14, 44, '#6ee3ff'], [21, 42, '#ff9adc'], [28, 45, '#7ef29a']]) {
+    p.tri(gx, gy - 4, gx + 3, gy, gx, gy + 4, c);
+    p.tri(gx, gy - 4, gx - 3, gy, gx, gy + 4, shade(c, 0.75));
+    p.set(gx, gy - 2, '#ffffff');
+  }
+  // door with lamp
+  p.rect(44, 38, 14, 20, '#4a3560');
+  p.rect(45, 39, 12, 18, '#3a2c54');
+  p.set(54, 48, '#ffd166');
+  // hanging gem shop sign
+  p.rect(58, 14, 1, 8, '#bc9e64');
+  p.tri(58, 22, 63, 27, 58, 32, '#6ee3ff');
+  p.tri(58, 22, 53, 27, 58, 32, '#4ec3e8');
+  p.set(57, 25, '#dcfaff');
+  const out = pad(p, 2);
+  out.outline();
+  return out;
+}
+
+function townTree() {
+  const p = new Pix(30, 40);
+  p.cylRect(13, 24, 4, 14, ['#8a5a2e', '#5c3a1c', '#4a2e18']);
+  p.domeEllipse(15, 14, 13, 13, ['#5a9a52', '#3a7a3e', '#2a5a30']);
+  p.set(9, 8, '#78b468');
+  p.set(10, 8, '#78b468');
+  p.set(20, 12, '#78b468');
+  const out = pad(p, 2);
+  out.outline();
+  return out;
+}
+
+function townLamp() {
+  const p = new Pix(16, 32);
+  p.cylRect(7, 8, 2, 22, ['#6e6a80', '#565266', '#40364e']);
+  p.rect(4, 28, 8, 2, '#40364e');
+  p.rect(4, 0, 8, 8, '#2a2434');
+  p.rect(5, 1, 6, 6, '#ffd166');
+  p.set(7, 2, '#ffe696');
+  p.set(8, 2, '#ffe696');
+  const out = pad(p, 2);
+  out.outline();
+  out.halo('#ffd16650');
+  return out;
+}
+
+function townStatue(f) {
+  const p = new Pix(34, 46);
+  // plinth
+  p.cylRect(4, 36, 26, 8, ['#a8a2b8', '#8a8598', '#6e6a80']);
+  p.rect(2, 34, 30, 3, '#a8a2b8');
+  // anvil
+  p.cylRect(10, 26, 14, 9, ['#6e6a80', '#565266', '#40364e']);
+  p.rect(7, 22, 20, 5, '#8a8598');
+  p.rect(7, 22, 20, 2, '#a8a2b8');
+  // soul flame, bobbing between frames
+  const fy = f === 0 ? 10 : 8;
+  p.ellipse(17, fy, 5, 7, '#a882f0');
+  p.ellipse(17, fy + 1, 3, 4, '#d6beff');
+  p.set(17, fy - 5, '#a882f0');
+  const out = pad(p, 2);
+  out.outline();
+  out.halo('#a882f060');
+  return out;
+}
+
 // ---------- Tiles (32x32 logical; floor/wall grayscale for biome tint) ----------
 
 function floorTile(variant) {
@@ -1760,6 +2000,14 @@ for (const [name, pal] of Object.entries(DRAGON_PALETTES)) {
 }
 writeSheet(`${OUT}/gift.png`, [gift(0), gift(1)], 1);
 writeSheet(`${OUT}/mine.png`, [mineVein(), mineCrystal(), mineFuel(), mineLadder(), mineRubble(), minePickaxe(), mineChest(), mineTreasure()], 1);
+writeSheet(`${OUT}/town-castle.png`, [townCastle()], 1);
+writeSheet(`${OUT}/town-barn.png`, [townBarn()], 1);
+writeSheet(`${OUT}/town-smith.png`, [townSmith(false), townSmith(true)], 1);
+writeSheet(`${OUT}/town-mine.png`, [townMine()], 1);
+writeSheet(`${OUT}/town-jeweler.png`, [townJeweler()], 1);
+writeSheet(`${OUT}/town-tree.png`, [townTree()], 1);
+writeSheet(`${OUT}/town-lamp.png`, [townLamp()], 1);
+writeSheet(`${OUT}/town-statue.png`, [townStatue(0), townStatue(1)], 1);
 // 25 tier blades + 50 arsenal weapons (tiers 26-75) + the 3 premium IAP
 // weapons (frames 75-77 — swordSkins.ts derives them from weaponArtCount)
 writeSheet(`${OUT}/gear.png`, [...WEAPONS.map(weapon), ...ARSENAL.map((f) => f()), scythe(), voidKatana(), dragonCleaver()], 2);

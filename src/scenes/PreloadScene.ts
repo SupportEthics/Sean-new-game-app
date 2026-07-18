@@ -77,6 +77,15 @@ export class PreloadScene extends Phaser.Scene {
     }
     this.load.spritesheet('gear', assetUrl('assets/gear.png'), { frameWidth: 56, frameHeight: 64 });
     this.load.spritesheet('mine', assetUrl('assets/mine.png'), { frameWidth: 26, frameHeight: 26 });
+    // The walkable Town's structures
+    this.load.image('town-castle', assetUrl('assets/town-castle.png'));
+    this.load.image('town-barn', assetUrl('assets/town-barn.png'));
+    this.load.spritesheet('town-smith', assetUrl('assets/town-smith.png'), { frameWidth: 76, frameHeight: 64 });
+    this.load.image('town-mine', assetUrl('assets/town-mine.png'));
+    this.load.image('town-jeweler', assetUrl('assets/town-jeweler.png'));
+    this.load.image('town-tree', assetUrl('assets/town-tree.png'));
+    this.load.image('town-lamp', assetUrl('assets/town-lamp.png'));
+    this.load.spritesheet('town-statue', assetUrl('assets/town-statue.png'), { frameWidth: 38, frameHeight: 50 });
     this.load.spritesheet('deco', assetUrl('assets/deco.png'), { frameWidth: 28, frameHeight: 28 });
     this.load.spritesheet('torch', assetUrl('assets/torch.png'), { frameWidth: 20, frameHeight: 34 });
     this.load.spritesheet('tiles', assetUrl('assets/tiles.png'), { frameWidth: 64, frameHeight: 64 });
