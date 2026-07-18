@@ -23,7 +23,7 @@ export const BUILDINGS: BuildingDef[] = [
     id: 'farm',
     name: 'FARM',
     desc: 'BATTLE GOLD',
-    maxLevel: 50,
+    maxLevel: 100,
     costBase: 20_000,
     costGrowth: 1.5,
     perLevel: 0.03, // +3% battle gold
@@ -32,7 +32,7 @@ export const BUILDINGS: BuildingDef[] = [
     id: 'blacksmith',
     name: 'BLACKSMITH',
     desc: 'HERO DAMAGE',
-    maxLevel: 50,
+    maxLevel: 100,
     costBase: 30_000,
     costGrowth: 1.5,
     perLevel: 0.02, // +2% DPS
@@ -41,7 +41,7 @@ export const BUILDINGS: BuildingDef[] = [
     id: 'mine',
     name: 'MINE',
     desc: 'OFFLINE GOLD',
-    maxLevel: 40,
+    maxLevel: 80,
     costBase: 25_000,
     costGrowth: 1.55,
     perLevel: 0.05, // +5% offline earnings
@@ -50,7 +50,7 @@ export const BUILDINGS: BuildingDef[] = [
     id: 'jeweler',
     name: 'JEWELER',
     desc: 'GEMS PER DAY',
-    maxLevel: 20,
+    maxLevel: 40,
     costBase: 60_000,
     costGrowth: 1.8,
     perLevel: 1, // +1 gem/day, collected in town

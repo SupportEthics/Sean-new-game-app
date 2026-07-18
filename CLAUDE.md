@@ -19,7 +19,7 @@ loadout, 6x7 board with purchasable cells, prestige (rebirth at stage 40,
 Souls banked), raids (post-prestige, 75 levels, ad cooldown reset, footer quick-start
 button for the current level, list opens scrolled to it), offline
 earnings (2x-ad popup), Soul Relics tree, daily + weekly + monthly quests
-(daily streak), pets (5 companions from gold/gem/free-ad eggs, dup = level-up, max level 20, evolution: 2 ascensions per pet, gem-only (75/250, no level gate; purple price button), per-stage sprites pet-<id>-s1/-s2 (fiercer art, final form has a halo), x2/x4 pet bonus + bigger arena sprite, stage names in config/pets.ts EVOLUTION, save v20 petStages), shop (sub-tabs DEALS/GEMS/COINS/BUNDLES/SKINS — skins tab sells the 5 legendary heroes + 3 premium swords and links to the full wardrobe (SKINS removed from the side MENU — RAID/QUESTS row + REBIRTH); 6 gem packs, 4 coin packs
+(daily streak), pets (5 companions from gold/gem/free-ad eggs, dup = level-up, max level 40, evolution: 2 ascensions per pet, gem-only (75/250, no level gate; purple price button), per-stage sprites pet-<id>-s1/-s2 (fiercer art, final form has a halo), x2/x4 pet bonus + bigger arena sprite, stage names in config/pets.ts EVOLUTION, save v20 petStages), shop (sub-tabs DEALS/GEMS/COINS/BUNDLES/SKINS — skins tab sells the 5 legendary heroes + 3 premium swords and links to the full wardrobe (SKINS removed from the side MENU — RAID/QUESTS row + REBIRTH); 6 gem packs, 4 coin packs
 granting hours of current gold income, 4 gems+coins bundles — each line
 with 49.99/99.99 whale tiers — $0.99 starter pack, $4.99 remove-ads,
 piggy bank cracked via IAP, free ad chest), interstitial
@@ -35,7 +35,7 @@ achievements (AWARDS tab in QuestsPanel, lifetime counters incl.
 totalMerges), procedural chiptune music loop (AudioService.startMusic on
 first gesture), x2 dmg ad boost + treasure ad (LOOT button: stage-scaled gold+gems behind a preview modal, config/economy.ts AD_LOOT, 15-min cooldown, save v21; speed boosts remain via gifts), sword sell bin (30% refund, never
 equipped), all 5 pets fight in the arena, skills on long cooldowns with
-AD CAST, town (post-2nd-rebirth: farm/blacksmith/mine/jeweler in config/town.ts, caps 50/50/40/20, jeweler gem vault), Hall of Legends leaderboard (RANKS button, seeded rivals in config/leaderboard.ts + LIVE ONLY/ALL toggle hides rivals on the live global board, save v22 boardRealOnly; platform boards dormant in services/LeaderboardService.ts), rebirths add +10% enemy HP each (config/prestige.ts enemyHpScale), gold curve has a second knee at stage 100 (stages.ts lateGoldStage2/goldDropGrowthLate2 — deep endgame pays nearer HP growth), content
+AD CAST, town (post-2nd-rebirth: farm/blacksmith/mine/jeweler in config/town.ts, caps 100/100/80/40, jeweler gem vault), Hall of Legends leaderboard (RANKS button, seeded rivals in config/leaderboard.ts + LIVE ONLY/ALL toggle hides rivals on the live global board, save v22 boardRealOnly; platform boards dormant in services/LeaderboardService.ts), rebirths add +10% enemy HP each (config/prestige.ts enemyHpScale), gold curve has a second knee at stage 100 (stages.ts lateGoldStage2/goldDropGrowthLate2 — deep endgame pays nearer HP growth), content
 expansion (25 distinct sword sprites — tiers past 25 keep the final art via
 gear.ts weaponFrame(), never cycle; maxTier 200 (raised from 80 — tier-80 wall stopped Sean near
 stage 250; ceiling now ~stage 550, tests/unit/endgame.test.ts guards it);

@@ -29,7 +29,7 @@ export const PETS: PetDef[] = [
     stageNames: ['MOSS DRAKE', 'MOSS WYVERN', 'MOSS DRAGON'] },
 ];
 
-export const PET_MAX_LEVEL = 20;
+export const PET_MAX_LEVEL = 40;
 
 /** Evolution: two ascensions per pet, initiated purely with gems (Sean's
  * call — no level requirement). Each multiplies the pet's whole DPS
