@@ -37,6 +37,7 @@ import {
   maybeRequestNotificationPermission,
   scheduleNotifications,
 } from './services/Notifications';
+import { attachHaptics } from './services/Haptics';
 import { attachReviewPrompt } from './services/Review';
 import { THEME } from './ui/theme';
 
@@ -87,6 +88,8 @@ async function boot(): Promise<void> {
   attachAnalytics(gs);
   // Rating prompt at a proud moment (native only, once ever)
   attachReviewPrompt(gs);
+  // Haptic buzzes on merges, stage clears and victories (native only)
+  attachHaptics(gs);
   // Platform leaderboards stay mocked until store setup (see the service)
   const leaderboard: LeaderboardService = new WebMockLeaderboard();
   // Apple-account cloud saves on configured iOS builds, quiet mock elsewhere

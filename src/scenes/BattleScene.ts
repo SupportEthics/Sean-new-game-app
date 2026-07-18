@@ -8,6 +8,7 @@ import { EVOLUTION } from '../config/pets';
 import { FAIRY_EVOLUTION } from '../config/fairy';
 import { DUNGEON_MODIFIERS } from '../config/dungeon';
 import { TAP } from '../config/economy';
+import { buzzTap } from '../services/Haptics';
 import { ENEMY_SPECIES, STAGES } from '../config/stages';
 import { isBossWave } from '../core/BattleSim';
 import { formatNumber, rivalDps } from '../core/EconomyMath';
@@ -185,6 +186,7 @@ export class BattleScene extends Phaser.Scene {
     const result = this.gs.tapStrike();
     if (!result) return;
     audio.hit();
+    buzzTap();
     if (!this.tapLunge?.isPlaying()) {
       this.tapLunge = this.tweens.add({
         targets: this.hero,
