@@ -1332,7 +1332,7 @@ export class GameState {
     return this.expedition === null && this.reservePetId !== null;
   }
 
-  startExpedition(defId: string, now: number = Date.now()): boolean {
+  startExpedition(defId: string, now: number = this.clock()): boolean {
     const def = expeditionById(defId);
     const petId = this.reservePetId;
     if (!def || !petId || this.expedition !== null) return false;
@@ -1342,11 +1342,11 @@ export class GameState {
     return true;
   }
 
-  expeditionTimeLeft(now: number = Date.now()): number {
+  expeditionTimeLeft(now: number = this.clock()): number {
     return this.expedition ? Math.max(0, this.expedition.endsAt - now) : 0;
   }
 
-  expeditionReady(now: number = Date.now()): boolean {
+  expeditionReady(now: number = this.clock()): boolean {
     return this.expedition !== null && now >= this.expedition.endsAt;
   }
 

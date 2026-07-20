@@ -39,11 +39,16 @@ import {
 } from './services/Notifications';
 import { attachHaptics } from './services/Haptics';
 import { attachReviewPrompt } from './services/Review';
+import { syncTime, trustedNow } from './services/TrustedTime';
 import { THEME } from './ui/theme';
 
 async function boot(): Promise<void> {
   // On native, restore a durable save copy before anything reads storage
   await hydrateSaveFromPreferences();
+
+  // Lock onto the server's clock before any time math (offline earnings,
+  // daily resets). Anti clock-cheat; falls back to device time when offline.
+  await syncTime();
 
   // Tester lever (web only): play.html?resetdaily=1 wipes today's
   // dungeon/duel/deal locks so the daily content can be re-tested at will
@@ -63,9 +68,11 @@ async function boot(): Promise<void> {
     }
   }
 
-  const saveManager = new SaveManager(new MirroredStorage());
+  const saveManager = new SaveManager(new MirroredStorage(), trustedNow);
   const loaded = saveManager.load();
   const gs = loaded?.state ?? new GameState();
+  // Every daily/offline check reads the trusted clock, not the device one
+  gs.clock = trustedNow;
   const offline = loaded ? computeOffline(gs, loaded.awaySeconds) : null;
   gs.rollDaily();
 
@@ -131,7 +138,12 @@ async function boot(): Promise<void> {
       saveManager.save(gs);
       void scheduleNotifications(gs);
     });
-    void App.addListener('resume', () => void cancelAllNotifications());
+    void App.addListener('resume', () => {
+      void cancelAllNotifications();
+      // Re-lock the clock: catches winding the phone forward while the app
+      // was backgrounded before any daily check re-reads the time
+      void syncTime();
+    });
     void cancelAllNotifications();
     void maybeRequestNotificationPermission(gs);
   }
