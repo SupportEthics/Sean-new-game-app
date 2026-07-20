@@ -77,12 +77,12 @@ describe('weapon art', () => {
     expect(weaponFrame(GEAR.maxTier)).toBe(74);
   });
 
-  it('the merge ceiling is tier 200 and its numbers still display', () => {
-    expect(GEAR.maxTier).toBe(200);
+  it('the merge ceiling is tier 500 and its numbers still display', () => {
+    expect(GEAR.maxTier).toBe(500);
     expect(tierName(75)).toBe('Eternity Blade');
-    expect(tierName(200)).toBe('Eternity Blade +125');
-    expect(formatNumber(gearDps(200))).not.toContain('∞'); // huge but finite
-    expect(formatNumber(gearDps(200)).length).toBeLessThan(10); // readable suffix
+    expect(tierName(500)).toBe('Eternity Blade +425');
+    expect(formatNumber(gearDps(500))).not.toContain('∞'); // huge but finite
+    expect(formatNumber(gearDps(500)).length).toBeLessThan(10); // readable suffix
   });
 
   it('has a name for all 75 weapon designs', () => {

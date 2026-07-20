@@ -15,7 +15,7 @@ export const GEAR = {
    * (Sean hit stage 200 in days and the old cap walled progress near 250):
    * at 1.9x DPS/tier vs 1.27x monster HP/stage, a tier is ~2.7 stages, so
    * 200 puts the ceiling for a maxed knight around stage 550. */
-  maxTier: 200,
+  maxTier: 500,
 
   /** Distinct weapon sprites in the gear sheet; tiers past this keep the
    * final design (no cycling back to tier-1 art). Tripled at Sean's request:

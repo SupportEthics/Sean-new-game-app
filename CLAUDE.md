@@ -37,8 +37,8 @@ first gesture), x2 dmg ad boost + treasure ad (LOOT button: stage-scaled gold+ge
 equipped), all 5 pets fight in the arena, skills on long cooldowns with
 AD CAST, town (post-2nd-rebirth: farm/blacksmith/mine/jeweler in config/town.ts, caps 100/100/80/40, jeweler gem vault), Hall of Legends leaderboard (RANKS button, seeded rivals in config/leaderboard.ts + LIVE ONLY/ALL toggle hides rivals on the live global board, save v22 boardRealOnly; platform boards dormant in services/LeaderboardService.ts), rebirths add +10% enemy HP each (config/prestige.ts enemyHpScale), gold curve has a second knee at stage 100 (stages.ts lateGoldStage2/goldDropGrowthLate2 — deep endgame pays nearer HP growth), content
 expansion (25 distinct sword sprites — tiers past 25 keep the final art via
-gear.ts weaponFrame(), never cycle; maxTier 200 (raised from 80 — tier-80 wall stopped Sean near
-stage 250; ceiling now ~stage 550, tests/unit/endgame.test.ts guards it);
+gear.ts weaponFrame(), never cycle; maxTier 500 (raised from 200 — the 200 cap walled Sean near
+stage 560; ceiling now ~stage 1350, tests/unit/endgame.test.ts guards it);
 weapon art tripled to 75 frames: tiers 26-75 are ten material bands x five
 weapons (maces/spears/axes/lances/greatswords alternating with flails/
 tridents/halberds/glaives/warhammers, ARSENAL in generate-assets.mjs,

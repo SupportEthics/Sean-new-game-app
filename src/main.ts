@@ -74,7 +74,7 @@ async function boot(): Promise<void> {
   // native, and web scores never reach the real leaderboard.
   if (!Capacitor.isNativePlatform()) {
     const teststage = Number(new URLSearchParams(location.search).get('teststage'));
-    if (Number.isFinite(teststage) && teststage >= 1 && teststage <= 500) {
+    if (Number.isFinite(teststage) && teststage >= 1 && teststage <= 1500) {
       gs.battle = newBattleState(teststage, 1, gs.enemyHpMultiplier);
       gs.highestStage = Math.max(gs.highestStage, teststage);
     }
