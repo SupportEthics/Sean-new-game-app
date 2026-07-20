@@ -4,17 +4,16 @@
 // stamped into prefs the moment it's shown or skipped.
 
 export const WHATS_NEW = {
-  key: 'whatsnew_1_0_3',
-  title: 'THE DRAGON UPDATE',
+  key: 'whatsnew_1_0_5',
+  title: 'THE KINGDOM UPDATE',
   subtitle: 'NEW SINCE YOUR LAST VISIT:',
   lines: [
-    'THE LABYRINTH: MINE THE DEPTHS',
-    'DAILY DUNGEON: SLAY THE DRAGON',
-    'DUEL RIVALS ON THE LEADERBOARD',
-    'THE CODEX + FORGE ENCHANTMENTS',
-    'PET EXPEDITIONS + FAIRY EVOLUTION',
-    '50 NEW WEAPONS + NEW LANDS',
-    'WEEKEND EVENTS + THE KNIGHTS PASS',
+    'TAP THE ARENA TO STRIKE FASTER',
+    'WALK YOUR TOWN - UPGRADE THE KEEP',
+    'THE ENDGAME IS 3X BIGGER',
+    'SWORDS NOW CLIMB TO TIER 500',
+    'HIGHER TOWN, PET + FORGE CAPS',
+    'YOUR PHONE RUMBLES ON BIG HITS',
   ],
   button: 'TO BATTLE!',
 } as const;
