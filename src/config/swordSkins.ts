@@ -19,6 +19,9 @@ export interface PremiumSword {
   /** Paid weapons pay twice while worn: damage AND gold. */
   dpsBonus: number;
   goldBonus: number;
+  /** Bundle-exclusive (e.g. the Founder's Pack): never sold on its own, so
+   * it's kept out of the shop's SWORDS tab and the store product list. */
+  founderOnly?: boolean;
 }
 
 /** Wearing tier art pays +0.5% DPS per art tier (max +12.5% at tier 25);
@@ -61,14 +64,32 @@ export const PREMIUM_SWORDS: readonly PremiumSword[] = [
     dpsBonus: 0.15,
     goldBonus: 0.15,
   },
+  {
+    // Founder's Pack exclusive — obtainable ONLY inside the £1.99 bundle,
+    // never sold individually, so it stays a genuine collector's item.
+    id: 'founderblade',
+    name: 'Founders Blade',
+    desc: 'FOR THE FIRST TO ANSWER THE CALL',
+    sku: 'sword_founderblade',
+    priceUsd: 1.99,
+    frame: GEAR.weaponArtCount + 3,
+    aura: 0xb98cff,
+    dpsBonus: 0.15,
+    goldBonus: 0.15,
+    founderOnly: true,
+  },
 ] as const;
 
-export const SWORD_PRODUCTS: IapProduct[] = PREMIUM_SWORDS.map((s) => ({
-  sku: s.sku,
-  priceUsd: s.priceUsd,
-  title: s.name,
-  kind: 'nonconsumable' as const,
-}));
+/** Store products for the individually-purchasable premium weapons only —
+ * the Founder's Blade is excluded (it ships inside the Founder's Pack SKU). */
+export const SWORD_PRODUCTS: IapProduct[] = PREMIUM_SWORDS.filter((s) => !s.founderOnly).map(
+  (s) => ({
+    sku: s.sku,
+    priceUsd: s.priceUsd,
+    title: s.name,
+    kind: 'nonconsumable' as const,
+  }),
+);
 
 export function premiumSwordById(id: string): PremiumSword | undefined {
   return PREMIUM_SWORDS.find((s) => s.id === id);

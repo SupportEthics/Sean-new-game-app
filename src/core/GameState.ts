@@ -3,9 +3,11 @@ import { AD_LOOT, BOOSTS, ECONOMY, TAP } from '../config/economy';
 import { FAIRY, FAIRY_EVOLUTION, fairyLevelCost } from '../config/fairy';
 import { GiftDef } from '../config/gifts';
 import { LOGIN_REWARDS, LoginReward } from '../config/loginRewards';
+import { ONBOARDING_REWARDS, OnboardingReward } from '../config/onboarding';
 import {
   BATTLE_PASS,
   bundleBySku,
+  FOUNDER_PACK,
   FREE_CHEST,
   gemPackBySku,
   goldPackBySku,
@@ -265,6 +267,11 @@ export interface SerializedState {
   adLootReadyAt: number;
   loginStreakDay: number;
   lastLoginClaimDay: string;
+  onboardingDay?: number;
+  onboardingLastDay?: string;
+  sessionCount?: number;
+  founderPackOwned?: boolean;
+  founderPackExpiresAt?: number;
   totalMerges: number;
   achievementsClaimed: string[];
   townBuildings: Record<string, number>;
@@ -391,6 +398,17 @@ export class GameState {
    * wraps), and the UTC day of the last claim (one per day). */
   loginStreakDay = 0;
   lastLoginClaimDay = '';
+  /** New-recruit welcome ramp: how many of the 7 one-time gifts are claimed
+   * (0-7, never wraps), and the UTC day of the last claim (one per day). */
+  onboardingDay = 0;
+  onboardingLastDay = '';
+  /** App launches counted at boot — drives the first-purchase (Founder's
+   * Pack) trigger, which fires from the 2nd session onward. */
+  sessionCount = 0;
+  /** Founder's Pack: owned once bought; expiry is the epoch ms the offer
+   * closes, set the first time it's shown (0 = never shown yet). */
+  founderPackOwned = false;
+  founderPackExpiresAt = 0;
   /** Lifetime merge count (achievements; quests use per-period sheets). */
   totalMerges = 0;
   /** Achievement ids already claimed. */
@@ -1672,6 +1690,15 @@ export class GameState {
       this.emit('shop:changed', undefined);
       return true;
     }
+    if (sku === FOUNDER_PACK.sku) {
+      if (this.founderPackOwned) return false;
+      this.founderPackOwned = true;
+      this.grantSkin(FOUNDER_PACK.skinId); // exclusive knight (equip in wardrobe)
+      this.grantPremiumSword(FOUNDER_PACK.swordId); // exclusive blade art
+      this.addGems(FOUNDER_PACK.gems);
+      this.emit('shop:changed', undefined);
+      return true;
+    }
     if (sku === REMOVE_ADS.sku) {
       if (this.removeAds) return false;
       this.removeAds = true;
@@ -1841,6 +1868,58 @@ export class GameState {
     }
     this.emit('login:changed', undefined);
     return reward;
+  }
+
+  // ---- New-recruit welcome ramp (first-week retention) ----
+
+  /** True once all 7 welcome gifts are claimed — the ramp is one-time. */
+  get onboardingComplete(): boolean {
+    return this.onboardingDay >= ONBOARDING_REWARDS.length;
+  }
+
+  /** The gift on offer today, or null if the ramp is finished. */
+  get todaysOnboardingReward(): OnboardingReward | null {
+    return this.onboardingComplete ? null : ONBOARDING_REWARDS[this.onboardingDay];
+  }
+
+  /** Ready when the ramp isn't finished and today's gift is unclaimed. */
+  onboardingReady(now: number = this.clock()): boolean {
+    return !this.onboardingComplete && this.onboardingLastDay !== utcDay(now);
+  }
+
+  /** Claim today's welcome gift and advance the ramp (never wraps; a missed
+   * day just pauses it). Returns the reward, or null if nothing was due. */
+  claimOnboarding(now: number = this.clock()): OnboardingReward | null {
+    if (!this.onboardingReady(now)) return null;
+    const reward = this.todaysOnboardingReward;
+    if (!reward) return null;
+    this.onboardingLastDay = utcDay(now);
+    this.onboardingDay += 1;
+    if (reward.goldMinutes) {
+      this.addGold(Math.max(50, Math.floor(this.goldPerSecondEstimate * reward.goldMinutes * 60)));
+    }
+    if (reward.gems) this.addGems(reward.gems);
+    this.emit('login:changed', undefined);
+    return reward;
+  }
+
+  // ---- Founder's Pack (one-time first-purchase offer) ----
+
+  /** Whether the Founder's Pack offer should be shown right now: never once
+   * owned; open while inside the 48h window after it was first surfaced;
+   * otherwise eligible from the 2nd session onward (the offer hasn't been
+   * started yet). "session 2-3" per design — we use >= 2 so a player who
+   * skips a launch still gets their shot. */
+  founderOfferAvailable(now: number = this.clock()): boolean {
+    if (this.founderPackOwned) return false;
+    if (this.founderPackExpiresAt > 0) return now < this.founderPackExpiresAt;
+    return this.sessionCount >= 2;
+  }
+
+  /** Stamp the 48h countdown the first time the offer is actually shown. */
+  startFounderOfferWindow(now: number = this.clock()): void {
+    if (this.founderPackOwned || this.founderPackExpiresAt > 0) return;
+    this.founderPackExpiresAt = now + FOUNDER_PACK.windowHours * 3_600_000;
   }
 
   // ---- Quests (daily / weekly / monthly) ----
@@ -2016,6 +2095,9 @@ export class GameState {
           : { ok: false, reason: 'stage' };
       case 'iap':
         return { ok: false, reason: 'iap' };
+      case 'special':
+        // Bundle-exclusive (Founder's Pack): never unlockable on its own.
+        return { ok: false, reason: 'special' };
     }
   }
 
@@ -2092,6 +2174,14 @@ export class GameState {
       }
       if (sku === STARTER_PACK.sku) {
         this.starterPackOwned = true;
+        recognised++;
+        continue;
+      }
+      if (sku === FOUNDER_PACK.sku) {
+        // Restore the exclusives (never the consumable gems) on a new device
+        this.founderPackOwned = true;
+        this.grantSkin(FOUNDER_PACK.skinId);
+        this.grantPremiumSword(FOUNDER_PACK.swordId);
         recognised++;
         continue;
       }
@@ -2175,6 +2265,11 @@ export class GameState {
       adLootReadyAt: this.adLootReadyAt,
       loginStreakDay: this.loginStreakDay,
       lastLoginClaimDay: this.lastLoginClaimDay,
+      onboardingDay: this.onboardingDay,
+      onboardingLastDay: this.onboardingLastDay,
+      sessionCount: this.sessionCount,
+      founderPackOwned: this.founderPackOwned,
+      founderPackExpiresAt: this.founderPackExpiresAt,
       totalMerges: this.totalMerges,
       achievementsClaimed: [...this.achievementsClaimed],
       townBuildings: { ...this.townBuildings },
@@ -2258,6 +2353,11 @@ export class GameState {
     gs.adLootReadyAt = data.adLootReadyAt;
     gs.loginStreakDay = data.loginStreakDay;
     gs.lastLoginClaimDay = data.lastLoginClaimDay;
+    gs.onboardingDay = data.onboardingDay ?? 0;
+    gs.onboardingLastDay = data.onboardingLastDay ?? '';
+    gs.sessionCount = data.sessionCount ?? 0;
+    gs.founderPackOwned = data.founderPackOwned ?? false;
+    gs.founderPackExpiresAt = data.founderPackExpiresAt ?? 0;
     gs.totalMerges = data.totalMerges;
     gs.achievementsClaimed = [...data.achievementsClaimed];
     gs.townBuildings = { ...data.townBuildings };

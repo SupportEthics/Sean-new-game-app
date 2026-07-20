@@ -4,12 +4,12 @@ import { SKIN_PRODUCTS } from '../../src/config/monetization';
 import { GameState } from '../../src/core/GameState';
 
 describe('skin catalog', () => {
-  it('has exactly 25 skins with unique ids', () => {
-    expect(SKINS).toHaveLength(25);
-    expect(new Set(SKINS.map((s) => s.id)).size).toBe(25);
+  it('has 26 skins with unique ids (incl. the Founder\'s Pack exclusive)', () => {
+    expect(SKINS).toHaveLength(26);
+    expect(new Set(SKINS.map((s) => s.id)).size).toBe(26);
   });
 
-  it('has exactly 5 real-money skins at $4.99', () => {
+  it('has exactly 5 real-money skins at $4.99 (the founder skin is bundle-only)', () => {
     const iap = SKINS.filter((s) => s.unlock.type === 'iap');
     expect(iap).toHaveLength(5);
     iap.forEach((s) => {
@@ -17,6 +17,9 @@ describe('skin catalog', () => {
       expect((s.unlock as { priceUsd: number }).priceUsd).toBe(4.99);
     });
     expect(SKIN_PRODUCTS).toHaveLength(5);
+    // The founder skin is a "special" unlock — obtainable only via the pack
+    const founder = SKINS.find((s) => s.id === 'founder');
+    expect(founder?.unlock.type).toBe('special');
   });
 
   it('every skin sheet id resolves', () => {

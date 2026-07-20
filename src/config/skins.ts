@@ -9,7 +9,11 @@ export type SkinUnlock =
   | { type: 'gold'; amount: number }
   | { type: 'gems'; amount: number }
   | { type: 'stage'; stage: number }
-  | { type: 'iap'; sku: string; priceUsd: number };
+  | { type: 'iap'; sku: string; priceUsd: number }
+  // Obtainable ONLY as part of a specific bundle (e.g. the Founder's Pack) —
+  // never sold on its own, so it can't be earned or bought from the wardrobe.
+  // `label` is the "how do I get this" tag shown on the locked card.
+  | { type: 'special'; label: string };
 
 export interface SkinArt {
   armor: [string, string, string];

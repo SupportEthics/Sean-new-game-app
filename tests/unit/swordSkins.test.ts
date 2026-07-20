@@ -60,12 +60,17 @@ describe('sword skins', () => {
     expect(gs.ownedPremiumSwords).toEqual(['scythe']);
   });
 
-  it('all three premium swords are purchasable products', () => {
-    for (const s of PREMIUM_SWORDS) {
+  it('the individually-sold premium swords are purchasable products', () => {
+    // The Founder's Blade is bundle-exclusive (founderOnly) — it ships inside
+    // the Founder's Pack, never as its own $4.99 product.
+    for (const s of PREMIUM_SWORDS.filter((sw) => !sw.founderOnly)) {
       const product = ALL_PRODUCTS.find((p) => p.sku === s.sku);
       expect(product?.kind).toBe('nonconsumable');
       expect(product?.priceUsd).toBe(4.99);
     }
+    const founder = PREMIUM_SWORDS.find((s) => s.founderOnly);
+    expect(founder).toBeDefined();
+    expect(ALL_PRODUCTS.some((p) => p.sku === founder!.sku)).toBe(false);
   });
 
   it('sword skin and owned weapons survive a save/load round trip', () => {

@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 // Pre-mark the tutorial as done so these tests exercise the normal UI
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem('pawsblades_tutorial_done', '1'));
+  await page.addInitScript(() => localStorage.setItem('pawsblades_nopopups', '1'));
 });
 
 // Design-resolution coordinates map 1:1 to the 390x844 viewport (Scale.FIT).

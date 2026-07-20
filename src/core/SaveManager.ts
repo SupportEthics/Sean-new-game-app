@@ -211,6 +211,17 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.mineBestDepth = 0;
     return save;
   },
+  // v32 -> v33: new-recruit welcome ramp + the Founder's Pack first offer.
+  // Existing players start the welcome ramp fresh (a re-engagement gift) and
+  // become eligible for the Founder's Pack from their next-but-one launch.
+  (save) => {
+    save.state.onboardingDay = 0;
+    save.state.onboardingLastDay = '';
+    save.state.sessionCount = 0;
+    save.state.founderPackOwned = false;
+    save.state.founderPackExpiresAt = 0;
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

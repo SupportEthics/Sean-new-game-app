@@ -6,7 +6,10 @@ import { GameState } from '../core/GameState';
 import { InterstitialPolicy } from '../core/Interstitials';
 import { Tutorial, TutorialStep } from '../core/Tutorial';
 import { LOGIN_REWARDS } from '../config/loginRewards';
+import { ONBOARDING_REWARDS } from '../config/onboarding';
+import { FOUNDER_PACK } from '../config/monetization';
 import { WHATS_NEW } from '../config/whatsnew';
+import { IapService } from '../services/monetization/MonetizationService';
 import { formatDuration } from '../core/OfflineEarnings';
 import { SAVE_KEY, SaveManager } from '../core/SaveManager';
 import { CloudSaveService } from '../services/CloudSave';
@@ -885,9 +888,17 @@ export class UIScene extends Phaser.Scene {
   }
 
   private maybeShowLogin(force = false): void {
-    if (!this.gs.loginRewardReady()) return;
-    // Not on the very first play session — let new players just play
-    if (!force && this.gs.totalKills < 100) return;
+    // No daily reward due -> straight on to the welcome ramp / founder offer
+    if (!this.gs.loginRewardReady()) {
+      this.maybeShowWelcome();
+      return;
+    }
+    // Not on the very first play session — let new players just play (but
+    // they still get the welcome ramp, which is built for exactly them)
+    if (!force && this.gs.totalKills < 100) {
+      this.maybeShowWelcome();
+      return;
+    }
     if (this.confirmLayer || this.tutorial.active) {
       this.time.delayedCall(3000, () => this.maybeShowLogin(force));
       return;
@@ -959,8 +970,210 @@ export class UIScene extends Phaser.Scene {
       if (import.meta.env.DEV) {
         (window as unknown as { __loginOpen?: boolean }).__loginOpen = false;
       }
+      this.maybeShowWelcome();
     });
     layer.add([btn, lbl]);
+  }
+
+  /** New-recruit welcome ramp: a one-time 7-day gift track aimed at first-week
+   * retention. Chains after the daily login popup, hands off to the Founder's
+   * Pack offer when dismissed (or immediately when nothing is due). */
+  /** QA lever: e2e suites set pawsblades_nopopups=1 so the retention popups
+   * (welcome ramp, founder offer) never cover the UI they're driving. */
+  private popupsSuppressed(): boolean {
+    return this.prefTime('nopopups') > 0;
+  }
+
+  private maybeShowWelcome(): void {
+    if (this.popupsSuppressed()) return;
+    if (!this.gs.onboardingReady()) {
+      this.maybeShowFounderOffer();
+      return;
+    }
+    if (this.confirmLayer || this.tutorial.active) {
+      this.time.delayedCall(3000, () => this.maybeShowWelcome());
+      return;
+    }
+
+    const layer = this.add.container(0, 0).setDepth(60);
+    this.confirmLayer = layer;
+    if (import.meta.env.DEV) {
+      (window as unknown as { __welcomeOpen?: boolean }).__welcomeOpen = true;
+    }
+    const dim = this.add
+      .rectangle(THEME.width / 2, THEME.height / 2, THEME.width, THEME.height, 0x14101c, 0.7)
+      .setInteractive();
+    const g = this.add.graphics();
+    g.fillStyle(THEME.cardBg);
+    g.fillRoundedRect(25, 290, 340, 250, 12);
+    g.lineStyle(3, THEME.gold);
+    g.strokeRoundedRect(25, 290, 340, 250, 12);
+    const title = this.add
+      .bitmapText(THEME.width / 2, 308, 'pix', 'RECRUIT REWARDS', 16)
+      .setTint(THEME.gold)
+      .setOrigin(0.5, 0);
+    const sub = this.add
+      .bitmapText(THEME.width / 2, 330, 'pix', 'A GIFT EVERY DAY THIS WEEK', 8)
+      .setTint(0x8a5a2e)
+      .setOrigin(0.5, 0);
+    layer.add([dim, g, title, sub]);
+
+    // Seven chips; today's (the next unclaimed day) glows
+    const today = this.gs.onboardingDay;
+    ONBOARDING_REWARDS.forEach((r, i) => {
+      const cx = 48 + i * 49;
+      const cy = 392;
+      const isToday = i === today;
+      const done = i < today;
+      const chip = this.add
+        .rectangle(cx, cy, 44, 62, done ? 0xd8e4c4 : THEME.panelBg)
+        .setStrokeStyle(2, isToday ? THEME.gold : done ? 0x6fae4e : THEME.cardBorder);
+      const dayLbl = this.add
+        .bitmapText(cx, cy - 22, 'pix', `D${r.day}`, 8)
+        .setOrigin(0.5, 0)
+        .setTint(isToday ? 0xc9961e : 0x8a5a2e);
+      const what = this.add
+        .bitmapText(cx, cy - 2, 'pix', r.gems ? `${r.gems}` : 'GOLD', 8)
+        .setOrigin(0.5, 0)
+        .setTint(r.gems ? 0x2884a8 : 0xc9961e);
+      const label = this.add
+        .bitmapText(cx, cy + 14, 'pix', r.gems ? 'GEMS' : '', 8)
+        .setOrigin(0.5, 0)
+        .setTint(0x2884a8);
+      const okMark = this.add
+        .bitmapText(cx, cy + 14, 'pix', done ? 'OK' : '', 8)
+        .setOrigin(0.5, 0)
+        .setTint(0x2e7a1e);
+      layer.add([chip, dayLbl, what, label, okMark]);
+      if (isToday) {
+        this.tweens.add({ targets: chip, scaleX: 1.08, scaleY: 1.08, duration: 500, yoyo: true, repeat: -1 });
+      }
+    });
+
+    const btn = this.add.image(THEME.width / 2, 492, 'btn-wide').setTint(0x2e7a1e);
+    const lbl = this.add.bitmapText(THEME.width / 2, 492, 'pix', 'CLAIM', 16).setOrigin(0.5);
+    btn.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
+      const reward = this.gs.claimOnboarding();
+      if (reward) {
+        audio.coin();
+        this.toast(reward.gems ? `+${reward.gems} GEMS` : 'GOLD COLLECTED');
+      }
+      layer.destroy();
+      this.confirmLayer = null;
+      if (import.meta.env.DEV) {
+        (window as unknown as { __welcomeOpen?: boolean }).__welcomeOpen = false;
+      }
+      this.maybeShowFounderOffer();
+    });
+    layer.add([btn, lbl]);
+  }
+
+  /** Founder's Pack: the one-time first-purchase offer. Shows from the 2nd
+   * session, exclusive skin + blade + gems for a one-off price, on a 48h
+   * countdown. Guaranteed contents (no gacha) and non-cannibalising. */
+  private maybeShowFounderOffer(): void {
+    if (this.popupsSuppressed()) return;
+    if (!this.gs.founderOfferAvailable()) return;
+    if (this.confirmLayer || this.tutorial.active) {
+      this.time.delayedCall(3000, () => this.maybeShowFounderOffer());
+      return;
+    }
+    // Stamp the 48h window the first time it's actually surfaced
+    this.gs.startFounderOfferWindow();
+    const iap = this.registry.get('iap') as IapService;
+
+    const layer = this.add.container(0, 0).setDepth(60);
+    this.confirmLayer = layer;
+    if (import.meta.env.DEV) {
+      (window as unknown as { __founderOpen?: boolean }).__founderOpen = true;
+    }
+    const top = 250;
+    const height = 300;
+    const dim = this.add
+      .rectangle(THEME.width / 2, THEME.height / 2, THEME.width, THEME.height, 0x14101c, 0.72)
+      .setInteractive();
+    const g = this.add.graphics();
+    g.fillStyle(0x2a2140);
+    g.fillRoundedRect(30, top, 330, height, 14);
+    g.lineStyle(3, 0xb98cff);
+    g.strokeRoundedRect(30, top, 330, height, 14);
+    const title = this.add
+      .bitmapText(THEME.width / 2, top + 18, 'pix', "FOUNDER'S PACK", 16)
+      .setTint(0xffe86b)
+      .setOrigin(0.5, 0);
+    const tag = this.add
+      .bitmapText(THEME.width / 2, top + 42, 'pix', 'ONE TIME ONLY - NEVER SOLD AGAIN', 8)
+      .setTint(0xc9a6ff)
+      .setOrigin(0.5, 0);
+    layer.add([dim, g, title, tag]);
+
+    // The two exclusives, previewed side by side
+    const heroImg = this.add.image(THEME.width / 2 - 70, top + 110, `hero-${FOUNDER_PACK.skinId}`, 0);
+    const bladeImg = this.add.image(THEME.width / 2 + 70, top + 110, 'gear', GEAR.weaponArtCount + 3);
+    heroImg.setScale(1.4);
+    bladeImg.setScale(1.6);
+    const heroName = this.add
+      .bitmapText(THEME.width / 2 - 70, top + 150, 'pix', 'FOUNDERS AEGIS', 8)
+      .setOrigin(0.5, 0)
+      .setTint(0xc9a6ff);
+    const bladeName = this.add
+      .bitmapText(THEME.width / 2 + 70, top + 150, 'pix', 'FOUNDERS BLADE', 8)
+      .setOrigin(0.5, 0)
+      .setTint(0xc9a6ff);
+    const plus = this.add
+      .bitmapText(THEME.width / 2, top + 172, 'pix', `+ ${FOUNDER_PACK.gems} GEMS`, 12)
+      .setOrigin(0.5, 0)
+      .setTint(0x8ee8ff);
+    layer.add([heroImg, bladeImg, heroName, bladeName, plus]);
+
+    // Countdown so the FOMO is explicit
+    const hoursLeft = Math.max(
+      1,
+      Math.ceil((this.gs.founderPackExpiresAt - this.gs.clock()) / 3_600_000),
+    );
+    const timer = this.add
+      .bitmapText(THEME.width / 2, top + 198, 'pix', `OFFER ENDS IN ${hoursLeft}H`, 8)
+      .setOrigin(0.5, 0)
+      .setTint(0xff8a6a);
+    layer.add([timer]);
+
+    let pending = false;
+    const buy = this.add.image(THEME.width / 2, top + 236, 'btn-wide').setDisplaySize(220, 40).setTint(0x2e7a1e);
+    const buyLbl = this.add
+      .bitmapText(THEME.width / 2, top + 236, 'pix', `GET IT - ${iap.getPriceLabel(FOUNDER_PACK.sku)}`, 12)
+      .setOrigin(0.5);
+    buy.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
+      if (pending) return;
+      pending = true;
+      buyLbl.setText('...');
+      void iap.purchase(FOUNDER_PACK.sku).then((result) => {
+        pending = false;
+        if (result.success && this.gs.fulfillProduct(FOUNDER_PACK.sku)) {
+          audio.stageUp();
+          this.gs.equipSkin(FOUNDER_PACK.skinId);
+          this.toast('FOUNDERS PACK UNLOCKED!');
+          this.persist();
+          this.closeFounderOffer(layer);
+        } else if (this.scene.isActive()) {
+          buyLbl.setText(`GET IT - ${iap.getPriceLabel(FOUNDER_PACK.sku)}`);
+        }
+      });
+    });
+    const later = this.add
+      .bitmapText(THEME.width / 2, top + height - 16, 'pix', 'MAYBE LATER', 8)
+      .setOrigin(0.5)
+      .setTint(0x9a8d8a)
+      .setInteractive({ useHandCursor: true });
+    later.on('pointerdown', () => this.closeFounderOffer(layer));
+    layer.add([buy, buyLbl, later]);
+  }
+
+  private closeFounderOffer(layer: Phaser.GameObjects.Container): void {
+    layer.destroy();
+    this.confirmLayer = null;
+    if (import.meta.env.DEV) {
+      (window as unknown as { __founderOpen?: boolean }).__founderOpen = false;
+    }
   }
 
   maybeShowOffline(): void {

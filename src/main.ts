@@ -73,6 +73,9 @@ async function boot(): Promise<void> {
   const gs = loaded?.state ?? new GameState();
   // Every daily/offline check reads the trusted clock, not the device one
   gs.clock = trustedNow;
+  // Count this launch — the Founder's Pack first-purchase offer waits until
+  // the player's 2nd session so they're hooked on the free game first.
+  gs.sessionCount += 1;
   const offline = loaded ? computeOffline(gs, loaded.awaySeconds) : null;
   gs.rollDaily();
 
@@ -194,6 +197,16 @@ async function boot(): Promise<void> {
     openLogin: () => {
       gs.lastLoginClaimDay = '';
       (game.scene.getScene('UI') as unknown as { maybeShowLogin(force: boolean): void }).maybeShowLogin(true);
+    },
+    openWelcome: () => {
+      gs.onboardingLastDay = '';
+      (game.scene.getScene('UI') as unknown as { maybeShowWelcome(): void }).maybeShowWelcome();
+    },
+    openFounder: () => {
+      gs.founderPackOwned = false;
+      gs.founderPackExpiresAt = 0;
+      gs.sessionCount = Math.max(gs.sessionCount, 2);
+      (game.scene.getScene('UI') as unknown as { maybeShowFounderOffer(): void }).maybeShowFounderOffer();
     },
       hatch: (kind: 'gold' | 'gem' | 'free', roll?: number) => gs.hatchEgg(kind, roll),
       addSouls: (n: number) => { gs.souls += n; },

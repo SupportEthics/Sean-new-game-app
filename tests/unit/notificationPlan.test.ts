@@ -2,20 +2,25 @@ import { describe, expect, it } from 'vitest';
 import { DUNGEON } from '../../src/config/dungeon';
 import { GameState } from '../../src/core/GameState';
 import {
+  COMEBACK_NUDGE_HOURS,
   DRAGON_NUDGE_HOUR,
   nextDragonNudge,
-  OFFLINE_NUDGE_HOURS,
   planNotifications,
 } from '../../src/core/NotificationPlan';
 
 const NOW = Date.UTC(2026, 0, 7, 12, 0, 0); // Wednesday noon UTC
 
 describe('the notification plan', () => {
-  it('a fresh knight only gets the offline-gold nudge', () => {
+  it('a fresh knight gets the full-chest nudge and a comeback nudge', () => {
     const gs = new GameState();
     const plan = planNotifications(gs, NOW);
-    expect(plan.map((n) => n.id)).toEqual([3]);
-    expect(plan[0].at).toBe(NOW + OFFLINE_NUDGE_HOURS * 3_600_000);
+    expect(plan.map((n) => n.id)).toEqual([3, 4]);
+    // The chest nudge fires exactly when offline earnings hit the cap
+    const chest = plan.find((n) => n.id === 3)!;
+    expect(chest.at).toBe(NOW + gs.offlineCapHours * 3_600_000);
+    // The streak nudge lands just under a day out
+    const comeback = plan.find((n) => n.id === 4)!;
+    expect(comeback.at).toBe(NOW + COMEBACK_NUDGE_HOURS * 3_600_000);
   });
 
   it('a travelling pet schedules its homecoming a minute after arrival', () => {
@@ -24,7 +29,7 @@ describe('the notification plan', () => {
     const plan = planNotifications(gs, NOW);
     const pet = plan.find((n) => n.id === 1)!;
     expect(pet.at).toBe(NOW + 4 * 3_600_000 + 60_000);
-    expect(pet.body).toContain('DIRE PUP');
+    expect(pet.title).toContain('DIRE PUP');
   });
 
   it('an already-returned pet is not re-announced', () => {

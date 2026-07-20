@@ -78,6 +78,28 @@ export const STARTER_PACK: IapProduct & { gems: number; goldMinutes: number } = 
   kind: 'nonconsumable',
 };
 
+/** Founder's Pack: the one-time first-purchase offer shown to a player on
+ * their 2nd-3rd session and only for a 48h window. Guaranteed contents (no
+ * randomness — a sure-thing steal converts the first dollar best), and the
+ * skin + blade are EXCLUSIVE to this pack, so it can't cannibalise the
+ * premium catalogue. Non-consumable: the exclusives persist across restores. */
+export const FOUNDER_PACK: IapProduct & {
+  gems: number;
+  skinId: string;
+  swordId: string;
+  /** How long the offer stays open once first shown, in hours. */
+  windowHours: number;
+} = {
+  sku: 'founder_pack',
+  priceUsd: 1.99,
+  title: "FOUNDER'S PACK",
+  kind: 'nonconsumable',
+  gems: 300,
+  skinId: 'founder',
+  swordId: 'founderblade',
+  windowHours: 48,
+};
+
 /** Removes interstitial ad breaks. Rewarded (opt-in) ads stay. */
 export const REMOVE_ADS: IapProduct = {
   sku: 'remove_ads',
@@ -146,6 +168,7 @@ export const ALL_PRODUCTS: IapProduct[] = [
   ...GOLD_PACKS,
   ...BUNDLES,
   STARTER_PACK,
+  FOUNDER_PACK,
   REMOVE_ADS,
   GOLDEN_KNIGHT,
   PIGGY.product,

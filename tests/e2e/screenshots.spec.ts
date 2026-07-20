@@ -18,6 +18,7 @@ declare global {
 test.beforeEach(async ({ page }) => {
   // Pre-mark the tutorial as done so suites test the normal UI
   await page.addInitScript(() => localStorage.setItem('pawsblades_tutorial_done', '1'));
+  await page.addInitScript(() => localStorage.setItem('pawsblades_nopopups', '1'));
   await page.goto('/');
   await page.waitForFunction(
     () => (window as unknown as { __titleReady?: boolean }).__titleReady === true,

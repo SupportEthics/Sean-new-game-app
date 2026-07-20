@@ -4,16 +4,15 @@
 // stamped into prefs the moment it's shown or skipped.
 
 export const WHATS_NEW = {
-  key: 'whatsnew_1_0_5',
-  title: 'THE KINGDOM UPDATE',
+  key: 'whatsnew_1_0_6',
+  title: 'A HERO IS BORN',
   subtitle: 'NEW SINCE YOUR LAST VISIT:',
   lines: [
-    'TAP THE ARENA TO STRIKE FASTER',
-    'WALK YOUR TOWN - UPGRADE THE KEEP',
-    'THE ENDGAME IS 3X BIGGER',
-    'SWORDS NOW CLIMB TO TIER 500',
-    'HIGHER TOWN, PET + FORGE CAPS',
-    'YOUR PHONE RUMBLES ON BIG HITS',
+    'CLAIM 7 DAYS OF RECRUIT GIFTS',
+    'A FATTER DAY-7 LOGIN JACKPOT',
+    "GRAB THE ONE-TIME FOUNDER'S PACK",
+    'AN EXCLUSIVE KNIGHT + BLADE',
+    'SHARPER COME-BACK REMINDERS',
   ],
   button: 'TO BATTLE!',
 } as const;

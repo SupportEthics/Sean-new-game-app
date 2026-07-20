@@ -825,6 +825,39 @@
         "aura": "#8ee8ff58"
       },
       "goldBonus": 0.05
+    },
+    {
+      "id": "founder",
+      "name": "Founder's Aegis",
+      "rarity": "legendary",
+      "unlock": {
+        "type": "special",
+        "label": "FOUNDER'S PACK"
+      },
+      "dpsBonus": 0.05,
+      "art": {
+        "armor": [
+          "#c9a6ff",
+          "#8a5cd0",
+          "#4a2e8a"
+        ],
+        "trim": [
+          "#ffe8a0",
+          "#e8a53c"
+        ],
+        "cape": [
+          "#6a2a8a",
+          "#3a1560"
+        ],
+        "plume": "crown",
+        "plumeColor": [
+          "#ffe86b",
+          "#ffd166"
+        ],
+        "visor": "#ffe86b",
+        "aura": "#b98cff66"
+      },
+      "goldBonus": 0.05
     }
   ]
 }

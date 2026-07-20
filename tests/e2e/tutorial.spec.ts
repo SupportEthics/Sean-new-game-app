@@ -11,6 +11,7 @@ declare global {
 }
 
 test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('pawsblades_nopopups', '1'));
   await page.goto('/');
   await page.waitForFunction(() => window.__titleReady === true);
   await page.mouse.click(195, 500);

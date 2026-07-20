@@ -181,6 +181,8 @@ export class SkinsPanel extends Phaser.Scene {
         return { text: `STAGE ${def.unlock.stage}`, tint: 0x7a4ac8 };
       case 'iap':
         return { text: this.iap.getPriceLabel(def.unlock.sku), tint: 0x2e7a1e };
+      case 'special':
+        return { text: def.unlock.label, tint: 0x9b7ede };
     }
   }
 
@@ -280,8 +282,11 @@ export class SkinsPanel extends Phaser.Scene {
     });
 
     for (const sword of PREMIUM_SWORDS) {
-      const key = premiumSkinKey(sword.id);
       const owned = this.gs.ownedPremiumSwords.includes(sword.id);
+      // Bundle-exclusive blades (Founder's Blade) never appear in the shop —
+      // only once earned via their pack do they show as an equippable card.
+      if (sword.founderOnly && !owned) continue;
+      const key = premiumSkinKey(sword.id);
       const equipped = cur === key;
       entries.push({
         key,

@@ -8,7 +8,7 @@ import type { LocalNotificationsPlugin } from '@capacitor/local-notifications';
 import { GameState } from '../core/GameState';
 import { planNotifications } from '../core/NotificationPlan';
 
-const ALL_IDS = [1, 2, 3];
+const ALL_IDS = [1, 2, 3, 4];
 const ASKED_KEY = 'pawsblades_notif_asked';
 
 let ln: LocalNotificationsPlugin | null = null;

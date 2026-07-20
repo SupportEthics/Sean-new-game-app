@@ -1060,6 +1060,35 @@ function dragonCleaver() {
   return out;
 }
 
+// Founder's Blade — the Founder's Pack exclusive. A regal broadsword: a
+// bright amethyst blade down the centre, gold crossguard with winged quillons
+// and a crowned pommel gem. Reads as "the first champion's" weapon.
+function founderSword() {
+  const p = new Pix(24, 28);
+  // Straight tapering blade, violet steel with a white fuller and highlight
+  p.cylRect(10, 1, 4, 16, ['#e6d2ff', '#b98cff', '#6a45c0']);
+  p.tri(10, 1, 14, 1, 12, -2, '#e6d2ff'); // point
+  p.rect(11, 2, 1, 14, '#f4ecff'); // fuller shine
+  p.set(12, 4, '#ffffff');
+  p.set(12, 9, '#ffffff');
+  // Gold winged crossguard sweeping up at the tips
+  p.rect(6, 17, 12, 2, '#ffd166');
+  p.rect(6, 17, 12, 1, '#ffe8a0');
+  p.tri(6, 18, 3, 15, 7, 18, '#ffd166');
+  p.tri(18, 18, 21, 15, 17, 18, '#ffd166');
+  p.set(4, 16, '#ffe8a0');
+  p.set(19, 16, '#ffe8a0');
+  // Wrapped grip
+  for (let y = 0; y < 5; y++) p.rect(11, 19 + y, 2, 1, y % 2 ? '#4a2e8a' : '#6a45c0');
+  // Crowned pommel with a bright gem
+  p.domeEllipse(12, 25, 2.5, 2, ['#ffe8a0', '#ffd166', '#c9961e']);
+  p.set(12, 25, '#b98cff');
+  const out = pad(p, 2);
+  out.outline();
+  out.halo('#b98cff98');
+  return out;
+}
+
 // ---------- Tier 26-75 arsenal (Sean: triple the weapon art) ----------
 // Ten material bands of five weapons each, alternating two class sets so
 // maces, spears, axes, lances, greatswords, flails, tridents, halberds,
@@ -2044,9 +2073,10 @@ writeSheet(`${OUT}/town-jeweler.png`, [townJeweler()], 1);
 writeSheet(`${OUT}/town-tree.png`, [townTree()], 1);
 writeSheet(`${OUT}/town-lamp.png`, [townLamp()], 1);
 writeSheet(`${OUT}/town-statue.png`, [townStatue(0), townStatue(1)], 1);
-// 25 tier blades + 50 arsenal weapons (tiers 26-75) + the 3 premium IAP
-// weapons (frames 75-77 — swordSkins.ts derives them from weaponArtCount)
-writeSheet(`${OUT}/gear.png`, [...WEAPONS.map(weapon), ...ARSENAL.map((f) => f()), scythe(), voidKatana(), dragonCleaver()], 2);
+// 25 tier blades + 50 arsenal weapons (tiers 26-75) + the premium IAP
+// weapons: frames 75-77 (scythe/katana/cleaver) then 78 the Founder's Blade
+// — swordSkins.ts derives all of them from weaponArtCount.
+writeSheet(`${OUT}/gear.png`, [...WEAPONS.map(weapon), ...ARSENAL.map((f) => f()), scythe(), voidKatana(), dragonCleaver(), founderSword()], 2);
 writeSheet(
   `${OUT}/deco.png`,
   [deadTree(), skullProp(), rockProp(), stuckSword(), boneProp(), bushProp(), crateProp()],

@@ -124,6 +124,36 @@ uncovers the ladder to the next, richer cave. mine.png frames:
 0 vein / 1 crystal / 2 fuel / 3 ladder / 4 rubble / 5 pickaxe /
 6 chest / 7 hoard. Loot banks via GameState.bankMine on exit.
 
+2026-07-20 New-player retention + first-purchase wave (save v33
+onboardingDay/onboardingLastDay/sessionCount/founderPackOwned/
+founderPackExpiresAt; whatsnew_1_0_6 'A HERO IS BORN'; ships in 1.0.6):
+(1) **New-recruit welcome ramp** (config/onboarding.ts ONBOARDING_REWARDS,
+a one-time escalating 7-day gift track separate from the login cycle,
+aimed at first-week retention; GameState onboardingReady/claimOnboarding/
+todaysOnboardingReward/onboardingComplete, one claim per UTC day, missed
+days pause not reset; UIScene.maybeShowWelcome popup 'RECRUIT REWARDS'
+chains after the daily-login popup — existing players get it too as a
+re-engagement gift). (2) **Founder's Pack** (config/monetization.ts
+FOUNDER_PACK, the £1.99 one-time first-purchase offer: a GUARANTEED
+exclusive skin 'founder' (Founder's Aegis — skins.json unlock.type
+'special', bundle-only, purple+gold crowned knight) + exclusive blade
+'founderblade' (swordSkins.ts founderOnly, gear frame 78) + 300 gems, all
+kept OUT of the shop so they can't cannibalise the premium catalogue;
+shown from the 2nd session onward for a 48h window via
+GameState.founderOfferAvailable/startFounderOfferWindow + sessionCount
+bumped each boot in main.ts; UIScene.maybeShowFounderOffer popup with the
+two exclusives previewed, countdown + BUY; fulfillProduct/applyRestoredSkus
+grant the exclusives, gems are consumable-only on restore). (3) **Juicier
+day-7 login** (loginRewards.ts: whole week nudged up, day 7 is a jackpot —
+75 gems + 120 min gold + free egg). (4) **Sharper push notifications**
+(NotificationPlan.ts: specific, greedy, loss-framed copy + a 4th slot; the
+offline nudge now fires exactly at gs.offlineCapHours when the chest maxes
+out, plus a comeback/streak nudge ~23h out; Notifications.ts ALL_IDS
+1-4). E2e suites set localStorage pawsblades_nopopups=1 so the retention
+popups never cover the UI they drive; dev hooks __game.openWelcome/
+openFounder. Founder skin auto-generates from skins.json; the blade is a
+new founderSword() in generate-assets.mjs (gear.png now 79 frames).
+
 ## Commands
 
 - `npm run dev` — Vite dev server on :5173 (game is fully playable in browser)
