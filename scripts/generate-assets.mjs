@@ -1065,11 +1065,13 @@ function dragonCleaver() {
 // and a crowned pommel gem. Reads as "the first champion's" weapon.
 function founderSword() {
   const p = new Pix(24, 28);
-  // Straight tapering blade, violet steel with a white fuller and highlight
-  p.cylRect(10, 1, 4, 16, ['#e6d2ff', '#b98cff', '#6a45c0']);
-  p.tri(10, 1, 14, 1, 12, -2, '#e6d2ff'); // point
-  p.rect(11, 2, 1, 14, '#f4ecff'); // fuller shine
-  p.set(12, 4, '#ffffff');
+  // Blade tapers from a wide base at the guard to a sharp point — two halves
+  // meeting at a bright central fuller, so it reads as keen, not squared off.
+  p.tri(9, 17, 12, 17, 12, -4, '#8a5cd0'); // left half (shadowed)
+  p.tri(12, 17, 15, 17, 12, -4, '#c9a6ff'); // right half (lit)
+  p.line(12, 16, 12, -4, '#f4ecff'); // fuller shine straight to the tip
+  p.set(12, -3, '#ffffff'); // point gleam
+  p.set(12, 3, '#ffffff');
   p.set(12, 9, '#ffffff');
   // Gold winged crossguard sweeping up at the tips
   p.rect(6, 17, 12, 2, '#ffd166');
