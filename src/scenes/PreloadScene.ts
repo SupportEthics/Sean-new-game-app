@@ -83,7 +83,7 @@ export class PreloadScene extends Phaser.Scene {
     this.load.spritesheet('town-smith', assetUrl('assets/town-smith.png'), { frameWidth: 76, frameHeight: 64 });
     this.load.image('town-mine', assetUrl('assets/town-mine.png'));
     this.load.image('town-jeweler', assetUrl('assets/town-jeweler.png'));
-    this.load.image('town-photo', assetUrl('assets/town-photo.jpg'));
+    this.load.image('town-photo', assetUrl('assets/town-full.png'));
     this.load.image('town-tree', assetUrl('assets/town-tree.png'));
     this.load.image('town-lamp', assetUrl('assets/town-lamp.png'));
     this.load.spritesheet('town-statue', assetUrl('assets/town-statue.png'), { frameWidth: 38, frameHeight: 50 });

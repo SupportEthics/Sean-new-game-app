@@ -5,7 +5,7 @@ import { GameState } from '../core/GameState';
 import { audio } from '../services/AudioService';
 import { THEME } from '../ui/theme';
 
-/** A tappable building on the photo backdrop: id + centre + hit size. */
+/** A tappable building on the artwork: id + centre + hit size. */
 interface TownPlace {
   id: string;
   x: number;
@@ -14,27 +14,17 @@ interface TownPlace {
   h: number;
 }
 
-// The reference-art town is a single hand-illustrated screen. It ships as one
-// image with its own header + footer baked in. It's squarer than the phone,
-// so we mount it full-width at the top (reusing its lovely header), crop its
-// baked footer, and let a grassy approach fill below — one continuous village.
-// Buildings are invisible tap zones over the art; the upgrade cards show the
-// real live numbers. Positions are fractions of the photo's on-screen rect.
-const PHOTO_W = THEME.width; // 390 — art mounted at full width
-const PHOTO_SRC_W = 1320;
-const PHOTO_SRC_H = 1854;
-const PHOTO_H = Math.round((PHOTO_W * PHOTO_SRC_H) / PHOTO_SRC_W); // ~547
-// Crop the baked footer bar off the bottom so ours sits at the true screen foot
-const FOOTER_SRC = 96;
-const PHOTO_VIS_H = Math.round((PHOTO_W * (PHOTO_SRC_H - FOOTER_SRC)) / PHOTO_SRC_W);
-
+// The town is one full-screen illustration (Sean's art). It's phone-shaped,
+// so it fills the screen edge-to-edge — no procedural grass. Buildings are
+// invisible tap zones over the art; each opens its existing upgrade card
+// with the real live numbers. Positions are fractions of the screen.
 const PLACES_FRAC: { id: string; fx: number; fy: number; fw: number; fh: number }[] = [
-  { id: 'keep', fx: 0.5, fy: 0.225, fw: 0.62, fh: 0.19 },
-  { id: 'farm', fx: 0.2, fy: 0.42, fw: 0.34, fh: 0.15 },
-  { id: 'blacksmith', fx: 0.78, fy: 0.42, fw: 0.34, fh: 0.15 },
-  { id: 'soulforge', fx: 0.47, fy: 0.63, fw: 0.24, fh: 0.14 },
-  { id: 'mine', fx: 0.17, fy: 0.83, fw: 0.3, fh: 0.15 },
-  { id: 'jeweler', fx: 0.78, fy: 0.85, fw: 0.32, fh: 0.15 },
+  { id: 'keep', fx: 0.5, fy: 0.16, fw: 0.66, fh: 0.15 },
+  { id: 'farm', fx: 0.2, fy: 0.3, fw: 0.36, fh: 0.14 },
+  { id: 'blacksmith', fx: 0.78, fy: 0.3, fw: 0.36, fh: 0.14 },
+  { id: 'soulforge', fx: 0.49, fy: 0.455, fw: 0.26, fh: 0.12 },
+  { id: 'mine', fx: 0.18, fy: 0.575, fw: 0.32, fh: 0.14 },
+  { id: 'jeweler', fx: 0.78, fy: 0.585, fw: 0.34, fh: 0.14 },
 ];
 
 export class TownScene extends Phaser.Scene {
@@ -54,26 +44,19 @@ export class TownScene extends Phaser.Scene {
     this.gs = this.registry.get('gs') as GameState;
     this.cardLayer = null;
 
-    // Grassy field behind everything (matches the photo's grass so the
-    // approach below the art blends into one continuous meadow).
-    this.add.rectangle(THEME.width / 2, THEME.height / 2, THEME.width, THEME.height, 0x4e7f3c);
-    this.buildForeground();
-
-    // The illustrated town, mounted full-width at the top, baked footer cropped.
+    // The full-screen illustrated town.
     this.add
-      .image(THEME.width / 2, 0, 'town-photo')
-      .setOrigin(0.5, 0)
-      .setDisplaySize(PHOTO_W, PHOTO_H)
-      .setCrop(0, 0, PHOTO_SRC_W, PHOTO_SRC_H - FOOTER_SRC)
-      .setDepth(10);
+      .image(THEME.width / 2, THEME.height / 2, 'town-photo')
+      .setDisplaySize(THEME.width, THEME.height)
+      .setDepth(0);
 
-    // Tappable building zones from the photo fractions
+    // Tappable building zones over the art
     this.places = PLACES_FRAC.map((p) => ({
       id: p.id,
-      x: p.fx * PHOTO_W,
-      y: p.fy * PHOTO_H,
-      w: p.fw * PHOTO_W,
-      h: p.fh * PHOTO_H,
+      x: p.fx * THEME.width,
+      y: p.fy * THEME.height,
+      w: p.fw * THEME.width,
+      h: p.fh * THEME.height,
     }));
     for (const place of this.places) {
       this.add
@@ -115,74 +98,32 @@ export class TownScene extends Phaser.Scene {
     this.gemLabel.setText(`${this.gs.gems}`);
   }
 
-  // ---- grassy approach that fills below the (squarer) artwork ----
-
-  private buildForeground(): void {
-    const g = this.add.graphics().setDepth(1);
-    // grass tufts
-    for (let i = 0; i < 260; i++) {
-      const x = (i * 97) % THEME.width;
-      const y = PHOTO_VIS_H - 10 + ((i * 53) % (THEME.height - PHOTO_VIS_H + 10));
-      g.fillStyle(i % 3 === 0 ? 0x437034 : i % 3 === 1 ? 0x5c9048 : 0x6aa456, 1);
-      g.fillRect(x, y, 3, 3);
-    }
-    // central cobble path continuing down from the castle gate
-    const px = THEME.width / 2;
-    g.fillStyle(0xb6a06e);
-    g.fillRect(px - 22, PHOTO_VIS_H - 16, 44, THEME.height - PHOTO_VIS_H + 16);
-    g.fillStyle(0x9a835a);
-    for (let y = PHOTO_VIS_H - 12; y < THEME.height; y += 8) g.fillRect(px - 22, y, 44, 2);
-    for (let x = px - 20; x < px + 22; x += 8) g.fillStyle(0x8a744a), g.fillRect(x, PHOTO_VIS_H - 16, 1, THEME.height - PHOTO_VIS_H + 16);
-
-    // trees + bushes lining the approach (drawn clear of the path)
-    for (const [tx, ty, sc] of [
-      [30, PHOTO_VIS_H + 30, 1.2], [116, PHOTO_VIS_H + 96, 1.0], [360, PHOTO_VIS_H + 34, 1.2],
-      [278, PHOTO_VIS_H + 100, 1.0], [64, PHOTO_VIS_H + 150, 0.95], [330, PHOTO_VIS_H + 150, 0.95],
-    ] as [number, number, number][]) {
-      if (this.textures.exists('town-tree')) this.add.image(tx, ty, 'town-tree').setScale(sc).setDepth(ty);
-    }
-
-    // the player's knight, standing on the approach path
-    const skin = this.gs.activeSkin;
-    const tex = this.textures.exists(`hero-${skin}`) ? `hero-${skin}` : 'hero-squire';
-    const knight = this.add.image(px, PHOTO_VIS_H + 78, tex, 0).setScale(0.7).setDepth(PHOTO_VIS_H + 90);
-    void knight;
-  }
-
-  // ---- HUD: an opaque header over the photo's baked one, with live numbers ----
+  // ---- HUD: an opaque header over the art's baked one, with live numbers ----
 
   private buildHud(): void {
-    // Cover the photo's static header entirely so nothing double-shows.
-    this.add.rectangle(THEME.width / 2, 34, THEME.width, 68, 0x14101c).setDepth(2000);
-    this.add.rectangle(THEME.width / 2, 68, THEME.width, 2, 0x6e5a2e).setDepth(2000);
-    this.add.bitmapText(12, 8, 'pix', 'THE TOWN', 16).setTint(THEME.gold).setDepth(2001);
-    this.add.bitmapText(12, 30, 'pix', 'YOUR PEOPLE WORK WHILE YOU FIGHT', 8).setTint(0xb8935a).setDepth(2001);
+    // Cover the art's static header so the currency + LEAVE are live.
+    this.add.rectangle(THEME.width / 2, 30, THEME.width, 60, 0x14101c).setDepth(2000);
+    this.add.rectangle(THEME.width / 2, 60, THEME.width, 2, 0x6e5a2e).setDepth(2000);
+    this.add.bitmapText(12, 6, 'pix', 'THE TOWN', 16).setTint(THEME.gold).setDepth(2001);
+    this.add.bitmapText(12, 27, 'pix', 'YOUR PEOPLE. YOUR LEGEND.', 8).setTint(0xb8935a).setDepth(2001);
 
-    this.add.circle(20, 54, 6, 0xffd166).setDepth(2001);
-    this.goldLabel = this.add.bitmapText(32, 49, 'pix', '0', 8).setTint(0xe6dec8).setDepth(2001);
+    this.add.circle(20, 48, 6, 0xffd166).setDepth(2001);
+    this.goldLabel = this.add.bitmapText(32, 43, 'pix', '0', 8).setTint(0xe6dec8).setDepth(2001);
     const gem = this.add.graphics().setDepth(2001);
     gem.fillStyle(0x6ee3ff);
     gem.fillPoints(
-      [new Phaser.Geom.Point(136, 48), new Phaser.Geom.Point(142, 54), new Phaser.Geom.Point(136, 60), new Phaser.Geom.Point(130, 54)],
+      [new Phaser.Geom.Point(136, 42), new Phaser.Geom.Point(142, 48), new Phaser.Geom.Point(136, 54), new Phaser.Geom.Point(130, 48)],
       true,
     );
-    this.gemLabel = this.add.bitmapText(150, 49, 'pix', '0', 8).setTint(0xe6dec8).setDepth(2001);
+    this.gemLabel = this.add.bitmapText(150, 43, 'pix', '0', 8).setTint(0xe6dec8).setDepth(2001);
 
     const leave = this.add
-      .rectangle(THEME.width - 44, 40, 78, 30, 0x3a3244)
+      .rectangle(THEME.width - 44, 34, 78, 30, 0x3a3244)
       .setStrokeStyle(2, 0x8a7d60)
       .setDepth(2001)
       .setInteractive({ useHandCursor: true });
-    this.add.bitmapText(THEME.width - 44, 40, 'pix', 'LEAVE', 8).setOrigin(0.5).setDepth(2002);
+    this.add.bitmapText(THEME.width - 44, 34, 'pix', 'LEAVE', 8).setOrigin(0.5).setDepth(2002);
     leave.on('pointerdown', () => this.scene.stop());
-
-    // Footer prompt at the true screen foot
-    this.add.rectangle(THEME.width / 2, THEME.height - 20, THEME.width, 28, 0x14101c, 0.86).setDepth(2000);
-    this.add
-      .bitmapText(THEME.width / 2, THEME.height - 20, 'pix', 'TAP A BUILDING TO UPGRADE', 8)
-      .setOrigin(0.5)
-      .setTint(0x9a8d6e)
-      .setDepth(2001);
   }
 
   private refreshVault(): void {
