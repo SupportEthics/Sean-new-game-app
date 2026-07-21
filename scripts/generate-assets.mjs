@@ -1704,6 +1704,245 @@ function townStatue(f) {
   return out;
 }
 
+// ---------- Extra town dressing for the single-screen village ----------
+
+function townWindmill() {
+  const p = new Pix(46, 62);
+  // round stone tower
+  p.cylRect(12, 26, 22, 32, ['#cdb890', '#a88f64', '#7a6544']);
+  p.noise(12, 28, 22, 28, '#8a7452', 7, 41);
+  // conical timber cap
+  p.tri(7, 28, 39, 28, 23, 12, '#6a4a2e');
+  p.tri(11, 26, 35, 26, 23, 14, '#8a5a2e');
+  // door + lit windows
+  p.rect(19, 46, 8, 12, '#5c3a1c');
+  p.rect(20, 47, 6, 10, '#3a2412');
+  p.rect(15, 34, 5, 5, '#ffd166');
+  p.rect(26, 34, 5, 5, '#ffd166');
+  // sail hub + four cloth blades
+  for (const [dx, dy] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    p.line(23, 22, 23 + dx * 17, 22 + dy * 17, '#efe6d0');
+    p.line(23 + dx, 22, 23 + dx * 16, 22 + dy * 15, '#c7bca0');
+    p.line(23 + dx * 4, 22 + dy * 4, 23 + dx * 4 + dy * 4, 22 + dy * 4 - dx * 4, '#8a744a');
+  }
+  p.set(23, 22, '#3a2412');
+  const out = pad(p, 2);
+  out.outline();
+  return out;
+}
+
+function townWell() {
+  const p = new Pix(30, 36);
+  // stone ring + water
+  p.domeEllipse(15, 26, 13, 7, ['#b8b2c6', '#8a8598', '#6e6a80']);
+  p.ellipse(15, 24, 10, 4, '#20304a');
+  p.ellipse(15, 24, 8, 3, '#3a6a8a');
+  p.noise(3, 22, 24, 10, '#9a94ac', 6, 42);
+  // posts + little roof
+  p.rect(4, 5, 2, 18, '#5c3a1c');
+  p.rect(24, 5, 2, 18, '#5c3a1c');
+  p.tri(1, 9, 29, 9, 15, 1, '#b03a2e');
+  p.rect(2, 8, 26, 2, '#7a2418');
+  p.line(15, 10, 15, 17, '#8a744a');
+  p.rect(13, 17, 4, 4, '#8a5a2e'); // bucket
+  const out = pad(p, 2);
+  out.outline();
+  return out;
+}
+
+function townFountain() {
+  const p = new Pix(52, 48);
+  // octagonal stone basin
+  p.domeEllipse(26, 38, 24, 9, ['#b8b2c6', '#8a8598', '#6e6a80']);
+  p.rect(4, 34, 44, 5, '#8a8598');
+  p.ellipse(26, 34, 19, 5, '#2a5070'); // water
+  p.ellipse(26, 34, 15, 4, '#4c92c4');
+  p.set(20, 33, '#bfe6ff');
+  p.set(31, 34, '#bfe6ff');
+  // central pillar
+  p.cylRect(22, 18, 8, 16, ['#b8b2c6', '#8a8598', '#6e6a80']);
+  // floating purple soul crystal
+  p.tri(26, 2, 19, 16, 26, 22, '#b47cf0');
+  p.tri(26, 2, 33, 16, 26, 22, '#7a3ec0');
+  p.line(26, 4, 26, 20, '#e2ccff');
+  p.set(26, 7, '#ffffff');
+  const out = pad(p, 2);
+  out.outline();
+  out.halo('#a066e055');
+  return out;
+}
+
+function townBanner() {
+  const p = new Pix(16, 44);
+  p.rect(7, 2, 2, 40, '#3a2a1e'); // pole
+  p.set(8, 1, '#ffd166'); // finial
+  p.rect(9, 5, 6, 18, '#b03a2e'); // hanging banner
+  p.tri(9, 23, 15, 23, 12, 27, '#b03a2e');
+  p.rect(9, 5, 6, 2, '#7a2418');
+  // gold lion-rampant hint
+  p.set(11, 10, '#ffd166');
+  p.set(12, 11, '#ffd166');
+  p.set(11, 13, '#ffd166');
+  p.set(12, 15, '#ffd166');
+  const out = pad(p, 2);
+  out.outline();
+  return out;
+}
+
+function townBush() {
+  const p = new Pix(20, 15);
+  p.domeEllipse(10, 9, 9, 6, ['#5a9a52', '#3a7a3e', '#2a5a30']);
+  p.set(5, 6, '#78b468');
+  p.set(14, 7, '#78b468');
+  p.set(8, 8, '#ff6a9a');
+  p.set(12, 10, '#ffd166');
+  const out = pad(p, 2);
+  out.outline();
+  return out;
+}
+
+// Draw helpers that paint straight onto the scene canvas ------------------
+
+function grassBase(s) {
+  s.rect(0, 0, s.w, s.h, '#4e7f3c');
+  s.noise(0, 0, s.w, s.h, '#3f6a30', 3, 51);
+  s.noise(0, 0, s.w, s.h, '#5c9048', 4, 52);
+  s.noise(0, 0, s.w, s.h, '#6fa456', 7, 53);
+}
+
+function cobblePath(s, x, y, w, h) {
+  s.rect(x, y, w, h, '#b6a06e');
+  s.rect(x, y, w, 1, '#c9b684');
+  s.noise(x, y, w, h, '#9a835a', 5, 54);
+  s.noise(x, y, w, h, '#8a744a', 8, 55);
+  // faint cobble seams
+  for (let gy = y + 4; gy < y + h; gy += 6) s.rect(x, gy, w, 1, '#8a744a');
+  for (let gx = x + 5; gx < x + w; gx += 7) s.rect(gx, y, 1, h, '#8a744a');
+}
+
+function fenceH(s, x, y, w) {
+  s.rect(x, y + 2, w, 2, '#7a5230');
+  s.rect(x, y + 7, w, 2, '#5c3a1c');
+  for (let px = x; px <= x + w; px += 13) {
+    s.rect(px, y, 3, 12, '#6b4423');
+    s.rect(px, y, 1, 12, '#8a6a3a');
+  }
+}
+
+function fenceV(s, x, y, h) {
+  for (let py = y; py <= y + h; py += 13) {
+    s.rect(x, py, 12, 3, '#6b4423');
+    s.rect(x, py, 12, 1, '#8a6a3a');
+  }
+  s.rect(x + 2, y, 2, h, '#7a5230');
+  s.rect(x + 7, y, 2, h, '#5c3a1c');
+}
+
+function wheatField(s, x, y, w, h) {
+  s.rect(x, y, w, h, '#6a4a24');
+  s.noise(x, y, w, h, '#553a1c', 5, 56);
+  for (let wx = x + 2; wx < x + w - 1; wx += 4) {
+    for (let wy = y + 3; wy < y + h; wy += 3) {
+      s.rect(wx, wy, 1, 4, '#d9b24a');
+      s.set(wx, wy - 1, '#f0d070');
+    }
+  }
+}
+
+function vegRows(s, x, y, w, h) {
+  s.rect(x, y, w, h, '#5a3e20');
+  for (let ry = y + 2; ry < y + h; ry += 4) {
+    for (let rx = x + 1; rx < x + w; rx += 3) {
+      s.set(rx, ry, '#4e9a3e');
+      s.set(rx, ry - 1, '#6fbf54');
+    }
+  }
+}
+
+function flowers(s, x, y, n, seed) {
+  const cols = ['#ff6a9a', '#ffd166', '#6ec8ff', '#ffffff', '#e86aff'];
+  let r = seed >>> 0;
+  const rnd = () => ((r = (r * 1103515245 + 12345) & 0x7fffffff), r);
+  for (let i = 0; i < n; i++) {
+    const fx = x + (rnd() % 26);
+    const fy = y + (rnd() % 14);
+    const c = cols[rnd() % cols.length];
+    s.set(fx, fy, c);
+    s.set(fx, fy - 1, c);
+    s.set(fx - 1, fy, shade(c, 0.7));
+    s.set(fx, fy + 1, '#2a5a30');
+  }
+}
+
+// Compose the whole single-screen village (390x844) for the mockup / scene.
+function composeTownScene() {
+  const s = new Pix(390, 844);
+  grassBase(s);
+
+  // Cobblestone cross-paths: a spine down the middle + two rungs
+  cobblePath(s, 178, 150, 34, 650);
+  cobblePath(s, 24, 356, 342, 28);
+  cobblePath(s, 24, 636, 342, 28);
+
+  // Framing trees around the edges
+  for (const [x, y] of [[0, 150], [356, 150], [0, 470], [356, 470], [2, 700], [356, 700], [40, 130], [316, 132]]) {
+    s.stamp(townTree(), x, y);
+  }
+
+  // THE KNIGHTS KEEP — top centre
+  s.stamp(townCastle(2), 116, 120);
+  s.stamp(townBanner(), 96, 210);
+  s.stamp(townBanner(), 280, 210);
+
+  // FARM (top-left, fenced): barn + windmill + well + fields + farmer
+  fenceH(s, 16, 292, 158);
+  fenceH(s, 16, 388, 158);
+  fenceV(s, 16, 292, 100);
+  fenceV(s, 162, 292, 100);
+  vegRows(s, 22, 356, 40, 28);
+  wheatField(s, 96, 352, 64, 34);
+  s.stamp(townBarn(), 20, 300);
+  s.stamp(townWindmill(), 104, 300);
+  s.stamp(townWell(), 70, 348);
+
+  // BLACKSMITH (top-right, fenced)
+  fenceH(s, 216, 292, 158);
+  fenceH(s, 216, 388, 158);
+  fenceV(s, 216, 292, 100);
+  fenceV(s, 362, 292, 100);
+  s.stamp(townBanner(), 224, 300);
+  s.stamp(townSmith(true), 286, 300);
+
+  // THE SOULFORGE — centre fountain, flanked by lamps
+  s.stamp(townLamp(), 150, 452);
+  s.stamp(townLamp(), 222, 452);
+  s.stamp(townFountain(), 168, 456);
+  // the player knight, waiting by the fountain
+  s.stamp(knight(0, SKINS[0].art), 172, 384);
+
+  // MINE (bottom-left, rocky)
+  s.stamp(townMine(), 16, 600);
+  s.stamp(townBanner(), 150, 690);
+
+  // JEWELER (bottom-right, fenced)
+  fenceH(s, 216, 588, 158);
+  fenceH(s, 216, 696, 158);
+  fenceV(s, 216, 588, 112);
+  fenceV(s, 362, 588, 112);
+  s.stamp(townJeweler(), 296, 600);
+  s.stamp(townBanner(), 224, 604);
+
+  // Lamp posts down the spine + bushes/flowers softening the grass
+  s.stamp(townLamp(), 150, 640);
+  s.stamp(townLamp(), 222, 640);
+  for (const [x, y] of [[70, 500], [300, 500], [50, 780], [300, 782], [176, 806]]) s.stamp(townBush(), x, y);
+  for (const [x, y, seed] of [[60, 480, 7], [300, 470, 11], [130, 560, 13], [250, 560, 17], [40, 760, 19], [320, 760, 23]]) {
+    flowers(s, x, y, 10, seed);
+  }
+
+  return s;
+}
+
 // ---------- Tiles (32x32 logical; floor/wall grayscale for biome tint) ----------
 
 function floorTile(variant) {
@@ -2077,6 +2316,8 @@ writeSheet(`${OUT}/town-jeweler.png`, [townJeweler()], 1);
 writeSheet(`${OUT}/town-tree.png`, [townTree()], 1);
 writeSheet(`${OUT}/town-lamp.png`, [townLamp()], 1);
 writeSheet(`${OUT}/town-statue.png`, [townStatue(0), townStatue(1)], 1);
+// Single-screen village mockup (390x844) — the reference-style full-screen town
+writeSheet(`${OUT}/town-mockup.png`, [composeTownScene()], 1);
 // 25 tier blades + 50 arsenal weapons (tiers 26-75) + the premium IAP
 // weapons: frames 75-77 (scythe/katana/cleaver) then 78 the Founder's Blade
 // — swordSkins.ts derives all of them from weaponArtCount.
