@@ -1,13 +1,12 @@
 // Native store/ad identifiers — data only.
 //
-// AdMob iOS: Sean's REAL ad units (account ca-app-pub-1071330978490238,
-// app ID in ios/App/App/Info.plist). Android still runs Google's OFFICIAL
-// public test IDs until Sean creates the Android app in the AdMob console
-// (its app ID then also goes into AndroidManifest.xml).
+// AdMob: Sean's REAL ad units on both platforms (account
+// ca-app-pub-1071330978490238; app IDs live in ios/App/App/Info.plist
+// and android/.../AndroidManifest.xml respectively).
 export const ADMOB = {
   android: {
-    rewarded: 'ca-app-pub-3940256099942544/5224354917',
-    interstitial: 'ca-app-pub-3940256099942544/1033173712',
+    rewarded: 'ca-app-pub-1071330978490238/1104733062',
+    interstitial: 'ca-app-pub-1071330978490238/2310003521',
   },
   ios: {
     rewarded: 'ca-app-pub-1071330978490238/4825862946',

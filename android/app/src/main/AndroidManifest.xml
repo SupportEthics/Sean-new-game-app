@@ -9,13 +9,11 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <!-- AdMob application ID. This is Google's PUBLIC TEST app ID; swap
-             it for the real one from the AdMob console before release
-             (docs/GETTING-ON-THE-STORES.md). Without this meta-data the ads
-             SDK crashes the app at launch. -->
+        <!-- Sean's real AdMob app ID (Soulforge Knight Android). Without
+             this meta-data the ads SDK crashes the app at launch. -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-1071330978490238~4100497268" />
 
         <activity
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
