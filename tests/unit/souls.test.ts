@@ -9,7 +9,7 @@ describe('soul relics', () => {
     const might = SOUL_UPGRADES[0];
     expect(soulUpgradeCost(might, 1)).toBeGreaterThan(soulUpgradeCost(might, 0));
     const gs = new GameState();
-    gs.souls = 1e9;
+    gs.souls = 1e13; // enough to climb the full (raised) relic ladder
     for (let i = 0; i < might.maxLevel; i++) expect(gs.buySoulUpgrade('might')).toBe(true);
     expect(gs.buySoulUpgrade('might')).toBe(false); // maxed
     expect(gs.soulUpgradePrice('might')).toBeNull();

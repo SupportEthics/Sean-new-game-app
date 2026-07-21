@@ -3,7 +3,7 @@
 
 export const FAIRY = {
   unlockStage: 10,
-  maxLevel: 100,
+  maxLevel: 200,
   costBase: 1500,
   costGrowth: 1.55,
   /** Additive bonuses per level. */
