@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "929599131702",
+    "project_id": "soulforge-knight",
+    "storage_bucket": "soulforge-knight.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:929599131702:android:89ae8e1b936ceb841f4897",
+        "android_client_info": {
+          "package_name": "uk.co.supportethics.soulforgeknight"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBIx5q8cx_C1_mEIt_mOjIr2f7gT4gcL4s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
