@@ -1,122 +1,204 @@
-# Getting Soulforge Knight onto Google Play
+# Google Play — full setup walkthrough (Soulforge Knight)
 
-The Android app is code-complete: `android/` builds the same game as iOS
-(versionName 1.0.6, versionCode 8), saves mirror to Preferences, and the
-service factory uses AdMob + RevenueCat on device. What remains is
-accounts, IDs and the store listing — Sean's side, with copyable steps
-below.
+Click-by-click, in the order that actually works. Play's console gates
+some steps behind others (you can't create in-app products until a build
+with billing is uploaded), so follow top to bottom.
 
-## 0. Decide the account type (affects the timeline!)
+The Android project is code-complete at **1.0.6 (versionCode 8)** — same
+game as iOS. Ads run Google TEST units and purchases are dormant until
+the real IDs land in `src/config/native.ts` (step 7).
 
-- **Organization account (recommended — Support Ethics LTD):** needs a
-  D-U-N-S number for the company. Check first — many UK LTDs already
-  have one: https://www.dnb.co.uk/duns-number/lookup.html. If not,
-  request one free (typically days, can be longer). Org accounts have
-  **no closed-testing requirement** — you can go straight to production.
-- **Personal account:** instant signup, BUT Google requires new personal
-  accounts to run a **closed test with at least 12 testers for 14 days**
-  before production access. That adds two weeks minimum.
+---
 
-Either way the signup fee is a one-off **$25** at
-https://play.google.com/console/signup.
+## Step 0 — The account decision (sets your timeline)
 
-## 1. Google Play Console setup
+- **Organisation account (recommended — Support Ethics LTD):**
+  Requires a **D-U-N-S number** for the company. Check if you already
+  have one (many UK LTDs do): https://www.dnb.co.uk/duns-number/lookup.html
+  If not, request one free (usually days). Org accounts can publish
+  **straight to production** → live in ~1–2 weeks total.
+- **Personal account:** instant signup, but Google forces new personal
+  accounts to run a **closed test with 12+ testers for 14 days** before
+  production access → ~3–4 weeks total.
 
-1. Create the app: All apps -> Create app -> "Soulforge Knight",
-   Game, Free, declarations as prompted.
-2. Store listing (reuse docs/STORE-LISTING.md):
-   - Short description: `Forge swords. Slay the horde.`
-   - Full description: the same text as the App Store description.
-   - Screenshots: the same PNGs used for the App Store 6.5" set work
-     (Play accepts 9:16-ish portrait up to 19.5:9).
-   - Feature graphic (required, 1024x500):
-     `screenshots/play/play-feature-graphic.png` (regenerate any time
-     with `npx playwright test tests/e2e/_feature-graphic.spec.ts`;
-     gallery shots at 1080x1920 live in `screenshots/play/` via
-     `tests/e2e/_play-assets.spec.ts`).
-   - App icon 512x512: export from `resources/icon.png` (Play Console
-     will ask; it must match the in-app icon).
-3. Content rating questionnaire: category Game; answer honestly
-   (fantasy violence vs pixel monsters, no gambling — the egg odds are
-   disclosed in-game). Expect Everyone 10+ / PEGI 7.
-4. Data safety form (mirror of Apple's App Privacy):
-   - Collected: App interactions (analytics), Advertising ID (AdMob),
-     Purchase history (IAP). All "not shared for tracking you across
-     apps" except advertising which is handled by AdMob's disclosure.
-   - Privacy policy URL: the hosted privacy.html on the Netlify site.
-5. In-app products (Monetize -> Products -> In-app products): create
-   every SKU from the master table in docs/GETTING-ON-THE-STORES.md with
-   the SAME product IDs (soulforge_starter_pack, founder_pack,
-   remove_ads, golden_knight, piggy_crack, knights_pass, the 6 gem packs,
-   4 coin packs, 4 bundles, 5 skins, 3 swords). Prices to match iOS.
-6. The subscription (Monetize -> Products -> Subscriptions): create
-   `knights_membership` with a monthly base plan at £4.99. Play needs a
-   base plan ID too — use `monthly`. Attach it to the same RevenueCat
-   `membership` entitlement as the iOS product so either store unlocks
-   the same perks.
+Fee is a one-off **$25** either way.
 
-## 2. AdMob (Android side)
+## Step 1 — Create the Play Console account
 
-1. AdMob console -> Apps -> Add app -> Android -> link the Play listing
-   once it exists (or add unlinked first).
-2. Create the same ad units as iOS: rewarded x4? no — mirror
-   src/config/native.ts: rewarded, interstitial (and any others listed
-   for ios) and paste the ANDROID app ID + unit IDs into
-   `src/config/native.ts` under the android section.
-3. Replace the TEST application ID in
-   `android/app/src/main/AndroidManifest.xml`
-   (`com.google.android.gms.ads.APPLICATION_ID`) with the real
-   `ca-app-pub-...~...` Android APP id.
-4. app-ads.txt on the website already covers AdMob; no change needed
-   (same publisher ID).
+1. Go to https://play.google.com/console/signup
+2. Sign in with the Google account you want to own the app (use a
+   company Google account if you have one — ownership transfers are a
+   pain later).
+3. Choose **Organisation** or **Yourself** per Step 0, pay the $25, fill
+   in the identity details. Org accounts go through a verification step
+   (D-U-N-S lookup + possibly documents) that can take a few days —
+   start this TODAY, everything else can proceed while it verifies.
 
-## 3. RevenueCat (Android side)
+## Step 2 — Create the app
 
-1. RevenueCat dashboard -> the existing project -> add a Play Store app
-   (needs a service-account JSON from Play Console; RevenueCat's guide
-   walks through it).
-2. Attach the Play products to the existing entitlements/offerings.
-3. Paste the **Google API key** into `src/config/native.ts`.
+1. Play Console → **All apps → Create app**
+2. App name: `Soulforge Knight` · Default language: `English (United
+   Kingdom)` · **App or game:** Game · **Free or paid:** Free
+   (irreversible once published — Free is correct, we monetise via IAP).
+3. Tick both declarations → **Create app**.
 
-## 4. Firebase (optional but free)
+## Step 3 — The "Set up your app" checklist (Dashboard)
 
-Firebase console -> the existing project -> Add app -> Android
-(`uk.co.supportethics.soulforgeknight`) -> download `google-services.json`
--> drop it at `android/app/google-services.json`. The build applies it
-automatically; without it, analytics is silently off (build still works).
+Play's dashboard shows a task list. Work through it:
 
-## 5. Build the signed release (Sean's Mac, ~1 evening)
+1. **Privacy policy:** paste your hosted policy URL (the Netlify site's
+   privacy page).
+2. **App access:** "All functionality is available without special
+   access" (no login).
+3. **Ads:** YES, the app contains ads.
+4. **Content rating:** fill the IARC questionnaire — category **Game**;
+   violence: mild fantasy violence against pixel monsters; no gore, no
+   gambling with real winnings (egg odds are disclosed in-game), no user
+   content, no chat. Expect **PEGI 7 / Everyone 10+**.
+5. **Target audience:** 13+ (avoids the whole Families programme);
+   "not designed for children."
+6. **News app:** No. · **COVID app:** No. · **Data safety** — declare:
+   - **Device or other IDs** (Advertising ID — AdMob): collected, used
+     for advertising, not shared beyond that.
+   - **Purchase history** (RevenueCat receipts): collected, app
+     functionality.
+   - **App interactions** (Firebase Analytics): collected, analytics.
+   - Data is encrypted in transit; users can request deletion via the
+     support email.
+7. **Government app:** No. · **Financial features:** none.
+8. **Store listing** (paste from docs/STORE-LISTING.md):
+   - Short description (80 chars): `Merge swords, hatch pets and slay
+     the horde in a dark idle RPG.`
+   - Full description: the App Store description text.
+   - App icon: **512x512** PNG (export from `resources/icon-1024.png`,
+     scaled — any image tool, or ask Claude for the file).
+   - Feature graphic (**required**, 1024x500):
+     `screenshots/play/play-feature-graphic.png`
+   - Phone screenshots (min 2): the six `screenshots/play/*-1080x1920.jpg`
+   - Regenerate assets any time:
+     `npx playwright test tests/e2e/_play-assets.spec.ts` and
+     `npx playwright test tests/e2e/_feature-graphic.spec.ts`
+9. **Countries:** Production → Countries/regions → add all (or your
+   shortlist).
+
+## Step 4 — AdMob (Android) — do BEFORE the final build
+
+1. https://apps.admob.com → **Apps → Add app → Android**. The Play
+   listing won't be searchable until the app is live — choose "No, the
+   app isn't listed" for now (you link it later via App settings).
+2. Name it `Soulforge Knight (Android)`. Copy the **App ID**
+   (`ca-app-pub-1071330978490238~XXXXXXXXXX`).
+3. Create **2 ad units**: a **Rewarded** unit and an **Interstitial**
+   unit. Copy both unit IDs.
+4. **Send all three IDs to Claude** — they go into:
+   - `src/config/native.ts` (the two unit IDs, android section)
+   - `android/app/src/main/AndroidManifest.xml` (the app ID replaces
+     Google's TEST `APPLICATION_ID`)
+
+## Step 5 — First build + upload (unlocks the products menu)
+
+On the Mac, one command at a time:
 
 ```
-cd ~/Sean-new-game-app
-git pull origin claude/fan-app-monetization-1bugoq
+cd ~/Documents/GitHub/Sean-new-game-app
+```
+```
+git pull
+```
+```
 npm install
-npm run build
-npx cap sync android
-npx cap open android          # opens Android Studio (install it first)
 ```
+```
+npm run build
+```
+```
+npx cap sync android
+```
+```
+npx cap open android
+```
+
+That opens **Android Studio** (install it first from
+https://developer.android.com/studio — first launch downloads a lot).
 
 In Android Studio:
-1. First run: let Gradle sync finish (it downloads a lot; be patient).
-2. Build -> Generate Signed App Bundle -> App Bundle -> Create new
-   keystore. **BACK THE KEYSTORE FILE + PASSWORDS UP SOMEWHERE SAFE —
-   losing it means you can never update the app again.**
-3. Choose `release`, finish. The `.aab` lands under
-   `android/app/release/`.
-4. Upload the .aab in Play Console -> Production (or the closed test
-   track if on a personal account) -> roll out.
+1. Wait for the Gradle sync to finish (bottom status bar; several
+   minutes the first time).
+2. **Build → Generate Signed App Bundle / APK → App Bundle → Next**.
+3. **Create new…** keystore:
+   - Path: somewhere OUTSIDE the repo, e.g.
+     `~/Documents/soulforge-keystore.jks`
+   - Passwords + alias (e.g. alias `soulforge`).
+   - ⚠️ **BACK UP THE .jks FILE AND BOTH PASSWORDS NOW** (password
+     manager + a second location). Losing them means you can NEVER
+     update the app again — Google cannot reset this.
+4. Select **release** → Finish. The `.aab` lands in
+   `android/app/release/app-release.aab`.
+5. Play Console → **Testing → Internal testing → Create new release** →
+   upload the `.aab` → accept Play App Signing → name the release
+   `1.0.6 (8)` → Save/Rollout to internal testing.
+   (Internal testing is instant, needs no review, and unlocks the
+   Monetize menu. Add your own Gmail as a tester to install it.)
 
-## 6. Review + live
+## Step 6 — Create the products (now the menu exists)
 
-Google review is usually 1-3 days for a new app (sometimes hours,
-occasionally a week). After approval, roll out to production and the
-listing goes live within hours.
+**Monetize → Products → In-app products → Create product.** Product IDs
+must match the code EXACTLY — the master table is in
+docs/GETTING-ON-THE-STORES.md. Same prices as iOS:
 
-## Timeline summary
+- One-time (Play has no consumable/non-consumable split; the app
+  handles it): `soulforge_starter_pack` £0.99, `founder_pack` £1.99,
+  `remove_ads` £4.99, `golden_knight` £19.99, `piggy_crack` £2.99,
+  `knights_pass` £4.99, `gems_fistful` £0.99, `gems_pouch` £4.99,
+  `gems_chest` £9.99, `gems_hoard` £19.99, `gems_vault` £49.99,
+  `gems_ransom` £99.99, `coins_sack` £1.99, `coins_wagon` £9.99,
+  `coins_treasury` £49.99, `coins_hoard` £99.99, `bundle_squire` £9.99,
+  `bundle_knight` £19.99, `bundle_royal` £49.99, `bundle_dragon` £99.99,
+  `skin_dragonlord` / `skin_celestial` / `skin_voidreaper` /
+  `skin_sovereign` / `skin_phantomking` £4.99 each, `sword_scythe` /
+  `sword_voidkatana` / `sword_dragoncleaver` £4.99 each.
+  Each needs a name + one-line description → **Activate** it.
+- **Subscription:** Monetize → Products → **Subscriptions** → Create:
+  product ID `knights_membership`, then add a **base plan** with ID
+  `monthly`, auto-renewing, 1 month, £4.99 → Activate.
 
-- Claude code prep: done (this commit).
-- Sean accounts + listings (Play Console, AdMob, RevenueCat, Firebase):
-  1-2 evenings.
-- First signed build + upload: 1 evening (mostly Android Studio setup).
-- Org account with existing D-U-N-S: **live in roughly 1-2 weeks.**
-- Personal account: add the 14-day closed test -> **roughly 3-4 weeks.**
+## Step 7 — RevenueCat (Android)
+
+1. RevenueCat dashboard → the existing **Soulforge Knight** project →
+   **Apps → + New → Play Store**. Package:
+   `uk.co.supportethics.soulforgeknight`.
+2. It asks for a **service account JSON** — follow RevenueCat's inline
+   guide (Google Cloud console → create service account → grant it
+   access in Play Console → Users & permissions → download JSON →
+   upload to RevenueCat). Fiddly but one-time; ~15 minutes.
+3. Attach the Play products to the SAME entitlements as iOS
+   (`knights_membership` → the `membership` entitlement).
+4. Copy the **Google API key** (starts `goog_`) → **send to Claude**
+   for `src/config/native.ts`.
+
+## Step 8 — Firebase (Android analytics, optional but free)
+
+Firebase console → the existing project → **Add app → Android** →
+package `uk.co.supportethics.soulforgeknight` → download
+`google-services.json` → put it at `android/app/google-services.json`.
+Without it the build still works; analytics is just silently off.
+
+## Step 9 — FINAL build + release
+
+After Claude wires the AdMob + RevenueCat IDs (steps 4/7) and bumps
+versionCode to 9: repeat Step 5's commands, generate the signed bundle
+with the SAME keystore, upload to:
+
+- **Org account:** Production → Create new release → rollout. Review is
+  typically 1–3 days for a first release.
+- **Personal account:** Closed testing first — 12+ testers, 14 days —
+  then apply for production access, then promote the release.
+
+## Quick reference — what Claude needs from you
+
+| From | What | Goes into |
+|---|---|---|
+| AdMob | Android App ID (`~` format) | AndroidManifest.xml |
+| AdMob | Rewarded + Interstitial unit IDs | native.ts |
+| RevenueCat | Google API key (`goog_...`) | native.ts |
+| (optional) Firebase | google-services.json | android/app/ |
