@@ -74,8 +74,10 @@ export const PREMIUM_SWORDS: readonly PremiumSword[] = [
     priceUsd: 1.99,
     frame: GEAR.weaponArtCount + 3,
     aura: 0xb98cff,
-    dpsBonus: 0.15,
-    goldBonus: 0.15,
+    // A cut above the standard premium blades (+15%): this is a one-time
+    // exclusive, tuned to be a clear early-game power spike worth £1.99.
+    dpsBonus: 0.25,
+    goldBonus: 0.25,
     founderOnly: true,
   },
 ] as const;

@@ -8,6 +8,7 @@ import { Tutorial, TutorialStep } from '../core/Tutorial';
 import { LOGIN_REWARDS } from '../config/loginRewards';
 import { ONBOARDING_REWARDS } from '../config/onboarding';
 import { FOUNDER_PACK } from '../config/monetization';
+import { premiumSwordById } from '../config/swordSkins';
 import { WHATS_NEW } from '../config/whatsnew';
 import { IapService } from '../services/monetization/MonetizationService';
 import { formatDuration } from '../core/OfflineEarnings';
@@ -1121,10 +1122,22 @@ export class UIScene extends Phaser.Scene {
       .setOrigin(0.5, 0)
       .setTint(0xc9a6ff);
     const plus = this.add
-      .bitmapText(THEME.width / 2, top + 172, 'pix', `+ ${FOUNDER_PACK.gems} GEMS`, 12)
+      .bitmapText(THEME.width / 2, top + 166, 'pix', `+ ${FOUNDER_PACK.gems} GEMS`, 12)
       .setOrigin(0.5, 0)
       .setTint(0x8ee8ff);
-    layer.add([heroImg, bladeImg, heroName, bladeName, plus]);
+    // The blade's boost, spelled out — this is what makes it worth buying early
+    const blade = premiumSwordById(FOUNDER_PACK.swordId);
+    const boost = this.add
+      .bitmapText(
+        THEME.width / 2,
+        top + 186,
+        'pix',
+        `+${Math.round((blade?.dpsBonus ?? 0) * 100)}% DAMAGE  +${Math.round((blade?.goldBonus ?? 0) * 100)}% GOLD`,
+        10,
+      )
+      .setOrigin(0.5, 0)
+      .setTint(0xffd166);
+    layer.add([heroImg, bladeImg, heroName, bladeName, plus, boost]);
 
     // Countdown so the FOMO is explicit
     const hoursLeft = Math.max(
@@ -1132,15 +1145,15 @@ export class UIScene extends Phaser.Scene {
       Math.ceil((this.gs.founderPackExpiresAt - this.gs.clock()) / 3_600_000),
     );
     const timer = this.add
-      .bitmapText(THEME.width / 2, top + 198, 'pix', `OFFER ENDS IN ${hoursLeft}H`, 8)
+      .bitmapText(THEME.width / 2, top + 208, 'pix', `OFFER ENDS IN ${hoursLeft}H`, 8)
       .setOrigin(0.5, 0)
       .setTint(0xff8a6a);
     layer.add([timer]);
 
     let pending = false;
-    const buy = this.add.image(THEME.width / 2, top + 236, 'btn-wide').setDisplaySize(220, 40).setTint(0x2e7a1e);
+    const buy = this.add.image(THEME.width / 2, top + 240, 'btn-wide').setDisplaySize(220, 40).setTint(0x2e7a1e);
     const buyLbl = this.add
-      .bitmapText(THEME.width / 2, top + 236, 'pix', `GET IT - ${iap.getPriceLabel(FOUNDER_PACK.sku)}`, 12)
+      .bitmapText(THEME.width / 2, top + 240, 'pix', `GET IT - ${iap.getPriceLabel(FOUNDER_PACK.sku)}`, 12)
       .setOrigin(0.5);
     buy.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
       if (pending) return;
