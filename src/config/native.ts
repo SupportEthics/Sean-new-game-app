@@ -14,12 +14,12 @@ export const ADMOB = {
   },
 };
 
-// RevenueCat: per-platform public SDK keys from the dashboard. iOS is
-// Sean's real key (project "Soulforge Knight"); Android stays a
-// placeholder until the Play app exists, which keeps the Android IAP
-// service dormant ("store not connected") instead of crashing.
+// RevenueCat: per-platform public SDK keys from the dashboard
+// (project "Soulforge Knight"). Both platforms are Sean's real keys;
+// Android purchases start validating once the Play products exist and
+// the service account is authorised in Play Console.
 export const REVENUECAT = {
-  androidApiKey: 'REPLACE_WITH_REVENUECAT_ANDROID_KEY',
+  androidApiKey: 'goog_dZhYzsuOBmxNsVodskulxvPpoaa',
   iosApiKey: 'appl_CUzhbMvcaITCxtiuTmhpPkgqMKP',
 };
 
