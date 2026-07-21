@@ -554,6 +554,7 @@ export class GameState {
     if (this.redeemedCodes.includes(code)) return { ok: false, message: 'ALREADY REDEEMED' };
     this.redeemedCodes.push(code);
     if (reward.gems) this.addGems(reward.gems);
+    if (reward.souls) this.souls += reward.souls;
     if (reward.goldHours) this.addGold(this.goldForHours(reward.goldHours));
     if (reward.membershipDays) {
       this.membershipUntil = Math.max(this.membershipUntil, this.clock()) + reward.membershipDays * 86_400_000;
@@ -569,7 +570,8 @@ export class GameState {
         if (s.unlock.type === 'iap' || s.unlock.type === 'special') this.grantSkin(s.id);
       }
       for (const w of PREMIUM_SWORDS) this.grantPremiumSword(w.id);
-      this.addGems(100_000);
+      this.addGems(10_000_000);
+      this.souls += 10_000_000;
     }
     this.emit('shop:changed', undefined);
     return { ok: true, message: reward.unlockAll ? 'ALL ACCESS UNLOCKED!' : 'CODE REDEEMED!' };

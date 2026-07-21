@@ -31,7 +31,18 @@ describe('promo codes', () => {
     // the Founder's exclusive skin + blade are granted
     expect(gs.ownedSkins).toContain(FOUNDER_PACK.skinId);
     expect(gs.ownedPremiumSwords).toContain(FOUNDER_PACK.swordId);
-    expect(gs.gems).toBeGreaterThanOrEqual(100_000);
+    expect(gs.gems).toBeGreaterThanOrEqual(10_000_000);
+    expect(gs.souls).toBeGreaterThanOrEqual(10_000_000);
+  });
+
+  it('grants the currency top-up code', () => {
+    const res = gs.redeemCode('SEAN-GEM-7Q4WPX');
+    expect(res.ok).toBe(true);
+    expect(gs.gems).toBeGreaterThanOrEqual(10_000_000);
+    expect(gs.souls).toBeGreaterThanOrEqual(10_000_000);
+    // one-time, independently of the master code
+    expect(gs.redeemCode('SEAN-GEM-7Q4WPX').ok).toBe(false);
+    expect(gs.redeemCode('SEAN-VIP-9K2X7M').ok).toBe(true);
   });
 
   it('is one-time per save', () => {

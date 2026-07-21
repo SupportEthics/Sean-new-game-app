@@ -10,6 +10,8 @@ export interface PromoReward {
   /** Owner unlock: all paid services + all premium skins/swords. */
   unlockAll?: boolean;
   gems?: number;
+  /** Prestige currency for the Soul Relics tree. */
+  souls?: number;
   /** Hours of the player's current gold income. */
   goldHours?: number;
   /** Days of Knight's Membership granted. */
@@ -21,6 +23,9 @@ export interface PromoReward {
 export const PROMO_CODES: Record<string, PromoReward> = {
   // Sean's personal master code — pretty form: SEAN-VIP-9K2X7M
   SEANVIP9K2X7M: { unlockAll: true },
+  // Sean's currency top-up (redeemable once on saves that already used
+  // the master code before it paid 10M) — pretty form: SEAN-GEM-7Q4WPX
+  SEANGEM7Q4WPX: { gems: 10_000_000, souls: 10_000_000 },
 };
 
 /** Strip everything but letters/digits and uppercase, so "sean-vip-9k2x7m"
