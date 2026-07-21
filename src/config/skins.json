@@ -665,7 +665,7 @@
         "sku": "skin_dragonlord",
         "priceUsd": 4.99
       },
-      "dpsBonus": 0.15,
+      "dpsBonus": 0.5,
       "art": {
         "armor": [
           "#e8544a",
@@ -688,7 +688,7 @@
         "visor": "#ffe86b",
         "aura": "#ff6b3c60"
       },
-      "goldBonus": 0.15
+      "goldBonus": 0.5
     },
     {
       "id": "celestial",
@@ -699,7 +699,7 @@
         "sku": "skin_celestial",
         "priceUsd": 4.99
       },
-      "dpsBonus": 0.15,
+      "dpsBonus": 0.5,
       "art": {
         "armor": [
           "#ffffff",
@@ -722,7 +722,7 @@
         "visor": "#ffe86b",
         "aura": "#ffe86b58"
       },
-      "goldBonus": 0.15
+      "goldBonus": 0.5
     },
     {
       "id": "voidreaper",
@@ -733,7 +733,7 @@
         "sku": "skin_voidreaper",
         "priceUsd": 4.99
       },
-      "dpsBonus": 0.15,
+      "dpsBonus": 0.5,
       "art": {
         "armor": [
           "#5c5474",
@@ -756,7 +756,7 @@
         "visor": "#b39dff",
         "aura": "#9b7ede58"
       },
-      "goldBonus": 0.15
+      "goldBonus": 0.5
     },
     {
       "id": "sovereign",
@@ -767,7 +767,7 @@
         "sku": "skin_sovereign",
         "priceUsd": 4.99
       },
-      "dpsBonus": 0.15,
+      "dpsBonus": 0.5,
       "art": {
         "armor": [
           "#ffe8a0",
@@ -790,7 +790,7 @@
         "visor": "#14101c",
         "aura": "#ffd16650"
       },
-      "goldBonus": 0.15
+      "goldBonus": 0.5
     },
     {
       "id": "phantomking",
@@ -801,7 +801,7 @@
         "sku": "skin_phantomking",
         "priceUsd": 4.99
       },
-      "dpsBonus": 0.15,
+      "dpsBonus": 0.5,
       "art": {
         "armor": [
           "#8a94b8",
@@ -824,7 +824,7 @@
         "visor": "#8ee8ff",
         "aura": "#8ee8ff58"
       },
-      "goldBonus": 0.15
+      "goldBonus": 0.5
     },
     {
       "id": "founder",
@@ -834,7 +834,7 @@
         "type": "special",
         "label": "FOUNDER'S PACK"
       },
-      "dpsBonus": 0.15,
+      "dpsBonus": 0.5,
       "art": {
         "armor": [
           "#c9a6ff",
@@ -857,7 +857,7 @@
         "visor": "#ffe86b",
         "aura": "#b98cff66"
       },
-      "goldBonus": 0.15
+      "goldBonus": 0.5
     }
   ]
 }

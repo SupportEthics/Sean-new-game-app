@@ -85,11 +85,11 @@ describe('skin unlock rules', () => {
     gs.addGold(5000);
     gs.unlockSkin('crimson'); // +2%
     expect(gs.heroDps).toBeCloseTo(base * 1.02);
-    gs.grantSkin('dragonlord'); // +15%
-    expect(gs.heroDps).toBeCloseTo(base * 1.17);
+    gs.grantSkin('dragonlord'); // +50%
+    expect(gs.heroDps).toBeCloseTo(base * 1.52);
     // Equipping does not change the bonus — owning does
     gs.equipSkin('crimson');
-    expect(gs.heroDps).toBeCloseTo(base * 1.17);
+    expect(gs.heroDps).toBeCloseTo(base * 1.52);
   });
 
   it('skins survive serialize/deserialize', () => {
