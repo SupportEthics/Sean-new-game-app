@@ -230,6 +230,11 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.freeGemsAdUsed = 0;
     return save;
   },
+  // v34 -> v35: promo / redeem codes
+  (save) => {
+    save.state.redeemedCodes = [];
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

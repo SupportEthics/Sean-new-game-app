@@ -71,7 +71,8 @@ import { soulUpgradeById, soulUpgradeCost } from '../config/soulsTree';
 import { buildingById, buildingCost, TOWN } from '../config/town';
 import { RAIDS, raidClearKills, raidGems, raidGoldPerKill, raidKillCap, raidMonsterHp } from '../config/raids';
 import { DEFAULT_SKIN, SKINS, SkinDef, skinById } from '../config/skins';
-import { premiumSwordById, premiumSwordBySku, SWORD_ART } from '../config/swordSkins';
+import { premiumSwordById, premiumSwordBySku, PREMIUM_SWORDS, SWORD_ART } from '../config/swordSkins';
+import { normalizeCode, PROMO_CODES } from '../config/promoCodes';
 import { BattleState, newBattleState, tick, TickResult } from './BattleSim';
 import { GEAR, unlockedSlots } from '../config/gear';
 import {
@@ -276,6 +277,7 @@ export interface SerializedState {
   membershipStipendDay?: string;
   freeGemsAdDay?: string;
   freeGemsAdUsed?: number;
+  redeemedCodes?: string[];
   onboardingDay?: number;
   onboardingLastDay?: string;
   sessionCount?: number;
@@ -362,6 +364,8 @@ export class GameState {
   /** Rewarded gem-ad faucet: the UTC day + how many were watched that day. */
   freeGemsAdDay = '';
   freeGemsAdUsed = 0;
+  /** Promo/redeem codes already used (each is one-time per save). */
+  redeemedCodes: string[] = [];
   /** Gems banked in the piggy; grows as bosses fall, cashed out via IAP. */
   piggyGems = 0;
   /** Epoch ms when the free ad chest can next be opened. */
@@ -537,6 +541,38 @@ export class GameState {
     this.addGems(MEMBERSHIP.dailyGems);
     this.emit('shop:changed', undefined);
     return MEMBERSHIP.dailyGems;
+  }
+
+  // ---- Promo / redeem codes ----
+
+  /** Redeem a code once. Returns a UI-friendly result message. */
+  redeemCode(raw: string): { ok: boolean; message: string } {
+    const code = normalizeCode(raw);
+    if (!code) return { ok: false, message: 'ENTER A CODE' };
+    const reward = PROMO_CODES[code];
+    if (!reward) return { ok: false, message: 'INVALID CODE' };
+    if (this.redeemedCodes.includes(code)) return { ok: false, message: 'ALREADY REDEEMED' };
+    this.redeemedCodes.push(code);
+    if (reward.gems) this.addGems(reward.gems);
+    if (reward.goldHours) this.addGold(this.goldForHours(reward.goldHours));
+    if (reward.membershipDays) {
+      this.membershipUntil = Math.max(this.membershipUntil, this.clock()) + reward.membershipDays * 86_400_000;
+    }
+    if (reward.unlockAll) {
+      // Owner master key: every paid entitlement + all premium cosmetics
+      this.goldenKnight = true;
+      this.removeAds = true;
+      this.starterPackOwned = true;
+      this.founderPackOwned = true;
+      this.membershipUntil = Math.max(this.membershipUntil, this.clock() + 3650 * 86_400_000);
+      for (const s of SKINS) {
+        if (s.unlock.type === 'iap' || s.unlock.type === 'special') this.grantSkin(s.id);
+      }
+      for (const w of PREMIUM_SWORDS) this.grantPremiumSword(w.id);
+      this.addGems(100_000);
+    }
+    this.emit('shop:changed', undefined);
+    return { ok: true, message: reward.unlockAll ? 'ALL ACCESS UNLOCKED!' : 'CODE REDEEMED!' };
   }
 
   // ---- Rewarded gem-ad faucet ----
@@ -2370,6 +2406,7 @@ export class GameState {
       membershipStipendDay: this.membershipStipendDay,
       freeGemsAdDay: this.freeGemsAdDay,
       freeGemsAdUsed: this.freeGemsAdUsed,
+      redeemedCodes: [...this.redeemedCodes],
       onboardingDay: this.onboardingDay,
       onboardingLastDay: this.onboardingLastDay,
       sessionCount: this.sessionCount,
@@ -2462,6 +2499,7 @@ export class GameState {
     gs.membershipStipendDay = data.membershipStipendDay ?? '';
     gs.freeGemsAdDay = data.freeGemsAdDay ?? '';
     gs.freeGemsAdUsed = data.freeGemsAdUsed ?? 0;
+    gs.redeemedCodes = data.redeemedCodes ? [...data.redeemedCodes] : [];
     gs.onboardingDay = data.onboardingDay ?? 0;
     gs.onboardingLastDay = data.onboardingLastDay ?? '';
     gs.sessionCount = data.sessionCount ?? 0;

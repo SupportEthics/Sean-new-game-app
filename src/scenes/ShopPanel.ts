@@ -210,6 +210,61 @@ export class ShopPanel extends Phaser.Scene {
     });
   }
 
+  /** Code entry as an HTML overlay so the device keyboard works (Phaser has
+   * no text input). Works in the browser and in the Capacitor WKWebView. */
+  private promptCode(): void {
+    if (document.getElementById('promo-overlay')) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'promo-overlay';
+    overlay.style.cssText =
+      'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.65);z-index:99999;font-family:monospace;';
+    const box = document.createElement('div');
+    box.style.cssText =
+      'background:#1c1622;border:2px solid #c9961e;border-radius:12px;padding:20px;width:280px;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.5);';
+    const title = document.createElement('div');
+    title.textContent = 'REDEEM CODE';
+    title.style.cssText = 'color:#ffd166;font-size:18px;letter-spacing:2px;margin-bottom:12px;';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.autocapitalize = 'characters';
+    input.spellcheck = false;
+    input.placeholder = 'ENTER CODE';
+    input.style.cssText =
+      'width:100%;box-sizing:border-box;padding:11px;font-size:16px;letter-spacing:1px;text-transform:uppercase;text-align:center;border-radius:8px;border:1px solid #8a7d60;background:#2a2434;color:#fff;';
+    const msg = document.createElement('div');
+    msg.style.cssText = 'color:#9a8d6e;font-size:12px;margin-top:8px;min-height:16px;';
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;margin-top:14px;';
+    const redeemBtn = document.createElement('button');
+    redeemBtn.textContent = 'REDEEM';
+    redeemBtn.style.cssText =
+      'flex:1;padding:11px;border:0;border-radius:8px;background:#2e7a1e;color:#fff;font-size:14px;cursor:pointer;';
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = 'CLOSE';
+    closeBtn.style.cssText =
+      'flex:1;padding:11px;border:0;border-radius:8px;background:#3a3244;color:#fff;font-size:14px;cursor:pointer;';
+    const close = (): void => overlay.remove();
+    closeBtn.onclick = close;
+    redeemBtn.onclick = (): void => {
+      const res = this.gs.redeemCode(input.value);
+      msg.textContent = res.message;
+      msg.style.color = res.ok ? '#6fdc6f' : '#e8884a';
+      if (res.ok) {
+        audio.coin();
+        if (this.scene.isActive()) this.build();
+        setTimeout(close, 1300);
+      }
+    };
+    input.onkeydown = (e: KeyboardEvent): void => {
+      if (e.key === 'Enter') redeemBtn.click();
+    };
+    row.append(redeemBtn, closeBtn);
+    box.append(title, input, msg, row);
+    overlay.append(box);
+    document.body.append(overlay);
+    input.focus();
+  }
+
   // ---- Content ----
 
   private build(): void {
@@ -464,6 +519,24 @@ export class ShopPanel extends Phaser.Scene {
           this.watchGemAd();
         });
       }
+      this.rows.add([btn, lbl]);
+      y += h + 10;
+    }
+
+    // Redeem a promo code (owner/tester master key, future public codes)
+    {
+      const h = 54;
+      this.card(y, h, 0x9b7ede);
+      this.text(24, y + 12, 'REDEEM CODE', 0x9b7ede);
+      this.text(24, y + 30, 'GOT A CODE? UNLOCK YOUR REWARD', 0x8a5a2e);
+      const btn = this.add.image(PANEL_X + PANEL_W - 52, y + h / 2, 'btn-sm').setTint(0x7a4ac8);
+      const lbl = this.add
+        .bitmapText(PANEL_X + PANEL_W - 52, y + h / 2, 'pix', 'ENTER', 8)
+        .setOrigin(0.5);
+      btn.setInteractive({ useHandCursor: true }).on('pointerup', (ptr: Phaser.Input.Pointer) => {
+        if (this.tapBlocked(ptr)) return;
+        this.promptCode();
+      });
       this.rows.add([btn, lbl]);
       y += h + 10;
     }
