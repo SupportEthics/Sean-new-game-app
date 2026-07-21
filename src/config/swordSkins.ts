@@ -39,8 +39,8 @@ export const PREMIUM_SWORDS: readonly PremiumSword[] = [
     priceUsd: 4.99,
     frame: GEAR.weaponArtCount,
     aura: 0x8aff8a,
-    dpsBonus: 0.15,
-    goldBonus: 0.15,
+    dpsBonus: 0.5,
+    goldBonus: 0.5,
   },
   {
     id: 'voidkatana',
@@ -50,8 +50,8 @@ export const PREMIUM_SWORDS: readonly PremiumSword[] = [
     priceUsd: 4.99,
     frame: GEAR.weaponArtCount + 1,
     aura: 0xe86aff,
-    dpsBonus: 0.15,
-    goldBonus: 0.15,
+    dpsBonus: 0.5,
+    goldBonus: 0.5,
   },
   {
     id: 'dragoncleaver',
@@ -61,8 +61,8 @@ export const PREMIUM_SWORDS: readonly PremiumSword[] = [
     priceUsd: 4.99,
     frame: GEAR.weaponArtCount + 2,
     aura: 0xff9a3c,
-    dpsBonus: 0.15,
-    goldBonus: 0.15,
+    dpsBonus: 0.5,
+    goldBonus: 0.5,
   },
   {
     // Founder's Pack exclusive — obtainable ONLY inside the £1.99 bundle,

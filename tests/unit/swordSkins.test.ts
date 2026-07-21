@@ -127,7 +127,7 @@ describe('skin benefits (Sean: skins must pay)', () => {
     const goldBefore = gs.goldMultiplier;
     gs.grantPremiumSword('scythe');
     gs.setSwordSkin('premium-scythe');
-    expect(gs.swordSkinDpsMultiplier).toBeCloseTo(1.15);
-    expect(gs.goldMultiplier / goldBefore).toBeCloseTo(1.15);
+    expect(gs.swordSkinDpsMultiplier).toBeCloseTo(1.5);
+    expect(gs.goldMultiplier / goldBefore).toBeCloseTo(1.5);
   });
 });
