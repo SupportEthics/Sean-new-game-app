@@ -12,20 +12,26 @@ interface TownPlace {
   y: number;
   w: number;
   h: number;
+  ly: number;
 }
 
 // The town is one full-screen illustration (Sean's art). It's phone-shaped,
 // so it fills the screen edge-to-edge — no procedural grass. Buildings are
 // invisible tap zones over the art; each opens its existing upgrade card
-// with the real live numbers. Positions are fractions of the screen.
-const PLACES_FRAC: { id: string; fx: number; fy: number; fw: number; fh: number }[] = [
-  { id: 'keep', fx: 0.5, fy: 0.16, fw: 0.66, fh: 0.15 },
-  { id: 'farm', fx: 0.2, fy: 0.3, fw: 0.36, fh: 0.14 },
-  { id: 'blacksmith', fx: 0.78, fy: 0.3, fw: 0.36, fh: 0.14 },
-  { id: 'soulforge', fx: 0.49, fy: 0.455, fw: 0.26, fh: 0.12 },
-  { id: 'mine', fx: 0.18, fy: 0.575, fw: 0.32, fh: 0.14 },
-  { id: 'jeweler', fx: 0.78, fy: 0.585, fw: 0.34, fh: 0.14 },
+// with the real live numbers. Positions are fractions of the screen; `fly`
+// is where the art's baked level label sits, so we can cover it with the
+// real live level. `kx`/`ky` mark the art's baked knight, hidden behind the
+// player's own skinned knight.
+const PLACES_FRAC: { id: string; fx: number; fy: number; fw: number; fh: number; fly: number }[] = [
+  { id: 'keep', fx: 0.5, fy: 0.16, fw: 0.66, fh: 0.15, fly: 0.214 },
+  { id: 'farm', fx: 0.2, fy: 0.3, fw: 0.36, fh: 0.14, fly: 0.371 },
+  { id: 'blacksmith', fx: 0.78, fy: 0.3, fw: 0.36, fh: 0.14, fly: 0.371 },
+  { id: 'soulforge', fx: 0.49, fy: 0.455, fw: 0.26, fh: 0.12, fly: 0.51 },
+  { id: 'mine', fx: 0.19, fy: 0.575, fw: 0.32, fh: 0.14, fly: 0.643 },
+  { id: 'jeweler', fx: 0.78, fy: 0.585, fw: 0.34, fh: 0.14, fly: 0.643 },
 ];
+const KNIGHT_FX = 0.5;
+const KNIGHT_FY = 0.742;
 
 export class TownScene extends Phaser.Scene {
   private gs!: GameState;
@@ -35,6 +41,7 @@ export class TownScene extends Phaser.Scene {
   private vaultText!: Phaser.GameObjects.BitmapText;
   private cardLayer: Phaser.GameObjects.Container | null = null;
   private places: TownPlace[] = [];
+  private labels = new Map<string, Phaser.GameObjects.BitmapText>();
 
   constructor() {
     super('Town');
@@ -57,6 +64,7 @@ export class TownScene extends Phaser.Scene {
       y: p.fy * THEME.height,
       w: p.fw * THEME.width,
       h: p.fh * THEME.height,
+      ly: p.fly * THEME.height,
     }));
     for (const place of this.places) {
       this.add
@@ -70,6 +78,8 @@ export class TownScene extends Phaser.Scene {
         });
     }
 
+    this.addLiveLabels();
+    this.addPlayerKnight();
     this.buildHud();
 
     // Jeweler vault bubble floats over the shop when gems are waiting
@@ -96,6 +106,58 @@ export class TownScene extends Phaser.Scene {
   override update(): void {
     this.goldLabel.setText(formatNumber(this.gs.gold).toUpperCase());
     this.gemLabel.setText(`${this.gs.gems}`);
+  }
+
+  // ---- live level labels (cover the art's baked ones) ----
+
+  private signLabel(id: string): string {
+    if (id === 'soulforge') return 'THE SOULFORGE';
+    const def = buildingById(id)!;
+    const level = this.gs.buildingLevel(id);
+    return level > 0 ? `${def.name} LV ${level}/${def.maxLevel}` : `${def.name} - BUILD ME`;
+  }
+
+  private addLiveLabels(): void {
+    for (const place of this.places) {
+      // The Soulforge has no level — leave the art's baked label as-is.
+      if (place.id === 'soulforge') continue;
+      // Cover the baked pill: size to the widest possible (max-level) text so
+      // it fully hides the art's label whatever the real level is.
+      const def = buildingById(place.id)!;
+      const widest = `${def.name} LV ${def.maxLevel}/${def.maxLevel}`;
+      const measure = this.add.bitmapText(0, 0, 'pix', widest, 8).setVisible(false);
+      const pw = measure.width + 14;
+      measure.destroy();
+      this.add.rectangle(place.x, place.ly, pw, 16, 0x14101c).setStrokeStyle(1, 0x8a7d60).setDepth(1000);
+      const txt = this.add
+        .bitmapText(place.x, place.ly, 'pix', this.signLabel(place.id), 8)
+        .setOrigin(0.5)
+        .setTint(0xe6dec8)
+        .setDepth(1001);
+      this.labels.set(place.id, txt);
+    }
+  }
+
+  private refreshLabel(id: string): void {
+    this.labels.get(id)?.setText(this.signLabel(id));
+  }
+
+  // ---- the player's own knight, over the art's baked one ----
+
+  private addPlayerKnight(): void {
+    const skin = this.gs.activeSkin;
+    const tex = this.textures.exists(`hero-${skin}`) ? `hero-${skin}` : 'hero-squire';
+    const x = KNIGHT_FX * THEME.width;
+    const y = KNIGHT_FY * THEME.height;
+    // A dab of path-tone under the sprite hides the baked knight; kept narrow
+    // so it stays on the cobbles (tan-on-tan) and the live knight covers it.
+    this.add.ellipse(x, y + 2, 28, 52, 0x9a835a).setDepth(999);
+    const knight = this.add.sprite(x, y, tex, 0).setScale(0.72).setDepth(1000);
+    try {
+      knight.play(`hero-${skin}-idle`);
+    } catch {
+      /* static frame is fine */
+    }
   }
 
   // ---- HUD: an opaque header over the art's baked one, with live numbers ----
@@ -226,6 +288,7 @@ export class TownScene extends Phaser.Scene {
     if (!this.gs.buyBuilding(id)) return;
     audio.buy();
     this.refreshVault();
+    this.refreshLabel(id);
     this.openCard(id); // reopen with fresh numbers
   }
 
