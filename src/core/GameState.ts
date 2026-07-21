@@ -9,10 +9,13 @@ import {
   bundleBySku,
   FOUNDER_PACK,
   FREE_CHEST,
+  FREE_GEMS_AD,
   gemPackBySku,
   goldPackBySku,
+  MEMBERSHIP,
   PIGGY,
   GOLDEN_KNIGHT,
+  productBySku,
   REMOVE_ADS,
   STARTER_PACK,
 } from '../config/monetization';
@@ -140,6 +143,8 @@ export interface GameEvents {
   'fairy:changed': number;
   'login:changed': undefined;
   'town:changed': undefined;
+  /** A completed real-money purchase — for revenue analytics (LTV/ROAS). */
+  'purchase': { sku: string; usd: number };
 }
 
 /** Sim-time seconds left on a skill's buff and cooldown. */
@@ -267,6 +272,10 @@ export interface SerializedState {
   adLootReadyAt: number;
   loginStreakDay: number;
   lastLoginClaimDay: string;
+  membershipUntil?: number;
+  membershipStipendDay?: string;
+  freeGemsAdDay?: string;
+  freeGemsAdUsed?: number;
   onboardingDay?: number;
   onboardingLastDay?: string;
   sessionCount?: number;
@@ -346,6 +355,13 @@ export class GameState {
   goldenKnight = false;
   /** The one-time starter bundle can only be bought once. */
   starterPackOwned = false;
+  /** Knight's Membership: epoch ms the subscription runs until (active while
+   * clock() < this), and the UTC day the daily gem stipend was last claimed. */
+  membershipUntil = 0;
+  membershipStipendDay = '';
+  /** Rewarded gem-ad faucet: the UTC day + how many were watched that day. */
+  freeGemsAdDay = '';
+  freeGemsAdUsed = 0;
   /** Gems banked in the piggy; grows as bosses fall, cashed out via IAP. */
   piggyGems = 0;
   /** Epoch ms when the free ad chest can next be opened. */
@@ -482,9 +498,69 @@ export class GameState {
       this.townGoldMultiplier *
       this.skinGoldMultiplier *
       this.swordSkinGoldMultiplier *
+      this.memberGoldMultiplier *
       this.enchantBonus('greed') *
       (this.currentEvent?.goldMult ?? 1)
     );
+  }
+
+  // ---- Knight's Membership (the monthly subscription) ----
+
+  /** True while the subscription window is open. */
+  membershipActive(now: number = this.clock()): boolean {
+    return now < this.membershipUntil;
+  }
+
+  /** +25% gold while subscribed (folds into goldMultiplier). */
+  get memberGoldMultiplier(): number {
+    return this.membershipActive() ? 1 + MEMBERSHIP.goldBonus : 1;
+  }
+
+  /** 2x offline earnings while subscribed. */
+  get memberOfflineMultiplier(): number {
+    return this.membershipActive() ? MEMBERSHIP.offlineMultiplier : 1;
+  }
+
+  /** Interstitial ad breaks are off for remove-ads owners AND members. */
+  get adsDisabled(): boolean {
+    return this.removeAds || this.membershipActive();
+  }
+
+  /** The daily gem stipend is claimable once per UTC day while subscribed. */
+  membershipStipendReady(now: number = this.clock()): boolean {
+    return this.membershipActive(now) && this.membershipStipendDay !== utcDay(now);
+  }
+
+  claimMembershipStipend(now: number = this.clock()): number {
+    if (!this.membershipStipendReady(now)) return 0;
+    this.membershipStipendDay = utcDay(now);
+    this.addGems(MEMBERSHIP.dailyGems);
+    this.emit('shop:changed', undefined);
+    return MEMBERSHIP.dailyGems;
+  }
+
+  // ---- Rewarded gem-ad faucet ----
+
+  private syncGemAdDay(now: number): void {
+    const today = utcDay(now);
+    if (this.freeGemsAdDay !== today) {
+      this.freeGemsAdDay = today;
+      this.freeGemsAdUsed = 0;
+    }
+  }
+
+  gemAdsLeft(now: number = this.clock()): number {
+    this.syncGemAdDay(now);
+    return Math.max(0, FREE_GEMS_AD.perDay - this.freeGemsAdUsed);
+  }
+
+  /** Grant the reward after a watched gem ad; returns gems (0 if none left). */
+  grantGemAd(now: number = this.clock()): number {
+    if (this.gemAdsLeft(now) <= 0) return 0;
+    this.freeGemsAdUsed += 1;
+    this.addGems(FREE_GEMS_AD.gems);
+    this.emit('shop:changed', undefined);
+    return FREE_GEMS_AD.gems;
   }
 
   /**
@@ -1662,7 +1738,14 @@ export class GameState {
     return Math.max(1, Math.floor(this.goldPerSecondEstimate * hours * 3600));
   }
 
+  /** Grant a completed purchase and log a revenue event (for LTV / ROAS). */
   fulfillProduct(sku: string): boolean {
+    const ok = this.fulfillInner(sku);
+    if (ok) this.emit('purchase', { sku, usd: productBySku(sku)?.priceUsd ?? 0 });
+    return ok;
+  }
+
+  private fulfillInner(sku: string): boolean {
     const pack = gemPackBySku(sku);
     if (pack) {
       this.addGems(pack.gems);
@@ -1696,6 +1779,14 @@ export class GameState {
       this.grantSkin(FOUNDER_PACK.skinId); // exclusive knight (equip in wardrobe)
       this.grantPremiumSword(FOUNDER_PACK.swordId); // exclusive blade art
       this.addGems(FOUNDER_PACK.gems);
+      this.emit('shop:changed', undefined);
+      return true;
+    }
+    if (sku === MEMBERSHIP.sku) {
+      // Extend the subscription by a month (stacks if renewed early). Native
+      // RevenueCat entitlement will override this once real keys are live.
+      const base = Math.max(this.membershipUntil, this.clock());
+      this.membershipUntil = base + MEMBERSHIP.durationDays * 86_400_000;
       this.emit('shop:changed', undefined);
       return true;
     }
@@ -2185,6 +2276,16 @@ export class GameState {
         recognised++;
         continue;
       }
+      if (sku === MEMBERSHIP.sku) {
+        // An active subscription reported by the store — open the window.
+        // (RevenueCat is the real authority for expiry once keys are live.)
+        this.membershipUntil = Math.max(
+          this.membershipUntil,
+          this.clock() + MEMBERSHIP.durationDays * 86_400_000,
+        );
+        recognised++;
+        continue;
+      }
       const skin = SKINS.find((s) => s.unlock.type === 'iap' && s.unlock.sku === sku);
       if (skin) {
         this.grantSkin(skin.id);
@@ -2265,6 +2366,10 @@ export class GameState {
       adLootReadyAt: this.adLootReadyAt,
       loginStreakDay: this.loginStreakDay,
       lastLoginClaimDay: this.lastLoginClaimDay,
+      membershipUntil: this.membershipUntil,
+      membershipStipendDay: this.membershipStipendDay,
+      freeGemsAdDay: this.freeGemsAdDay,
+      freeGemsAdUsed: this.freeGemsAdUsed,
       onboardingDay: this.onboardingDay,
       onboardingLastDay: this.onboardingLastDay,
       sessionCount: this.sessionCount,
@@ -2353,6 +2458,10 @@ export class GameState {
     gs.adLootReadyAt = data.adLootReadyAt;
     gs.loginStreakDay = data.loginStreakDay;
     gs.lastLoginClaimDay = data.lastLoginClaimDay;
+    gs.membershipUntil = data.membershipUntil ?? 0;
+    gs.membershipStipendDay = data.membershipStipendDay ?? '';
+    gs.freeGemsAdDay = data.freeGemsAdDay ?? '';
+    gs.freeGemsAdUsed = data.freeGemsAdUsed ?? 0;
     gs.onboardingDay = data.onboardingDay ?? 0;
     gs.onboardingLastDay = data.onboardingLastDay ?? '';
     gs.sessionCount = data.sessionCount ?? 0;

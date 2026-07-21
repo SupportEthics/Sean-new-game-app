@@ -222,6 +222,14 @@ const MIGRATIONS: ((save: SaveFile) => SaveFile)[] = [
     save.state.founderPackExpiresAt = 0;
     return save;
   },
+  // v33 -> v34: Knight's Membership subscription + rewarded gem-ad faucet
+  (save) => {
+    save.state.membershipUntil = 0;
+    save.state.membershipStipendDay = '';
+    save.state.freeGemsAdDay = '';
+    save.state.freeGemsAdUsed = 0;
+    return save;
+  },
 ];
 
 export const CURRENT_SAVE_VERSION = MIGRATIONS.length + 1;

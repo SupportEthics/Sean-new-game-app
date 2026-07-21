@@ -27,6 +27,17 @@ async function logEvent(name: string, params?: Record<string, unknown>): Promise
 /** Wire the handful of gameplay milestones worth counting. */
 export function attachAnalytics(gs: GameState): void {
   if (!Capacitor.isNativePlatform()) return;
+  // Revenue — the event that powers LTV, ROAS and Google Ads value-based
+  // bidding. Fires for every completed IAP (fulfillProduct emits it).
+  gs.on('purchase', (p) =>
+    void logEvent('purchase', { sku: p.sku, value: p.usd, currency: 'USD' }),
+  );
+  // A lightweight session marker with the launch count + membership status,
+  // so retention cohorts can be split by paying/subscribed players.
+  void logEvent('play_session', {
+    session: gs.sessionCount,
+    member: gs.membershipActive() ? 1 : 0,
+  });
   gs.on('prestige:done', (count) => void logEvent('rebirth', { count }));
   gs.on('raid:started', (level) =>
     void logEvent(gs.raid?.dungeon ? 'dungeon_start' : 'raid_start', { level }),

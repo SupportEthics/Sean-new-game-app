@@ -15,7 +15,9 @@ export type AdPlacement =
   | 'loot'
   | 'skill_cast'
   | 'gift'
-  | 'mine';
+  | 'mine'
+  | 'free_gems'
+  | 'double_login';
 
 export interface AdResult {
   /** True when the ad played to completion and the reward should be granted. */

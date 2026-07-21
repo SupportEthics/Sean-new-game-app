@@ -109,7 +109,7 @@ export class UIScene extends Phaser.Scene {
     const interstitials = new InterstitialPolicy();
     this.gs.on('stage:changed', () => {
       interstitials.onStageCleared();
-      if (interstitials.shouldShow(this.gs.removeAds, !!this.gs.raid)) {
+      if (interstitials.shouldShow(this.gs.adsDisabled, !!this.gs.raid)) {
         interstitials.shown();
         this.showAdBreak();
       }

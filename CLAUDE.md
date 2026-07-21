@@ -154,6 +154,24 @@ popups never cover the UI they drive; dev hooks __game.openWelcome/
 openFounder. Founder skin auto-generates from skins.json; the blade is a
 new founderSword() in generate-assets.mjs (gear.png now 79 frames).
 
+2026-07-21 Recurring-revenue + measurement + ad-faucet wave (save v34
+membershipUntil/membershipStipendDay/freeGemsAdDay/freeGemsAdUsed; ships in
+1.0.6): (1) **Knight's Membership** — the monthly subscription
+(config/monetization.ts MEMBERSHIP, kind 'subscription', £4.99/30d;
+GameState.membershipActive/memberGoldMultiplier(+25%)/memberOfflineMultiplier
+(2x)/adsDisabled + a daily gem stipend claimMembershipStipend (50/day);
+fulfillProduct grants a 30-day window (web mock + testable free), RevenueCat
+entitlement is the real authority once keys land; a purple ShopPanel DEALS
+card subscribes + claims the daily gems). (2) **Revenue analytics** — a
+typed GameState 'purchase' event emitted by fulfillProduct (wrapped
+fulfillInner) with {sku,usd}; Analytics.ts logs it as a Firebase `purchase`
+(value+currency) for LTV/ROAS + a play_session event (session count + member
+flag). Firebase auto-tracks D1/D7 retention; link Firebase->Google Ads for
+ROAS. (3) **Free-gems rewarded-ad faucet** (FREE_GEMS_AD 15 gems x5/day,
+GameState.gemAdsLeft/grantGemAd, ShopPanel WATCH AD card, AdService
+'free_gems' placement). Interstitials now gated by gs.adsDisabled
+(removeAds || member).
+
 ## Commands
 
 - `npm run dev` — Vite dev server on :5173 (game is fully playable in browser)

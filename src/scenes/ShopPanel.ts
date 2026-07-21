@@ -3,8 +3,10 @@ import { addBackdrop, addCloseButton, addDragScroll } from '../ui/panelInput';
 import {
   BUNDLES,
   FREE_CHEST,
+  FREE_GEMS_AD,
   GEM_PACKS,
   GOLD_PACKS,
+  MEMBERSHIP,
   PIGGY,
   GOLDEN_KNIGHT,
   REMOVE_ADS,
@@ -193,6 +195,21 @@ export class ShopPanel extends Phaser.Scene {
     });
   }
 
+  private watchGemAd(): void {
+    if (this.adBusy || this.gs.gemAdsLeft() <= 0) return;
+    this.adBusy = true;
+    this.build();
+    void this.ads.showRewarded('free_gems').then((result) => {
+      this.adBusy = false;
+      if (result.rewarded) {
+        this.gs.trackQuest('ads');
+        this.gs.grantGemAd();
+        audio.coin();
+      }
+      if (this.scene.isActive()) this.build();
+    });
+  }
+
   // ---- Content ----
 
   private build(): void {
@@ -258,6 +275,45 @@ export class ShopPanel extends Phaser.Scene {
           if (this.gs.claimDailyDeal()) audio.coin();
         });
         this.rows.add([btn, lbl]);
+      }
+      y += h + 10;
+    }
+
+    // Knight's Membership — the monthly subscription (recurring revenue and a
+    // daily reason to open the app)
+    {
+      const active = this.gs.membershipActive();
+      const h = 80;
+      this.card(y, h, active ? 0x6fae4e : 0x9b7ede);
+      this.text(24, y + 10, "KNIGHT'S MEMBERSHIP", active ? 0x2e7a1e : 0x9b7ede);
+      this.text(24, y + 28, `2X OFFLINE - ${MEMBERSHIP.dailyGems} GEMS EVERY DAY`, 0x4a3520);
+      this.text(24, y + 44, '+25% GOLD - NO AD BREAKS', 0x8a5a2e);
+      if (!active) {
+        this.text(24, y + 62, 'MONTHLY - CANCEL ANYTIME', 0x9a8d6e);
+        this.priceButton(y + h / 2, MEMBERSHIP.sku, () => this.gs.fulfillProduct(MEMBERSHIP.sku));
+      } else {
+        const days = Math.max(1, Math.ceil((this.gs.membershipUntil - this.gs.clock()) / 86_400_000));
+        this.text(24, y + 62, `MEMBER - ${days}D LEFT`, 0x2e7a1e);
+        if (this.gs.membershipStipendReady()) {
+          const bx = PANEL_X + PANEL_W - 58;
+          const btn = this.add
+            .image(bx, y + h / 2, 'btn-sm')
+            .setTint(0x2884a8)
+            .setInteractive({ useHandCursor: true });
+          const lbl = this.add.bitmapText(bx, y + h / 2, 'pix', `+${MEMBERSHIP.dailyGems}`, 8).setOrigin(0.5);
+          btn.on('pointerup', (ptr: Phaser.Input.Pointer) => {
+            if (this.tapBlocked(ptr)) return;
+            if (this.gs.claimMembershipStipend() > 0) audio.coin();
+          });
+          this.rows.add([btn, lbl]);
+        } else {
+          this.rows.add(
+            this.add
+              .bitmapText(PANEL_X + PANEL_W - 24, y + h / 2, 'pix', 'GEMS CLAIMED', 8)
+              .setOrigin(1, 0.5)
+              .setTint(0x9a8d6e),
+          );
+        }
       }
       y += h + 10;
     }
@@ -373,6 +429,40 @@ export class ShopPanel extends Phaser.Scene {
             this.openChest();
           },
         );
+      }
+      this.rows.add([btn, lbl]);
+      y += h + 10;
+    }
+
+    // Free gems for a rewarded ad — a few times a day (ad revenue from the
+    // players who never buy, and a gem drip that pulls them deeper)
+    {
+      const h = 54;
+      const left = this.gs.gemAdsLeft();
+      const ready = left > 0 && !this.adBusy;
+      this.card(y, h, ready ? 0x6fae4e : THEME.cardBorder);
+      this.text(24, y + 12, 'FREE GEMS', 0x2884a8);
+      this.text(
+        24,
+        y + 30,
+        this.adBusy
+          ? 'AD PLAYING...'
+          : left > 0
+            ? `${FREE_GEMS_AD.gems} GEMS FOR AN AD - ${left} LEFT TODAY`
+            : 'ALL WATCHED - BACK TOMORROW',
+        0x8a5a2e,
+      );
+      const btn = this.add
+        .image(PANEL_X + PANEL_W - 52, y + h / 2, 'btn-sm')
+        .setTint(ready ? 0x2884a8 : THEME.buttonBgDisabled);
+      const lbl = this.add
+        .bitmapText(PANEL_X + PANEL_W - 52, y + h / 2, 'pix', 'WATCH AD', 8)
+        .setOrigin(0.5);
+      if (ready) {
+        btn.setInteractive({ useHandCursor: true }).on('pointerup', (ptr: Phaser.Input.Pointer) => {
+          if (this.tapBlocked(ptr)) return;
+          this.watchGemAd();
+        });
       }
       this.rows.add([btn, lbl]);
       y += h + 10;

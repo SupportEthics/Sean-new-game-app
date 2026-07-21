@@ -8,9 +8,36 @@ export interface IapProduct {
   sku: string;
   priceUsd: number;
   title: string;
-  /** Consumables can be bought repeatedly (gem packs, piggy cracks). */
-  kind: 'consumable' | 'nonconsumable';
+  /** Consumables repeat (gem packs); subscriptions auto-renew (membership). */
+  kind: 'consumable' | 'nonconsumable' | 'subscription';
 }
+
+/** Knight's Membership — the monthly subscription (recurring revenue + a
+ * daily reason to log in). On native, RevenueCat's entitlement is the source
+ * of truth; the web mock and this config grant a 30-day window per purchase
+ * so the perks are fully testable for free in the browser. */
+export const MEMBERSHIP: IapProduct & {
+  durationDays: number;
+  dailyGems: number;
+  offlineMultiplier: number;
+  goldBonus: number;
+} = {
+  sku: 'knights_membership',
+  priceUsd: 4.99,
+  title: "KNIGHT'S MEMBERSHIP",
+  kind: 'subscription',
+  durationDays: 30,
+  dailyGems: 50, // claimed once per day while subscribed
+  offlineMultiplier: 2, // 2x offline earnings
+  goldBonus: 0.25, // +25% gold, always on
+};
+
+/** Rewarded-ad gem faucet: watch an ad for gems, a few times a day. Monetises
+ * the majority who never pay (ad revenue) and seeds them into the gem economy. */
+export const FREE_GEMS_AD = {
+  gems: 15,
+  perDay: 5,
+};
 
 /** Premium skins: the five legendary looks, sold for real money. */
 export const SKIN_PRODUCTS: IapProduct[] = SKINS.filter(
@@ -169,6 +196,7 @@ export const ALL_PRODUCTS: IapProduct[] = [
   ...BUNDLES,
   STARTER_PACK,
   FOUNDER_PACK,
+  MEMBERSHIP,
   REMOVE_ADS,
   GOLDEN_KNIGHT,
   PIGGY.product,
