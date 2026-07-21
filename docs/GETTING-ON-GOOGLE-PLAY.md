@@ -1,9 +1,10 @@
 # Getting Soulforge Knight onto Google Play
 
 The Android app is code-complete: `android/` builds the same game as iOS
-(versionName 1.0.5), saves mirror to Preferences, and the service factory
-uses AdMob + RevenueCat on device. What remains is accounts, IDs and the
-store listing — Sean's side, with copyable steps below.
+(versionName 1.0.6, versionCode 8), saves mirror to Preferences, and the
+service factory uses AdMob + RevenueCat on device. What remains is
+accounts, IDs and the store listing — Sean's side, with copyable steps
+below.
 
 ## 0. Decide the account type (affects the timeline!)
 
@@ -28,8 +29,11 @@ https://play.google.com/console/signup.
    - Full description: the same text as the App Store description.
    - Screenshots: the same PNGs used for the App Store 6.5" set work
      (Play accepts 9:16-ish portrait up to 19.5:9).
-   - Feature graphic (required, 1024x500): `play-feature-graphic.png`
-     (Claude generated; in the project scratchpad / ask for a re-send).
+   - Feature graphic (required, 1024x500):
+     `screenshots/play/play-feature-graphic.png` (regenerate any time
+     with `npx playwright test tests/e2e/_feature-graphic.spec.ts`;
+     gallery shots at 1080x1920 live in `screenshots/play/` via
+     `tests/e2e/_play-assets.spec.ts`).
    - App icon 512x512: export from `resources/icon.png` (Play Console
      will ask; it must match the in-app icon).
 3. Content rating questionnaire: category Game; answer honestly
@@ -41,9 +45,15 @@ https://play.google.com/console/signup.
      apps" except advertising which is handled by AdMob's disclosure.
    - Privacy policy URL: the hosted privacy.html on the Netlify site.
 5. In-app products (Monetize -> Products -> In-app products): create
-   every SKU from src/config/monetization.ts with the SAME product IDs
-   (remove_ads, starter_pack, gem packs, coin packs, bundles, skins,
-   knights_pass, golden_knight, piggy_crack...). Prices to match iOS.
+   every SKU from the master table in docs/GETTING-ON-THE-STORES.md with
+   the SAME product IDs (soulforge_starter_pack, founder_pack,
+   remove_ads, golden_knight, piggy_crack, knights_pass, the 6 gem packs,
+   4 coin packs, 4 bundles, 5 skins, 3 swords). Prices to match iOS.
+6. The subscription (Monetize -> Products -> Subscriptions): create
+   `knights_membership` with a monthly base plan at £4.99. Play needs a
+   base plan ID too — use `monthly`. Attach it to the same RevenueCat
+   `membership` entitlement as the iOS product so either store unlocks
+   the same perks.
 
 ## 2. AdMob (Android side)
 
