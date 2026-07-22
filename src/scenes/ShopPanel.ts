@@ -18,6 +18,7 @@ import { formatNumber } from '../core/EconomyMath';
 import { formatDuration } from '../core/OfflineEarnings';
 import { GameState } from '../core/GameState';
 import { IapService } from '../services/monetization/MonetizationService';
+import { Capacitor } from '@capacitor/core';
 import { AdService } from '../services/monetization/AdService';
 import { audio } from '../services/AudioService';
 import { THEME } from '../ui/theme';
@@ -335,17 +336,41 @@ export class ShopPanel extends Phaser.Scene {
     }
 
     // Knight's Membership — the monthly subscription (recurring revenue and a
-    // daily reason to open the app)
+    // daily reason to open the app). Apple 3.1.2(c): the card must state the
+    // title, length and price of the auto-renewing sub AND carry functional
+    // Terms of Use + privacy policy links inside the app.
     {
       const active = this.gs.membershipActive();
-      const h = 80;
+      const h = active ? 80 : 96;
       this.card(y, h, active ? 0x6fae4e : 0x9b7ede);
       this.text(24, y + 10, "KNIGHT'S MEMBERSHIP", active ? 0x2e7a1e : 0x9b7ede);
       this.text(24, y + 28, `2X OFFLINE - ${MEMBERSHIP.dailyGems} GEMS EVERY DAY`, 0x4a3520);
       this.text(24, y + 44, '+25% GOLD - NO AD BREAKS', 0x8a5a2e);
       if (!active) {
-        this.text(24, y + 62, 'MONTHLY - CANCEL ANYTIME', 0x9a8d6e);
-        this.priceButton(y + h / 2, MEMBERSHIP.sku, () => this.gs.fulfillProduct(MEMBERSHIP.sku));
+        this.text(
+          24,
+          y + 62,
+          `${this.iap.getPriceLabel(MEMBERSHIP.sku)}/MONTH AUTO-RENEWS - CANCEL ANYTIME`,
+          0x9a8d6e,
+        );
+        const terms = this.add
+          .bitmapText(PANEL_X + 24, y + 78, 'pix', 'TERMS OF USE', 8)
+          .setTint(0x2884a8)
+          .setInteractive({ useHandCursor: true });
+        terms.on('pointerup', (ptr: Phaser.Input.Pointer) => {
+          if (this.tapBlocked(ptr)) return;
+          window.open('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/', '_blank');
+        });
+        const priv = this.add
+          .bitmapText(PANEL_X + 130, y + 78, 'pix', 'PRIVACY POLICY', 8)
+          .setTint(0x2884a8)
+          .setInteractive({ useHandCursor: true });
+        priv.on('pointerup', (ptr: Phaser.Input.Pointer) => {
+          if (this.tapBlocked(ptr)) return;
+          window.open('https://soulforge-knight.netlify.app/privacy.html', '_blank');
+        });
+        this.rows.add([terms, priv]);
+        this.priceButton(y + h / 2 - 8, MEMBERSHIP.sku, () => this.gs.fulfillProduct(MEMBERSHIP.sku));
       } else {
         const days = Math.max(1, Math.ceil((this.gs.membershipUntil - this.gs.clock()) / 86_400_000));
         this.text(24, y + 62, `MEMBER - ${days}D LEFT`, 0x2e7a1e);
@@ -523,8 +548,11 @@ export class ShopPanel extends Phaser.Scene {
       y += h + 10;
     }
 
-    // Redeem a promo code (owner/tester master key, future public codes)
-    {
+    // Redeem a promo code (owner/tester master key, future public codes).
+    // NOT on iOS: App Review rejected custom codes under guideline 3.1.1
+    // (unlocking paid content outside IAP), so the card only exists on
+    // web + Android — the same split gacha games use for gift codes.
+    if (Capacitor.getPlatform() !== 'ios') {
       const h = 54;
       this.card(y, h, 0x9b7ede);
       this.text(24, y + 12, 'REDEEM CODE', 0x9b7ede);
