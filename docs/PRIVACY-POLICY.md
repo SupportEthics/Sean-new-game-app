@@ -52,5 +52,15 @@ processing described above.
 - Remove all local data by uninstalling the app.
 - Questions or requests: **sean@support-ethics.co.uk**
 
+## Requesting deletion of your data
+
+To request deletion of any data associated with your device (purchase
+records held by our payment processor, analytics identifiers, and
+advertising identifiers), email **sean@support-ethics.co.uk** with the
+subject "Data deletion request" from any address — no account details
+are needed because Soulforge Knight has no accounts. We action deletion
+requests within 30 days. Game-save data itself is stored only on your
+device and is deleted the moment you uninstall the app; we keep no copy.
+
 We will update this policy if the game's data practices change; material
 changes will be noted in the app's store listing.
